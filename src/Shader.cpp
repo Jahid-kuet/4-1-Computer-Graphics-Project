@@ -60,8 +60,27 @@ uniform float pointLight2Intensity;
 uniform vec3  fogColor;
 uniform float fogDensity;
 
+// Lighting bypass for object modeling inspection
+uniform int   noLighting; // 1 = Crisp unlit 3D facets, 2 = Pure flat color, 0 = Full Phong lighting
+
 void main()
 {
+    // Object display mode (no lighting yet - for milestone grading)
+    if (noLighting == 1)
+    {
+        // Gentle directional facet contrast (82% ambient + 18% directional) so 3D surfaces are clear
+        vec3 norm = normalize(Normal);
+        float shade = 0.82 + 0.18 * max(dot(norm, normalize(vec3(0.35, 0.90, 0.40))), 0.0);
+        FragColor = vec4(objectColor * shade, 1.0);
+        return;
+    }
+    else if (noLighting == 2)
+    {
+        // Pure flat color without any shading
+        FragColor = vec4(objectColor, 1.0);
+        return;
+    }
+
     // Emissive bypass (moon, stars, fireflies, lantern flame)
     if (emissive > 0.5)
     {

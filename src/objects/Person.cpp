@@ -38,93 +38,35 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
     }
     float torsoTop = torsoBase + torsoH;
 
-    // ── 1. Anatomical Tapered Torso (Cotton Panjabi / Kurta) ──────
-    // Upper Chest & Pectorals (broader across shoulders)
-    mat4 chest = model;
-    chest = translate(chest, vec3(0.0f, torsoBase + torsoH * 0.72f, 0.0f));
-    chest = scale(chest, vec3(chestW, torsoH * 0.56f, chestD));
-    Primitives::drawCylinder(shader, chest, p.shirtColor);
+    // ── 1. Clean Explainable Geometric Torso (Unit Cube) ───────────
+    mat4 torso = model;
+    torso = translate(torso, vec3(0.0f, torsoBase + torsoH * 0.5f, 0.0f));
+    torso = scale(torso, vec3(chestW * 2.0f, torsoH, chestD * 2.0f));
+    Primitives::drawCube(shader, torso, p.shirtColor);
 
-    // Lean Waist & Abdomen (smooth anatomical taper toward belt/hips)
-    mat4 abdomen = model;
-    abdomen = translate(abdomen, vec3(0.0f, torsoBase + torsoH * 0.28f, 0.0f));
-    abdomen = scale(abdomen, vec3(waistW, torsoH * 0.56f, waistD));
-    Primitives::drawCylinder(shader, abdomen, p.shirtColor);
-
-    // Shoulder deltoid caps (smooth shoulder transition, eliminates floating arm gap)
-    for (int side = -1; side <= 1; side += 2) {
-        float fside = (float)side;
-        mat4 shoulderCap = model;
-        shoulderCap = translate(shoulderCap, vec3(fside * (chestW * 0.95f), torsoTop - 0.045f, 0.0f));
-        shoulderCap = scale(shoulderCap, vec3(0.038f, 0.038f, 0.038f));
-        Primitives::drawSphere(shader, shoulderCap, p.shirtColor);
-    }
-
-    // Traditional Mandarin / Ban Collar at neckline
-    mat4 collar = model;
-    collar = translate(collar, vec3(0.0f, torsoTop + 0.008f, 0.005f));
-    collar = scale(collar, vec3(0.058f, 0.022f, 0.058f));
-    Primitives::drawCylinder(shader, collar, p.shirtColor * 0.92f);
-
-    // Front Button Placket (iconic Bengali Kurta vertical button strip)
-    mat4 placket = model;
-    placket = translate(placket, vec3(0.0f, torsoBase + torsoH * 0.68f, chestD + 0.002f));
-    placket = scale(placket, vec3(0.016f, torsoH * 0.44f, 0.004f));
-    Primitives::drawCube(shader, placket, p.shirtColor * 0.82f);
-
-    // Tailored Kurta / Panjabi Tunic Hem (falls neatly over hips, no bulky barrel)
-    mat4 tunicHem = model;
-    tunicHem = translate(tunicHem, vec3(0.0f, torsoBase - 0.035f, 0.0f));
-    tunicHem = scale(tunicHem, vec3(waistW * 1.08f, 0.12f, waistD * 1.08f));
-    Primitives::drawCylinder(shader, tunicHem, p.shirtColor);
-
-    // ── 2. Traditional Draped Gamcha (Cotton Towel over shoulder) ─
+    // ── 2. Traditional Gamcha (Unit Cube draped over shoulder) ────
     if (p.hasGamcha) {
-        mat4 shawlFront = model;
-        shawlFront = translate(shawlFront, vec3(chestW * 0.60f, torsoBase + torsoH * 0.55f, chestD + 0.006f));
-        shawlFront = scale(shawlFront, vec3(0.060f, torsoH * 0.65f, 0.016f));
-        Primitives::drawCube(shader, shawlFront, p.gamchaColor);
-
-        mat4 shawlTop = model;
-        shawlTop = translate(shawlTop, vec3(chestW * 0.60f, torsoTop + 0.012f, 0.0f));
-        shawlTop = scale(shawlTop, vec3(0.065f, 0.024f, chestD * 1.80f));
-        Primitives::drawCube(shader, shawlTop, p.gamchaColor);
-
-        mat4 shawlBack = model;
-        shawlBack = translate(shawlBack, vec3(chestW * 0.60f, torsoBase + torsoH * 0.60f, -chestD - 0.006f));
-        shawlBack = scale(shawlBack, vec3(0.060f, torsoH * 0.55f, 0.016f));
-        Primitives::drawCube(shader, shawlBack, p.gamchaColor);
+        mat4 shawl = model;
+        shawl = translate(shawl, vec3(chestW * 0.65f, torsoBase + torsoH * 0.5f, 0.0f));
+        shawl = scale(shawl, vec3(0.065f, torsoH * 1.05f, chestD * 2.15f));
+        Primitives::drawCube(shader, shawl, p.gamchaColor);
     }
 
-    // ── 3. Neck & Head ───────────────────────────────────────────
-    float headCenterY = torsoTop + headR + 0.020f;
+    // ── 3. Neck (Unit Cylinder) & Head (Unit Sphere) ──────────────
+    // Clean, geometrically explainable canonical primitives
+    float headCenterY = torsoTop + headR + 0.030f;
+
     mat4 neck = model;
     neck = translate(neck, vec3(0.0f, torsoTop + 0.020f, 0.0f));
-    neck = scale(neck, vec3(0.038f, 0.048f, 0.038f));
+    neck = scale(neck, vec3(0.040f, 0.050f, 0.040f));
     Primitives::drawCylinder(shader, neck, p.skinColor);
 
     mat4 head = model;
     head = translate(head, vec3(0.0f, headCenterY, 0.0f));
-    head = scale(head, vec3(headR * 0.90f, headR * 1.05f, headR * 0.92f));
+    head = scale(head, vec3(headR, headR, headR));
     Primitives::drawSphere(shader, head, p.skinColor);
 
-    // ── 4. Hair & Elder Beard ────────────────────────────────────
-    vec3 actualHairCol = p.isElder ? vec3(0.90f, 0.90f, 0.90f) : p.hairColor;
-
-    mat4 hair = model;
-    hair = translate(hair, vec3(0.0f, headCenterY + headR * 0.25f, -headR * 0.15f));
-    hair = scale(hair, vec3(headR * 0.96f, headR * 0.88f, headR * 0.98f));
-    Primitives::drawSphere(shader, hair, actualHairCol);
-
-    if (p.isElder) {
-        mat4 beard = model;
-        beard = translate(beard, vec3(0.0f, headCenterY - headR * 0.85f, headR * 0.38f));
-        beard = rotate(beard, radians(15.0f), vec3(1.0f, 0.0f, 0.0f));
-        beard = scale(beard, vec3(0.052f, 0.13f, 0.052f));
-        Primitives::drawCone(shader, beard, actualHairCol);
-    }
-
-    // ── 5. Slender Anatomical Arms & Hands ─────────────────────────
+    // ── 4. Slender Anatomical Arms & Hands ─────────────────────────
     for (int side = -1; side <= 1; side += 2) {
         float fside = (float)side;
         float armAngle = (side == -1) ? p.leftArmAngle : p.rightArmAngle;
@@ -141,7 +83,7 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
                 shoulder = rotate(shoulder, radians(-22.0f), vec3(1.0f, 0.0f, 0.0f));
                 shoulder = rotate(shoulder, radians(14.0f), vec3(0.0f, 0.0f, 1.0f));
 
-                // Upper arm
+                // Upper arm: Unit Cylinder
                 mat4 upper = shoulder;
                 upper = translate(upper, vec3(0.0f, -upperArmH * 0.5f, 0.0f));
                 upper = scale(upper, vec3(armR, upperArmH, armR));
@@ -153,30 +95,24 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
                 elbow = rotate(elbow, radians(-65.0f), vec3(1.0f, 0.0f, 0.0f)); // raised forward
                 elbow = rotate(elbow, radians(-18.0f), vec3(0.0f, 1.0f, 0.0f)); // angled slightly inward
 
-                // Forearm
+                // Forearm: Unit Cylinder
                 mat4 lower = elbow;
                 lower = translate(lower, vec3(0.0f, -lowerArmH * 0.5f, 0.0f));
                 lower = scale(lower, vec3(forearmR, lowerArmH, forearmR));
                 Primitives::drawCylinder(shader, lower, p.shirtColor);
 
-                // Sleeve cuff
-                mat4 cuff = elbow;
-                cuff = translate(cuff, vec3(0.0f, -lowerArmH, 0.0f));
-                cuff = scale(cuff, vec3(forearmR * 1.08f, 0.015f, forearmR * 1.08f));
-                Primitives::drawCylinder(shader, cuff, p.shirtColor * 0.88f);
-
-                // Hand firmly grasping the bamboo handle
+                // Hand: Unit Sphere firmly grasping the bamboo handle
                 mat4 hand = elbow;
                 hand = translate(hand, vec3(0.0f, -lowerArmH - 0.020f, 0.005f));
-                hand = scale(hand, vec3(0.024f, 0.032f, 0.026f));
+                hand = scale(hand, vec3(0.028f, 0.032f, 0.028f));
                 Primitives::drawSphere(shader, hand, p.skinColor);
 
-                // Traditional Handmade Fan (Haat Pakha / হাতপাখা) in the Elder's hand!
+                // Traditional Handmade Fan (Haat Pakha / হাতপাখা) — Pointing UPWARD / ABOVE!
                 mat4 fan = elbow;
                 // Position grip in palm
                 fan = translate(fan, vec3(0.0f, -lowerArmH - 0.020f, 0.005f));
-                // Align fan handle with forearm/hand direction, blade extending upward & forward
-                fan = rotate(fan, radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
+                // Rotate +85 degrees around X so the fan blade stands UPWARD ("above direction")
+                fan = rotate(fan, radians(85.0f), vec3(1.0f, 0.0f, 0.0f));
                 fan = rotate(fan, radians(15.0f), vec3(0.0f, 0.0f, 1.0f));
                 // Gentle fanning oscillation
                 fan = rotate(fan, p.fanSway, vec3(0.0f, 1.0f, 0.0f));

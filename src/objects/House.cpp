@@ -242,8 +242,8 @@ void draw(Shader& shader, const mat4& model, HouseStyle style)
     drawKolshi(shader, model, vec3(hx * 0.70f, plinthH, postZ - 0.20f), 0.90f);
     drawKolshi(shader, model, vec3(hx * 0.85f, plinthH, postZ - 0.35f), 0.75f);
 
-    // ── 8. Outdoor Clay Cooking Stove (Matir Chula) for Kitchen Cottage ─
-    if (style == HOUSE_DOCHALA) {
+    // ── 8. Outdoor Clay Cooking Stove (Matir Chula) beside the house ─
+    {
         vec3 mudColor  (0.46f, 0.34f, 0.20f); // baked mud clay
         vec3 potColor  (0.20f, 0.20f, 0.22f); // cast-iron cooking patil
         vec3 woodColor (0.34f, 0.22f, 0.10f); // firewood sticks

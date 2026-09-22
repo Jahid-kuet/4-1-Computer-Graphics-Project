@@ -36,8 +36,12 @@ static bool    dragging   = false;
 static double  lastMouseX = 0.0, lastMouseY = 0.0;
 static int     winWidth   = 1280, winHeight = 720;
 
-// Lighting Mode: 0 = Moonlit Night (Default), 1 = Golden Sunset, 2 = Daytime
-static int lightingMode = 0;
+// Display / Milestone Mode:
+//   0 = No Lighting (Crisp Unlit 3D Facets - Milestone Default)
+//   1 = No Lighting (Pure Flat Object Color)
+//   2 = Full Moonlit Night Scene Preview
+static int  lightingMode = 0;
+static bool showTerrain  = true; // Key 'T' toggles terrain/river visibility
 
 // ─── GLFW Callbacks ──────────────────────────────────────────────────
 static void framebufferSizeCallback(GLFWwindow*, int w, int h)
@@ -82,54 +86,90 @@ static void keyCallback(GLFWwindow* window, int key, int, int action, int)
     // Lighting Mode Toggle
     else if (key == GLFW_KEY_L) {
         lightingMode = (lightingMode + 1) % 3;
-        const char* modeNames[] = { "Moonlit Night (Default)", "Golden Dusk / Sunset", "Crisp Tropical Day" };
-        std::cout << "Lighting Mode: " << modeNames[lightingMode] << std::endl;
+        const char* modeNames[] = {
+            "No Lighting (Crisp Unlit 3D Facets - Milestone Default)",
+            "No Lighting (Pure Flat Object Color)",
+            "Full Moonlit Night Scene Preview"
+        };
+        std::cout << "Display Mode: " << modeNames[lightingMode] << std::endl;
     }
-    // Camera Presets
+    // Terrain / Ground Visibility Toggle
+    else if (key == GLFW_KEY_T) {
+        showTerrain = !showTerrain;
+        std::cout << "Terrain / Ground: " << (showTerrain ? "VISIBLE" : "HIDDEN (Freestanding Objects Only)") << std::endl;
+    }
+    // Camera Presets for Object Inspection
     else if (key == GLFW_KEY_1) {
-        // Courtyard Gathering closeup
-        camera.target   = vec3(-3.5f, 0.9f, 0.8f);
-        camera.yaw      = radians(32.0f);
+        // 1: Village House & Clay Cooking Stove
+        camera.target   = vec3(-8.5f, 1.4f, -6.0f);
+        camera.yaw      = radians(45.0f);
         camera.pitch    = radians(16.0f);
-        camera.distance = 10.0f;
+        camera.distance = 9.5f;
         camera.updatePosition();
-        std::cout << "Camera View 1: Courtyard Gathering Closeup\n";
+        std::cout << "View 1: Village House (Chouchala 4-Sloped Roof & Outdoor Clay Stove)\n";
     }
     else if (key == GLFW_KEY_2) {
-        // River Shore & Moored Boat
-        camera.target   = vec3(7.2f, 0.8f, 1.2f);
+        // 2: Dingi Nouka with Hanging Hariken Lantern
+        camera.target   = vec3(7.2f, 0.6f, 1.2f);
         camera.yaw      = radians(-28.0f);
-        camera.pitch    = radians(18.0f);
-        camera.distance = 12.0f;
+        camera.pitch    = radians(16.0f);
+        camera.distance = 7.5f;
         camera.updatePosition();
-        std::cout << "Camera View 2: River Shore & Moored Boat\n";
+        std::cout << "View 2: Traditional Dingi Nouka (Curved Hull, Pointed Bow/Stern, Chhoi & Hariken)\n";
     }
     else if (key == GLFW_KEY_3) {
-        // Full Village Overview
-        camera.target   = vec3(0.0f, 1.5f, 0.0f);
-        camera.yaw      = radians(28.0f);
-        camera.pitch    = radians(24.0f);
-        camera.distance = 32.0f;
+        // 3: Charpai, Seated Elder & Handmade Fan
+        camera.target   = vec3(-3.8f, 0.7f, 0.8f);
+        camera.yaw      = radians(42.0f);
+        camera.pitch    = radians(14.0f);
+        camera.distance = 5.2f;
         camera.updatePosition();
-        std::cout << "Camera View 3: Full Village Overview\n";
+        std::cout << "View 3: Charpai, Seated Elder & Handmade Palm-Leaf Fan (Haat Pakha)\n";
     }
     else if (key == GLFW_KEY_4) {
-        // Homestead & Houses
-        camera.target   = vec3(-6.5f, 1.6f, -7.5f);
-        camera.yaw      = radians(55.0f);
-        camera.pitch    = radians(20.0f);
-        camera.distance = 16.0f;
+        // 4: Child Reading Book
+        camera.target   = vec3(-1.8f, 0.45f, 2.0f);
+        camera.yaw      = radians(10.0f);
+        camera.pitch    = radians(14.0f);
+        camera.distance = 3.5f;
         camera.updatePosition();
-        std::cout << "Camera View 4: Rural Homestead & Houses\n";
+        std::cout << "View 4: Child Reading Book on Courtyard\n";
     }
     else if (key == GLFW_KEY_5) {
-        // Lush Paddy Fields (Dhan Khet)
-        camera.target   = vec3(-11.5f, 0.6f, 15.0f);
-        camera.yaw      = radians(45.0f);
-        camera.pitch    = radians(22.0f);
-        camera.distance = 18.0f;
+        // 5: Rural Trees (1 Coconut Palm, 1 Banana, 1 Mango, 1 Bamboo)
+        camera.target   = vec3(4.2f, 2.5f, -8.5f);
+        camera.yaw      = radians(-15.0f);
+        camera.pitch    = radians(16.0f);
+        camera.distance = 15.0f;
         camera.updatePosition();
-        std::cout << "Camera View 5: Lush Paddy Fields (Dhan Khet)\n";
+        std::cout << "View 5: Rural Trees (1 Coconut Palm, 1 Banana, 1 Mango, 1 Bamboo)\n";
+    }
+    else if (key == GLFW_KEY_6) {
+        // 6: Animals (1 Hen & 1 Duck)
+        camera.target   = vec3(-4.5f, 0.4f, 0.4f);
+        camera.yaw      = radians(25.0f);
+        camera.pitch    = radians(14.0f);
+        camera.distance = 7.5f;
+        camera.updatePosition();
+        std::cout << "View 6: Village Animals (1 Hen & 1 River Duck)\n";
+    }
+    else if (key == GLFW_KEY_7) {
+        // 7: Rural Rice Tree (Dhan Gachh), Grass & Water Grass (Kashbon)
+        camera.target   = vec3(-8.5f, 0.4f, 8.0f);
+        camera.yaw      = radians(40.0f);
+        camera.pitch    = radians(16.0f);
+        camera.distance = 6.0f;
+        camera.updatePosition();
+        std::cout << "View 7: Rural Rice Tree (Dhan Gachh), Meadow Grass & Water Grass (Kashbon)\n";
+    }
+    else if (key == GLFW_KEY_8) {
+        // 8: Full Scene Overview
+        camera.target   = vec3(-1.0f, 1.0f, 0.0f);
+        camera.yaw      = radians(30.0f);
+        camera.pitch    = radians(28.0f);
+        camera.distance = 28.0f;
+        camera.updatePosition();
+        std::cout << "View 8: Full Village Scene Overview\n";
     }
 }
 
@@ -203,16 +243,23 @@ int main()
 
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
     std::cout << "========================================================\n";
+    std::cout << "  BANGLADESHI RURAL VILLAGE 3D SCENE - OBJECT MILESTONE\n";
+    std::cout << "  (Objects Only | No Motion | No Lighting)\n";
+    std::cout << "========================================================\n";
     std::cout << "CONTROLS:\n";
-    std::cout << "  Left-Drag Mouse : Orbit Camera\n";
+    std::cout << "  Left-Drag Mouse : Orbit Camera Around Object\n";
     std::cout << "  Scroll Wheel    : Zoom In / Out\n";
-    std::cout << "  W / S / A / D   : Move Camera (Forward / Backward / Left / Right)\n";
-    std::cout << "  Key 'L'         : Cycle Lighting (Night -> Sunset -> Day)\n";
-    std::cout << "  Key '1'         : View 1 - Courtyard Gathering\n";
-    std::cout << "  Key '2'         : View 2 - River Shore & Moored Boat\n";
-    std::cout << "  Key '3'         : View 3 - Full Village Overview\n";
-    std::cout << "  Key '4'         : View 4 - Rural Homestead\n";
-    std::cout << "  Key '5'         : View 5 - Lush Paddy Fields (Dhan Khet)\n";
+    std::cout << "  W / S / A / D   : Move Camera Freely\n";
+    std::cout << "  Key '1'         : Inspect House (Chouchala & Clay Cooking Stove)\n";
+    std::cout << "  Key '2'         : Inspect Boat (Dingi Nouka with Hanging Hariken)\n";
+    std::cout << "  Key '3'         : Inspect Charpai, Seated Elder & Handmade Fan\n";
+    std::cout << "  Key '4'         : Inspect Child Reading Book\n";
+    std::cout << "  Key '5'         : Inspect Trees (1 Palm, 1 Banana, 1 Mango, 1 Bamboo)\n";
+    std::cout << "  Key '6'         : Inspect Animals (1 Hen & 1 Duck)\n";
+    std::cout << "  Key '7'         : Inspect Rice Tree (Dhan Gachh), Grass & Water Grass\n";
+    std::cout << "  Key '8'         : Full Scene Overview\n";
+    std::cout << "  Key 'T'         : Toggle Terrain/Ground Visibility\n";
+    std::cout << "  Key 'L'         : Toggle Lighting (0: Unlit 3D | 1: Flat | 2: Night)\n";
     std::cout << "  ESC             : Exit\n";
     std::cout << "========================================================\n";
 
@@ -261,47 +308,51 @@ int main()
             camera.processKeyboardMovement(camFwd, camRgt, dt);
         }
 
+        // ── Motion Control (No motion within objects for milestone grading) ──
+        float animTime = (lightingMode == 2) ? time : 0.0f;
+
         // ── Lighting Mode Setup ─────────────────────────────────
         vec3 clearColor;
         vec3 lightDir;
         vec3 lightColor;
         float ambientStrength;
-        float specularStrength = 0.35f;
+        float specularStrength = 0.0f;
         float shininess        = 32.0f;
         vec3  pointColor       (1.0f, 0.78f, 0.32f); // warm golden kerosene glow
         float pointIntensity   = 0.0f;
         vec3  fogCol;
-        float fogDens          = 0.014f;
+        float fogDens          = 0.0f;
+        int   noLightVal       = 1;
 
         if (lightingMode == 0) {
-            // Mode 0: Serene Moonlit Night (Deep, moody, authentic village night)
-            clearColor      = vec3(0.04f, 0.06f, 0.14f); // deep midnight indigo
+            // Milestone Default: Crisp Unlit 3D Facets (Daylight, 0 darkness, 0 shadows, 0 point lights)
+            clearColor      = vec3(0.82f, 0.88f, 0.94f); // clean daylight sky
             fogCol          = clearColor;
-            lightDir        = normalize(vec3(0.35f, -0.85f, -0.40f)); // cool moonlight
-            lightColor      = vec3(0.50f, 0.62f, 0.85f);              // silvery lunar light
-            ambientStrength = 0.28f;                                  // deep, quiet nocturnal shadows
-            pointIntensity  = 2.40f;                                  // warm golden radiant courtyard lantern
-            fogDens         = 0.014f;                                 // atmospheric midnight depth
+            lightDir        = normalize(vec3(0.35f, -0.90f, -0.40f));
+            lightColor      = vec3(1.0f, 1.0f, 1.0f);
+            ambientStrength = 1.0f;
+            noLightVal      = 1; // gentle facet shading for crisp 3D recognition
         }
         else if (lightingMode == 1) {
-            // Mode 1: Golden Sunset / Twilight (Godhuli Bela)
-            clearColor      = vec3(0.36f, 0.18f, 0.24f); // crimson/amber dusk
+            // Milestone Mode: Pure Flat Object Color (completely unshaded)
+            clearColor      = vec3(0.88f, 0.90f, 0.92f); // neutral light studio backdrop
             fogCol          = clearColor;
-            lightDir        = normalize(vec3(-0.85f, -0.30f, -0.38f)); // low setting sun
-            lightColor      = vec3(1.00f, 0.68f, 0.38f);              // warm golden sunlight
-            ambientStrength = 0.40f;
-            pointIntensity  = 1.50f;
-            fogDens         = 0.008f;
+            lightDir        = normalize(vec3(0.0f, -1.0f, 0.0f));
+            lightColor      = vec3(1.0f, 1.0f, 1.0f);
+            ambientStrength = 1.0f;
+            noLightVal      = 2; // pure flat unshaded objectColor
         }
         else {
-            // Mode 2: Crisp Tropical Day
-            clearColor      = vec3(0.48f, 0.72f, 0.88f); // bright sky blue
-            fogCol          = vec3(0.55f, 0.76f, 0.90f);
-            lightDir        = normalize(vec3(-0.35f, -0.90f, -0.35f)); // overhead sun
-            lightColor      = vec3(1.00f, 0.98f, 0.92f);              // warm white sun
-            ambientStrength = 0.48f;
-            pointIntensity  = 0.0f;  // lantern flame less dominant in bright sun
-            fogDens         = 0.006f;
+            // Full Moonlit Night Scene Preview
+            clearColor       = vec3(0.04f, 0.06f, 0.14f); // deep midnight indigo
+            fogCol           = clearColor;
+            lightDir         = normalize(vec3(0.35f, -0.85f, -0.40f)); // cool moonlight
+            lightColor       = vec3(0.50f, 0.62f, 0.85f);              // silvery lunar light
+            ambientStrength  = 0.28f;
+            specularStrength = 0.35f;
+            pointIntensity   = 2.40f;
+            fogDens          = 0.014f;
+            noLightVal       = 0; // full Phong lighting with lanterns & fog
         }
 
         // ── Clear Framebuffer ───────────────────────────────────
@@ -319,16 +370,17 @@ int main()
         shader.setFloat("specularStrength", specularStrength);
         shader.setFloat("shininess",        shininess);
         shader.setFloat("emissive",         0.0f);
+        shader.setInt("noLighting",         noLightVal);
 
-        // Point Light 1: Courtyard Hurricane Lantern (Hariken — little light source)
-        float flameFlicker = 1.0f + 0.05f * sinf(time * 11.3f) * cosf(time * 17.7f);
+        // Point Light 1: Courtyard Hurricane Lantern
+        float flameFlicker = (lightingMode == 2) ? (1.0f + 0.05f * sinf(time * 11.3f) * cosf(time * 17.7f)) : 1.0f;
         shader.setVec3("pointLightPos",       vec3(lanternPos.x, 0.425f, lanternPos.z));
         shader.setVec3("pointLightColor",     pointColor);
         shader.setFloat("pointLightIntensity", pointIntensity * flameFlicker);
 
-        // Point Light 2: Boat Hurricane Lantern (Hariken hanging at front of Chhoi)
-        float boatBobLight = sinf(time * 1.6f) * 0.018f;
-        float boatFlameFlicker = 1.0f + 0.06f * sinf(time * 9.7f) * cosf(time * 14.3f);
+        // Point Light 2: Boat Hurricane Lantern
+        float boatBobLight = (lightingMode == 2) ? (sinf(time * 1.6f) * 0.018f) : 0.0f;
+        float boatFlameFlicker = (lightingMode == 2) ? (1.0f + 0.06f * sinf(time * 9.7f) * cosf(time * 14.3f)) : 1.0f;
         vec3 boatLanternWorldPos = vec3(7.2f, 0.11f + boatBobLight + 0.42f, 1.2f + 1.08f);
         shader.setVec3("pointLight2Pos",       boatLanternWorldPos);
         shader.setVec3("pointLight2Color",     pointColor);
@@ -338,8 +390,8 @@ int main()
         shader.setVec3("fogColor",  fogCol);
         shader.setFloat("fogDensity", fogDens);
 
-        // ─── 1. NIGHT SKY & CELESTIAL BODIES ────────────────────
-        if (lightingMode != 2) {
+        // ─── 1. NIGHT SKY & CELESTIAL BODIES (Only in Night Preview Mode) ─
+        if (lightingMode == 2) {
             // Stars in the sky dome
             Stars::draw(shader);
 
@@ -353,120 +405,54 @@ int main()
             Fireflies::draw(shader, time);
         }
 
-        // ─── 2. TERRAIN & COURTYARD (UTHAN) ─────────────────────
-        mat4 terrainM = mat4::identity();
-        Terrain::draw(shader, terrainM);
+        // ─── 2. TERRAIN & COURTYARD (Toggled by Key 'T') ─────────
+        if (showTerrain) {
+            mat4 terrainM = mat4::identity();
+            Terrain::draw(shader, terrainM);
 
-        // ─── 3. MEANDERING RIVER ────────────────────────────────
-        mat4 riverM = mat4::identity();
-        riverM = translate(riverM, vec3(8.0f, 0.0f, 0.0f));
-        River::draw(shader, riverM, time);
+            mat4 riverM = mat4::identity();
+            riverM = translate(riverM, vec3(8.0f, 0.0f, 0.0f));
+            River::draw(shader, riverM, animTime);
+        }
 
-        // ─── 4. VILLAGE HOUSES (DISTRIBUTED WITH BREATHING ROOM) ─
-        // House 1: Main residential house (Chouchala 4-sloped hip roof)
+        // ─── 4. VILLAGE HOUSE (1 TRADITIONAL BENGALI HOMESTEAD) ──
+        // Single residential house (Chouchala 4-sloped hip roof, verandah & outdoor clay cooking stove)
         mat4 house1 = mat4::identity();
         house1 = translate(house1, vec3(-8.5f, 0.0f, -6.0f));
         house1 = rotate(house1, radians(6.0f), vec3(0.0f, 1.0f, 0.0f));
         House::draw(shader, house1, HOUSE_CHOUCHALA);
 
-        // House 2: Side cottage / kitchen (Dochala 2-sloped pitched gable roof with outdoor clay stove)
-        mat4 house2 = mat4::identity();
-        house2 = translate(house2, vec3(-3.0f, 0.0f, -11.5f));
-        house2 = rotate(house2, radians(22.0f), vec3(0.0f, 1.0f, 0.0f));
-        house2 = scale(house2, vec3(0.85f, 0.88f, 0.85f));
-        House::draw(shader, house2, HOUSE_DOCHALA);
-
-        // ─── 5. VEGETATION (TREES DISTRIBUTED ACROSS MAP) ────────
-        // Coconut Palm 1: Village riverbank north
+        // ─── 5. VEGETATION (1 OF EACH TREE TYPE FOR MILESTONE INSPECTION) ──
+        // 1. Coconut Palm (curved trunk, crown with cascading leaflets)
         mat4 palm1 = mat4::identity();
         palm1 = translate(palm1, vec3(4.2f, 0.0f, -8.5f));
         palm1 = rotate(palm1, radians(-12.0f), vec3(0.0f, 1.0f, 0.0f));
         Tree::draw(shader, palm1, TREE_PALM);
 
-        // Coconut Palm 2: Village riverbank south
-        mat4 palm2 = mat4::identity();
-        palm2 = translate(palm2, vec3(4.5f, 0.0f, 9.5f));
-        palm2 = rotate(palm2, radians(35.0f), vec3(0.0f, 1.0f, 0.0f));
-        Tree::draw(shader, palm2, TREE_PALM);
-
-        // Coconut Palm 3: Southwest courtyard boundary
-        mat4 palm3 = mat4::identity();
-        palm3 = translate(palm3, vec3(-12.5f, 0.0f, 4.5f));
-        palm3 = rotate(palm3, radians(45.0f), vec3(0.0f, 1.0f, 0.0f));
-        Tree::draw(shader, palm3, TREE_PALM);
-
-        // Coconut Palm 4: Rear homestead garden
-        mat4 palm4 = mat4::identity();
-        palm4 = translate(palm4, vec3(-2.0f, 0.0f, -17.0f));
-        palm4 = rotate(palm4, radians(-25.0f), vec3(0.0f, 1.0f, 0.0f));
-        Tree::draw(shader, palm4, TREE_PALM);
-
-        // Coconut Palm 5: Far riverbank north (across the river!)
-        mat4 palm5 = mat4::identity();
-        palm5 = translate(palm5, vec3(15.5f, 0.0f, -7.0f));
-        palm5 = rotate(palm5, radians(20.0f), vec3(0.0f, 1.0f, 0.0f));
-        Tree::draw(shader, palm5, TREE_PALM);
-
-        // Coconut Palm 6: Far riverbank center (across the river!)
-        mat4 palm6 = mat4::identity();
-        palm6 = translate(palm6, vec3(16.8f, 0.0f, 1.5f));
-        palm6 = rotate(palm6, radians(-30.0f), vec3(0.0f, 1.0f, 0.0f));
-        Tree::draw(shader, palm6, TREE_PALM);
-
-        // Coconut Palm 7: Far riverbank south (across the river!)
-        mat4 palm7 = mat4::identity();
-        palm7 = translate(palm7, vec3(16.0f, 0.0f, 9.0f));
-        palm7 = rotate(palm7, radians(15.0f), vec3(0.0f, 1.0f, 0.0f));
-        Tree::draw(shader, palm7, TREE_PALM);
-
-        // Banana Trees: Kitchen garden grove
+        // 2. Banana Tree (curved stem, broad paddle leaves)
         mat4 banana1 = mat4::identity();
         banana1 = translate(banana1, vec3(-13.5f, 0.0f, -4.5f));
         Tree::draw(shader, banana1, TREE_BANANA);
 
-        mat4 banana2 = mat4::identity();
-        banana2 = translate(banana2, vec3(-12.8f, 0.0f, -7.5f));
-        banana2 = rotate(banana2, radians(55.0f), vec3(0.0f, 1.0f, 0.0f));
-        banana2 = scale(banana2, vec3(0.85f, 0.85f, 0.85f));
-        Tree::draw(shader, banana2, TREE_BANANA);
-
-        // Majestic branching Banyan / Mango Tree (homestead backdrop)
+        // 3. Majestic Branching Banyan / Mango Tree (heavy branching trunk, dense canopy)
         mat4 mangoTree = mat4::identity();
         mangoTree = translate(mangoTree, vec3(-16.5f, 0.0f, -10.5f));
         Tree::draw(shader, mangoTree, TREE_GENERAL);
 
-        // Second leafy Banyan / Mango Tree on the far bank of the river
-        mat4 farTree = mat4::identity();
-        farTree = translate(farTree, vec3(18.5f, 0.0f, 3.0f));
-        farTree = scale(farTree, vec3(1.1f, 1.1f, 1.1f));
-        Tree::draw(shader, farTree, TREE_GENERAL);
-
-        // Foreground lush canopy framing the courtyard from the south
-        mat4 southTree = mat4::identity();
-        southTree = translate(southTree, vec3(-1.0f, 0.0f, 16.0f));
-        southTree = scale(southTree, vec3(1.30f, 1.30f, 1.30f));
-        Tree::draw(shader, southTree, TREE_GENERAL);
-
-        // North leafy tree framing the river from the top
-        mat4 northTree = mat4::identity();
-        northTree = translate(northTree, vec3(1.0f, 0.0f, -17.5f));
-        northTree = scale(northTree, vec3(1.25f, 1.25f, 1.25f));
-        Tree::draw(shader, northTree, TREE_GENERAL);
-
-        // Traditional Bamboo Grove (Bansher Jhar) behind homestead (far away from river!)
+        // 4. Traditional Bamboo Grove (Bansher Jhar) behind homestead (far away from river!)
         mat4 bambooGrove = mat4::identity();
         bambooGrove = translate(bambooGrove, vec3(-19.0f, 0.0f, -14.0f));
         bambooGrove = rotate(bambooGrove, radians(30.0f), vec3(0.0f, 1.0f, 0.0f));
         Tree::draw(shader, bambooGrove, TREE_BAMBOO);
 
-        // ─── 6. VILLAGE GATHERING (UTHAN) ───────────────────────
+        // ─── 6. VILLAGE GATHERING (UTHAN) — EXACTLY 2 PEOPLE: OLD MAN & CHILD ─
         // Traditional woven Charpai (bed)
         mat4 charpaiM = mat4::identity();
         charpaiM = translate(charpaiM, vec3(-3.8f, 0.0f, 0.8f));
         charpaiM = rotate(charpaiM, radians(-12.0f), vec3(0.0f, 1.0f, 0.0f));
         Charpai::draw(shader, charpaiM);
 
-        // Seated Elder on the Charpai edge ("sit the human in the charpai properly")
+        // Person 1: Seated Elder on the Charpai edge holding handmade fan (Haat Pakha)
         PersonParams elder;
         elder.skinColor   = vec3(0.52f, 0.35f, 0.22f);
         elder.shirtColor  = vec3(0.92f, 0.90f, 0.85f); // white cotton kurta
@@ -476,7 +462,7 @@ int main()
         elder.hasGamcha   = true;                      // red gamcha over shoulder
         elder.gamchaColor = vec3(0.80f, 0.20f, 0.14f);
         elder.hasFan      = true;                      // holds traditional handmade fan (Haat Pakha) in hand!
-        elder.fanSway     = sinf(time * 2.6f) * radians(8.0f); // gentle, lifelike fanning oscillation
+        elder.fanSway     = (animTime > 0.0f) ? (sinf(animTime * 2.6f) * radians(8.0f)) : 0.0f; // static rest pose in inspection mode
 
         mat4 elderM = charpaiM;
         // Pelvis directly on mattress surface (Y = 0.50f), seated along edge facing courtyard (+Z / lantern)
@@ -494,30 +480,7 @@ int main()
         lanternM = translate(lanternM, vec3(lanternPos.x, 0.24f, lanternPos.z));
         Charpai::drawLantern(shader, lanternM);
 
-        // Standing Villager 1 (elder chatting)
-        PersonParams vp1;
-        vp1.skinColor     = vec3(0.48f, 0.32f, 0.20f);
-        vp1.shirtColor    = vec3(0.20f, 0.40f, 0.65f); // blue shirt
-        vp1.pantsColor    = vec3(0.55f, 0.48f, 0.32f); // checkered lungi
-        vp1.hasGamcha     = true;                      // gamcha on shoulder
-        vp1.gamchaColor   = vec3(0.85f, 0.75f, 0.20f); // yellowish gamcha
-        vp1.rightArmAngle = radians(18.0f);            // right arm gesturing politely forward
-        mat4 p1M = mat4::identity();
-        p1M = translate(p1M, vec3(-5.2f, 0.0f, 0.2f));
-        p1M = rotate(p1M, radians(45.0f), vec3(0.0f, 1.0f, 0.0f)); // faces charpai
-        Person::draw(shader, p1M, vp1);
-
-        // Standing Villager 2 (listening)
-        PersonParams vp2;
-        vp2.skinColor     = vec3(0.52f, 0.36f, 0.22f);
-        vp2.shirtColor    = vec3(0.78f, 0.72f, 0.58f); // cream panjabi
-        vp2.pantsColor    = vec3(0.18f, 0.30f, 0.45f); // dark blue lungi
-        mat4 p2M = mat4::identity();
-        p2M = translate(p2M, vec3(-3.8f, 0.0f, 2.6f));
-        p2M = rotate(p2M, radians(-30.0f), vec3(0.0f, 1.0f, 0.0f));
-        Person::draw(shader, p2M, vp2);
-
-        // Child sitting cross-legged on the swept yard reading
+        // Person 2: Child sitting cross-legged on the swept yard reading book
         PersonParams child;
         child.skinColor   = vec3(0.52f, 0.36f, 0.22f);
         child.shirtColor  = vec3(0.88f, 0.45f, 0.15f); // saffron/orange shirt
@@ -536,67 +499,30 @@ int main()
         bookM = scale(bookM, vec3(0.35f, 0.035f, 0.26f));
         Primitives::drawCube(shader, bookM, vec3(0.85f, 0.85f, 0.80f));
 
-        // ─── 7. ANIMALS (HENS & DUCKS) ──────────────────────────
-        // Hens wandering across the spacious courtyard
+        // ─── 7. ANIMALS (1 HEN & 1 DUCK FOR MILESTONE INSPECTION) ──
+        // Village Hen (pecking ground, wings, tail, comb)
         mat4 hen1 = mat4::identity();
-        hen1 = translate(hen1, vec3(-6.5f, 0.0f, -1.8f));
+        hen1 = translate(hen1, vec3(-5.2f, 0.0f, 0.8f));
         hen1 = rotate(hen1, radians(35.0f), vec3(0.0f, 1.0f, 0.0f));
         Hen::draw(shader, hen1);
 
-        mat4 hen2 = mat4::identity();
-        hen2 = translate(hen2, vec3(-5.0f, 0.0f, 3.2f));
-        hen2 = rotate(hen2, radians(-80.0f), vec3(0.0f, 1.0f, 0.0f));
-        Hen::draw(shader, hen2);
-
-        mat4 hen3 = mat4::identity();
-        hen3 = translate(hen3, vec3(-1.5f, 0.0f, -4.8f));
-        hen3 = rotate(hen3, radians(125.0f), vec3(0.0f, 1.0f, 0.0f));
-        Hen::draw(shader, hen3);
-
-        // Ducks swimming gracefully on the river water
-        float duckBob1 = sinf(time * 2.5f) * 0.02f;
+        // Duck on the river water
+        float duckBob1 = (animTime > 0.0f) ? (sinf(animTime * 2.5f) * 0.02f) : 0.0f;
         mat4 duck1 = mat4::identity();
-        duck1 = translate(duck1, vec3(7.5f, 0.02f + duckBob1, -3.8f));
+        duck1 = translate(duck1, vec3(7.5f, 0.02f + duckBob1, -1.8f));
         duck1 = rotate(duck1, radians(25.0f), vec3(0.0f, 1.0f, 0.0f));
         Duck::draw(shader, duck1);
 
-        float duckBob2 = cosf(time * 2.2f) * 0.02f;
-        mat4 duck2 = mat4::identity();
-        duck2 = translate(duck2, vec3(8.6f, 0.02f + duckBob2, -1.8f));
-        duck2 = rotate(duck2, radians(-40.0f), vec3(0.0f, 1.0f, 0.0f));
-        Duck::draw(shader, duck2);
-
-        float duckBob3 = sinf(time * 2.0f + 1.0f) * 0.02f;
-        mat4 duck3 = mat4::identity();
-        duck3 = translate(duck3, vec3(9.2f, 0.02f + duckBob3, 5.5f));
-        duck3 = rotate(duck3, radians(15.0f), vec3(0.0f, 1.0f, 0.0f));
-        Duck::draw(shader, duck3);
-
-        // ─── 8. TRADITIONAL DINGI NOUKA & MAJHI ──────────────────
-        // Boat resting right at the natural sandy riverbank (ghat removed)
-        // Elevated to 0.11m so floorboards (0.16m) stay safely above the river water surface (0.02m)
-        float boatBob  = sinf(time * 1.6f) * 0.018f;
-        float boatRoll = sinf(time * 1.4f) * radians(1.2f);
+        // ─── 8. TRADITIONAL DINGI NOUKA (1 MOORED BOAT WITH HARIKEN) ──
+        // Boat resting right at the natural sandy riverbank
+        float boatBob  = (animTime > 0.0f) ? (sinf(animTime * 1.6f) * 0.018f) : 0.0f;
+        float boatRoll = (animTime > 0.0f) ? (sinf(animTime * 1.4f) * radians(1.2f)) : 0.0f;
 
         mat4 boatM = mat4::identity();
         boatM = translate(boatM, vec3(7.2f, 0.11f + boatBob, 1.2f));
         boatM = rotate(boatM, radians(6.0f), vec3(0.0f, 1.0f, 0.0f));
         boatM = rotate(boatM, boatRoll, vec3(0.0f, 0.0f, 1.0f));
         Boat::draw(shader, boatM);
-
-        // Boatman (Majhi) seated at the stern seat (local Y = 0.16f)
-        float oarSway = sinf(time * 1.5f) * radians(8.0f);
-        mat4 majhiM = boatM;
-        majhiM = translate(majhiM, vec3(0.0f, 0.16f, -1.5f));
-        Boatman::draw(shader, majhiM, oarSway);
-
-        // Second smaller Dingi Nouka moored further upstream by the reeds
-        float boatBob2 = cosf(time * 1.5f + 0.5f) * 0.018f;
-        mat4 boat2 = mat4::identity();
-        boat2 = translate(boat2, vec3(9.8f, 0.11f + boatBob2, -13.5f));
-        boat2 = rotate(boat2, radians(-15.0f), vec3(0.0f, 1.0f, 0.0f));
-        boat2 = scale(boat2, vec3(0.75f, 0.75f, 0.75f));
-        Boat::draw(shader, boat2);
 
         // ── Swap Buffers & Poll Events ──────────────────────────
         glfwSwapBuffers(window);

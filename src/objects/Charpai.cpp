@@ -137,104 +137,58 @@ void drawFan(Shader& shader, const mat4& model, float)
 
 void drawLantern(Shader& shader, const mat4& model)
 {
-    // Traditional Bangladeshi Kerosene Hurricane Lantern (Hariken / হ্যারিকেন)
-    // Sized to authentic proportions (~16cm base diameter, ~34cm height)
-    vec3 tinMetalCol (0.24f, 0.25f, 0.27f); // stamped dark painted tinplate
-    vec3 brassBurner (0.72f, 0.54f, 0.18f); // brass wick burner mechanism
-    vec3 flameGlow   (1.00f, 0.88f, 0.38f); // luminous warm kerosene flame
-    vec3 chimneyGlass(0.90f, 0.94f, 0.98f); // blown glass globe
+    // Traditional Backdated Rural Bengali Kerosene Lantern (Hariken / Kupi)
+    // Constructed strictly from fundamental geometric shapes:
+    // 1. Base Oil Tank: Unit Cylinder
+    // 2. Burner Collar: Unit Cylinder
+    // 3. Glowing Flame: Unit Cone (Emissive)
+    // 4. Glass Chimney: Unit Cylinder
+    // 5. Smoke Cap:     Unit Cone
+    // 6. Bail Handle:   Unit Arch
 
-    // ── 1. Fuel Reservoir Tank (Base) ────────────────────────────
-    // Lower tank body
-    mat4 tank = model;
-    tank = translate(tank, vec3(0.0f, 0.045f, 0.0f));
-    tank = scale(tank, vec3(0.12f, 0.09f, 0.12f));
-    Primitives::drawCylinder(shader, tank, tinMetalCol);
+    vec3 metalCol (0.28f, 0.22f, 0.15f); // rustic weathered dark tin / clay
+    vec3 burnerCol(0.60f, 0.45f, 0.18f); // brass burner
+    vec3 flameCol (1.00f, 0.88f, 0.25f); // luminous warm golden kerosene flame
+    vec3 glassCol (0.86f, 0.92f, 0.96f); // clear glass chimney cylinder
+    vec3 capCol   (0.24f, 0.18f, 0.12f); // tin smoke cap cone
 
-    // Stepped beveled tank shoulder
-    mat4 shoulder = model;
-    shoulder = translate(shoulder, vec3(0.0f, 0.095f, 0.0f));
-    shoulder = scale(shoulder, vec3(0.095f, 0.025f, 0.095f));
-    Primitives::drawCylinder(shader, shoulder, tinMetalCol * 0.9f);
+    // 1. Base Reservoir: Unit Cylinder
+    mat4 base = model;
+    base = translate(base, vec3(0.0f, 0.04f, 0.0f));
+    base = scale(base, vec3(0.10f, 0.08f, 0.10f));
+    Primitives::drawCylinder(shader, base, metalCol);
 
-    // Filler cap on side of tank
-    mat4 cap = model;
-    cap = translate(cap, vec3(0.07f, 0.095f, 0.0f));
-    cap = scale(cap, vec3(0.020f, 0.025f, 0.020f));
-    Primitives::drawCylinder(shader, cap, brassBurner);
+    // 2. Burner Neck: Unit Cylinder
+    mat4 neck = model;
+    neck = translate(neck, vec3(0.0f, 0.095f, 0.0f));
+    neck = scale(neck, vec3(0.048f, 0.030f, 0.048f));
+    Primitives::drawCylinder(shader, neck, burnerCol);
 
-    // ── 2. Brass Burner Collar & Thumb Key ───────────────────────
-    mat4 collar = model;
-    collar = translate(collar, vec3(0.0f, 0.12f, 0.0f));
-    collar = scale(collar, vec3(0.065f, 0.035f, 0.065f));
-    Primitives::drawCylinder(shader, collar, brassBurner);
-
-    // Wick adjuster knob extending to the right
-    mat4 knob = model;
-    knob = translate(knob, vec3(0.075f, 0.12f, 0.0f));
-    knob = rotate(knob, radians(90.0f), vec3(0.0f, 0.0f, 1.0f));
-    knob = scale(knob, vec3(0.012f, 0.025f, 0.012f));
-    Primitives::drawCylinder(shader, knob, brassBurner);
-
-    // ── 3. Glowing Kerosene Flame (Little Light Core) ─────────────
+    // 3. Glowing Kerosene Flame: Unit Cone (Emissive)
     shader.setFloat("emissive", 1.0f);
     mat4 flame = model;
-    flame = translate(flame, vec3(0.0f, 0.185f, 0.0f));
-    flame = scale(flame, vec3(0.032f, 0.065f, 0.032f));
-    Primitives::drawSphere(shader, flame, flameGlow);
-
-    // Inner bright yellow flame tip
-    mat4 tip = model;
-    tip = translate(tip, vec3(0.0f, 0.225f, 0.0f));
-    tip = scale(tip, vec3(0.018f, 0.040f, 0.018f));
-    Primitives::drawCone(shader, tip, vec3(1.0f, 0.96f, 0.60f));
+    flame = translate(flame, vec3(0.0f, 0.11f, 0.0f));
+    flame = scale(flame, vec3(0.024f, 0.075f, 0.024f));
+    Primitives::drawCone(shader, flame, flameCol);
     shader.setFloat("emissive", 0.0f);
 
-    // ── 4. Pear-shaped Glass Chimney Globe ───────────────────────
-    // Glass globe bulb
-    mat4 globe = model;
-    globe = translate(globe, vec3(0.0f, 0.20f, 0.0f));
-    globe = scale(globe, vec3(0.082f, 0.11f, 0.082f));
-    Primitives::drawSphere(shader, globe, chimneyGlass);
+    // 4. Protective Glass Chimney: Unit Cylinder
+    mat4 glass = model;
+    glass = translate(glass, vec3(0.0f, 0.18f, 0.0f));
+    glass = scale(glass, vec3(0.065f, 0.14f, 0.065f));
+    Primitives::drawCylinder(shader, glass, glassCol);
 
-    // Chimney glass neck
-    mat4 neck = model;
-    neck = translate(neck, vec3(0.0f, 0.26f, 0.0f));
-    neck = scale(neck, vec3(0.055f, 0.06f, 0.055f));
-    Primitives::drawCylinder(shader, neck, chimneyGlass);
+    // 5. Conical Tin Smoke Cap: Unit Cone
+    mat4 cap = model;
+    cap = translate(cap, vec3(0.0f, 0.25f, 0.0f));
+    cap = scale(cap, vec3(0.088f, 0.045f, 0.088f));
+    Primitives::drawCone(shader, cap, capCol);
 
-    // ── 5. Twin Tubular Side Air Pipes ───────────────────────────
-    for (int side = -1; side <= 1; side += 2) {
-        float fside = (float)side;
-        mat4 pipe = model;
-        pipe = translate(pipe, vec3(fside * 0.105f, 0.20f, 0.0f));
-        pipe = scale(pipe, vec3(0.014f, 0.23f, 0.014f));
-        Primitives::drawCylinder(shader, pipe, tinMetalCol);
-
-        // Lower bend into tank
-        mat4 bend = model;
-        bend = translate(bend, vec3(fside * 0.085f, 0.085f, 0.0f));
-        bend = rotate(bend, radians(fside * 45.0f), vec3(0.0f, 0.0f, 1.0f));
-        bend = scale(bend, vec3(0.014f, 0.06f, 0.014f));
-        Primitives::drawCylinder(shader, bend, tinMetalCol);
-    }
-
-    // ── 6. Vented Tin Smoke Canopy & Top Ring ────────────────────
-    mat4 canopy = model;
-    canopy = translate(canopy, vec3(0.0f, 0.30f, 0.0f));
-    canopy = scale(canopy, vec3(0.10f, 0.045f, 0.10f));
-    Primitives::drawCone(shader, canopy, tinMetalCol);
-
-    mat4 crown = model;
-    crown = translate(crown, vec3(0.0f, 0.335f, 0.0f));
-    crown = scale(crown, vec3(0.048f, 0.032f, 0.048f));
-    Primitives::drawCylinder(shader, crown, tinMetalCol * 0.85f);
-
-    // ── 7. Arched Wire Carrying Bail Handle ───────────────────────
-    mat4 bail = model;
-    bail = translate(bail, vec3(0.0f, 0.32f, 0.0f));
-    bail = scale(bail, vec3(0.20f, 0.18f, 0.012f));
-    Primitives::drawArch(shader, bail, tinMetalCol);
+    // 6. Wire Bail Handle: Unit Arch
+    mat4 handle = model;
+    handle = translate(handle, vec3(0.0f, 0.27f, 0.0f));
+    handle = scale(handle, vec3(0.15f, 0.14f, 0.012f));
+    Primitives::drawArch(shader, handle, metalCol);
 }
 
 } // namespace Charpai

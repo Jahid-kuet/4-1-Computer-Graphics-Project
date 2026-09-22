@@ -176,37 +176,18 @@ void draw(Shader& shader, const mat4& model, float time)
     float stakeX = riverCenterline(stakeZ) - halfWidth + 0.2f;
     drawMooringStake(shader, model, vec3(stakeX, 0.04f, stakeZ));
 
-    // ── 3. Water Lilies (Shapla) in Calm River Shore Pockets ─────
-    float shaplaPositions[][2] = {
-        { -3.0f, -4.5f },
-        { -2.8f, -3.8f },
-        { -3.4f, -5.2f },
-        { -3.2f,  5.5f },
-        { -3.5f,  6.2f },
-        {  3.2f, -8.0f },
-        {  3.5f, -7.2f }
-    };
-    for (int s = 0; s < 7; s++) {
-        float sz = shaplaPositions[s][1];
-        float sx = riverCenterline(sz) + shaplaPositions[s][0];
-        drawShapla(shader, model, vec3(sx, 0.03f, sz), 0.85f);
+    // ── 3. Water Lily (Shapla) on River Shore (1 Single Instance) ─────
+    {
+        float sz = -3.8f;
+        float sx = riverCenterline(sz) - 2.8f;
+        drawShapla(shader, model, vec3(sx, 0.03f, sz), 0.90f);
     }
 
-    // ── 4. Riverbank Reeds / Kashbon (Catkins) along the Shore ───
-    float reedLocations[][2] = {
-        { -halfWidth - 1.2f, -12.0f },
-        { -halfWidth - 1.4f,  -8.0f },
-        { -halfWidth - 1.2f,  -2.0f },
-        { -halfWidth - 1.3f,   8.0f },
-        { -halfWidth - 1.4f,  14.0f },
-        {  halfWidth + 1.2f, -10.0f },
-        {  halfWidth + 1.3f,   4.0f },
-        {  halfWidth + 1.2f,  12.0f }
-    };
-    for (int r = 0; r < 8; r++) {
-        float rz = reedLocations[r][1];
-        float rx = riverCenterline(rz) + reedLocations[r][0];
-        drawKashbonCluster(shader, model, vec3(rx, 0.0f, rz), 5, (float)r * 3.14f);
+    // ── 4. Riverbank Water Grass / Reeds (Kashbon - 1 Single Cluster) ───
+    {
+        float rz = -2.0f;
+        float rx = riverCenterline(rz) - halfWidth - 1.2f;
+        drawKashbonCluster(shader, model, vec3(rx, 0.0f, rz), 5, 0.0f);
     }
 }
 

@@ -246,26 +246,23 @@ void draw(Shader& shader, const mat4& model)
         Primitives::drawPlane(shader, seg, pathColor);
     }
 
-    // ── 4. Traditional Bamboo Fencing (Bansh-er Bera) ────────────
-    // Encloses the homestead perimeter behind the houses
-    drawBambooFence(shader, model, vec3(-17.0f, 0.0f, -16.5f), 15.0f, 0.0f);  // rear boundary fence
-    drawBambooFence(shader, model, vec3(-17.0f, 0.0f, -16.5f), 12.0f, 90.0f); // west orchard fence
-    drawBambooFence(shader, model, vec3(-17.0f, 0.0f, -4.5f),   7.0f, 0.0f);  // kitchen garden fence
 
-    // ── 5. Lush Bangladeshi Paddy Fields (Dhan Khet / ধান ক্ষেত) ─
-    // Terraced agricultural plots with earthen boundary dikes (Aal) & rice trees (Dhan Gachh)
-    drawPaddyField(shader, model, vec3(-11.5f, 0.0f, 10.5f), 10.5f, 9.0f);  // South-west paddy plot 1
-    drawPaddyField(shader, model, vec3(-11.5f, 0.0f, 20.0f), 10.5f, 8.5f);  // South paddy plot 2
 
-    // ── 6. Scattered Grass Tufts Dotting the Meadows ─────────────
-    float grassSpots[][2] = {
-        { -4.5f,  5.5f }, {  2.0f, -4.0f }, {  3.5f,  -2.5f }, {  0.5f,  4.5f },
-        {  2.5f,  4.0f }, { -4.0f,  9.5f }, { -2.0f, 14.5f },
-        { 14.0f, -8.0f }, { 15.5f,   3.0f }, { 14.5f,  9.0f }
-    };
-    for (int g = 0; g < 10; g++) {
-        drawGrassClump(shader, model, vec3(grassSpots[g][0], 0.0f, grassSpots[g][1]), 1.0f);
+    // ── 5. Rural Bangladeshi Rice Tree (Dhan Gachh / ধান গাছ) ─────
+    // Exactly 1 representative rice tree clump with golden grain panicles (Dhaner Shish)
+    {
+        vec3 center(-8.5f, 0.0f, 8.0f);
+        vec3 soilCol(0.24f, 0.32f, 0.16f);
+        mat4 bed = model;
+        bed = translate(bed, vec3(center.x, 0.006f, center.z));
+        bed = scale(bed, vec3(3.2f, 1.0f, 3.2f));
+        Primitives::drawPlane(shader, bed, soilCol);
+
+        drawRiceClump(shader, model, vec3(center.x, 0.01f, center.z), 1.35f, 1.0f);
     }
+
+    // ── 6. Rural Meadow Grass (1 Single Clump) ────────────────────
+    drawGrassClump(shader, model, vec3(-4.5f, 0.0f, 5.5f), 1.30f);
 }
 
 } // namespace Terrain
