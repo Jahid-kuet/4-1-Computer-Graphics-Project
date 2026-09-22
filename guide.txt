@@ -1,0 +1,899 @@
+# OPENGL 3.3 COMPUTER GRAPHICS PROJECT
+
+## Object Implementation Guidelines for Antigravity
+
+You are working inside an existing Visual Studio OpenGL 3.3 C++ project.
+
+PROJECT ROOT:
+
+C:\Users\HP\source\repos\Hitlar
+
+The project currently contains files/folders similar to:
+
+Hitlar/
+Libraries/
+x64/
+glad.c
+Hitlar.slnx
+Hitlar.vcxproj
+Hitlar.vcxproj.filters
+main.cpp
+
+The existing OpenGL development environment is already configured. Do NOT unnecessarily reinstall, replace, or restructure GLFW, GLAD, Visual Studio configuration, libraries, or the existing project setup.
+
+Visual Studio version:
+
+18.10.1
+
+Graphics API:
+
+OpenGL 3.3 Core Profile
+
+Language:
+
+C++
+
+Windowing/input:
+
+GLFW
+
+OpenGL loading:
+
+GLAD
+
+==================================================
+
+1. PROJECT CONTEXT
+   ==================================================
+
+This is a Computer Graphics and Image Processing Laboratory project.
+
+The final scene will represent a Bangladeshi rural village gathering at night.
+
+The moonlit/night atmosphere is present, but moonlight is NOT the primary subject.
+
+The primary visual focus is:
+
+A Bangladeshi village gathering/environment.
+
+The final scene is expected to contain rural environmental elements such as:
+
+* Village homes
+* River
+* Boat
+* Boatman controlling the boat
+* Trees
+* Grass/ground
+* Village gathering area
+* People/villagers
+* Chickens/hens
+* Ducks
+* Moon
+* Night sky
+* Stars
+* Water
+* Riverbank
+* Other small rural/environmental elements required by the final proposal
+
+The exact final object list must follow the updated project proposal supplied below.
+
+IMPORTANT:
+
+Do not invent a completely different project.
+
+Use the proposal as the authoritative description of the final scene.
+
+==================================================
+2. UPDATED PROJECT PROPOSAL
+===========================
+
+Computer Graphics and Image Processing Laboratory
+Project Proposal
+Roll No. 2107064
+Project Title: Village Gathering by the River – A Bangladeshi Rural Night Scene in 3D
+1. Project Description
+The project recreates a typical Bangladeshi village on a summer night, when neighbours gather in a courtyard beside a flowing river. On a woven charpai, elders chat and fan themselves with handmade wooden fans; children play nearby, and siblings read a Bengali poem aloud. On the river, a boatman rows a traditional wooden boat, while hens and ducks wander the yard. The full moon and fireflies form a supporting nighttime atmosphere, not the main focus.
+Every object is generated procedurally in OpenGL 3.3 core-profile code from mathematical primitives (spheres, cylinders, cones, planes) — no external models. A single directional “moon” light drives per-pixel Phong shading (ambient + diffuse + specular), while hierarchical and time-varying transformations animate the fan, boatman, river, children, animals and trees. Animation follows clear stages: settling in → river and boat movement → village gathering → poem reading → firefly glow.
+2. Objectives
+•	Communicate traditional rural Bangladesh through a river, boat, houses, trees, animals and a gathering.
+•	Apply the OpenGL 3.3 pipeline (VAO/VBO/EBO, GLSL) with procedural geometry.
+•	Demonstrate hierarchical modeling and time-varying transformations.
+•	Use moonlit Phong lighting to support the village scene.
+3. Objects Used
+•	River: subdivided grid with sine-wave vertex displacement for flowing water; sloped banks.
+•	Boat and boatman: hull from scaled cylinder/sphere segments; shoulder → arm → oar hierarchy rows as the boat glides and bobs.
+•	Village houses (1–2): mud-walled cuboids, thatched cone/prism roofs, cylinder verandah posts.
+•	Terrain: parametric plane grid, tinted dark grey-green.
+•	Charpai and fan: cylinder legs, criss-cross cuboid weave; hub with rotating rectangular blades.
+•	Villagers: procedural humanoid rigs (spheres, cylinders); flattened cuboid books.
+•	Trees and plants: cylinder trunks, sphere/cone canopies (palm, banana, bamboo).
+•	Hens and ducks: sphere/cone bodies, heads and beaks; waddling and pecking motion.
+•	Fireflies and moon: small emissive spheres with sine-based blink; large distant sphere as light source.
+4. Extra Features (Beyond Baseline)
+•	Multi-part rigged characters (shoulder → arm, hip → leg).
+•	Emissive firefly glow and moon-reflection specular on the river, without bloom.
+•	Instanced-style rendering: one shared VBO/EBO reused for fireflies, leaves and animals.
+•	Stage-based scene director with fullscreen alpha cross-fades.
+•	Wind-sway animation, seeded pseudo-random population, and orbital camera fly-through.
+5. Expected Outcome
+An animated 3D scene conveying Bangladeshi village life beside a river, demonstrating lighting, hierarchical modeling, procedural geometry and staged animation, with moonlight enhancing the mood.
+
+After reading the proposal:
+
+1. Extract every visually necessary object.
+2. Group related objects into reusable components.
+3. Identify which objects should have their own C++ class/function.
+4. Identify objects that can be created using reusable primitive functions.
+5. Do not implement the entire final project yet.
+6. The current phase is ONLY OBJECT CREATION AND OBJECT TESTING.
+
+==================================================
+3. CURRENT OBJECTIVE
+====================
+
+The immediate goal is:
+
+CREATE ALL MAJOR OBJECTS REQUIRED BY THE PROJECT.
+
+Do NOT attempt to finish the complete project.
+
+At this stage, focus on creating reusable OpenGL objects/components that can later be assembled into the final scene.
+
+Each object should be independently callable/renderable.
+
+For example:
+
+drawHouse(...)
+drawTree(...)
+drawBoat(...)
+drawBoatman(...)
+drawDuck(...)
+drawHen(...)
+drawPerson(...)
+drawRiver(...)
+drawRiverBank(...)
+drawMoon(...)
+drawStar(...)
+drawCloud(...)
+drawGrass(...)
+etc.
+
+The exact functions should be determined from the final proposal.
+
+==================================================
+4. IMPORTANT ARCHITECTURE RULE
+==============================
+
+DO NOT put the entire project into one enormous main.cpp.
+
+Use a clean modular structure.
+
+Prefer a structure similar to:
+
+Hitlar/
+│
+├── main.cpp
+│
+├── include/
+│   ├── objects/
+│   │   ├── House.h
+│   │   ├── Tree.h
+│   │   ├── Boat.h
+│   │   ├── Boatman.h
+│   │   ├── Person.h
+│   │   ├── Duck.h
+│   │   ├── Hen.h
+│   │   ├── River.h
+│   │   └── ...
+│   │
+│   └── ...
+│
+├── src/
+│   ├── objects/
+│   │   ├── House.cpp
+│   │   ├── Tree.cpp
+│   │   ├── Boat.cpp
+│   │   ├── Boatman.cpp
+│   │   ├── Person.cpp
+│   │   ├── Duck.cpp
+│   │   ├── Hen.cpp
+│   │   ├── River.cpp
+│   │   └── ...
+│   │
+│   └── ...
+│
+├── Libraries/
+├── x64/
+├── glad.c
+├── Hitlar.slnx
+└── Hitlar.vcxproj
+
+However, FIRST inspect the existing project structure.
+
+If the existing project already has a suitable structure, adapt to it instead of unnecessarily creating a second architecture.
+
+Do not break the existing Visual Studio project.
+
+==================================================
+5. OPENGL VERSION
+=================
+
+Use ONLY OpenGL 3.3-compatible functionality.
+
+Do not use:
+
+* OpenGL 4.x
+* modern OpenGL features unavailable in 3.3
+* deprecated fixed-function pipeline
+* glBegin()
+* glEnd()
+* glMatrixMode()
+* glTranslatef()
+* glRotatef()
+* glVertex3f()
+* immediate-mode rendering
+
+Use the OpenGL 3.3 Core Profile approach:
+
+* VAO
+* VBO
+* EBO where appropriate
+* vertex shaders
+* fragment shaders
+* GLSL 330 core
+* transformation matrices
+* uniforms
+* GLFW
+* GLAD
+
+==================================================
+6. OBJECT DESIGN PRINCIPLE
+==========================
+
+Objects should be constructed primarily from simple geometric primitives.
+
+Useful primitives include:
+
+* triangles
+* rectangles
+* squares
+* circles
+* ellipses
+* polygons
+* cylinders
+* cones
+* spheres
+* cuboids
+* lines
+* curved polygon approximations
+
+The objective is not photorealism.
+
+The objective is to produce recognizable and visually coherent objects using OpenGL 3.3.
+
+==================================================
+7. REUSABLE PRIMITIVE SYSTEM
+============================
+
+Before implementing many objects, create reusable drawing utilities where appropriate.
+
+For example:
+
+drawRectangle(...)
+drawCircle(...)
+drawEllipse(...)
+drawTriangle(...)
+drawPolygon(...)
+drawLine(...)
+drawCube(...)
+drawCylinder(...)
+drawSphere(...)
+
+If appropriate, create a reusable transformation system:
+
+position
+scale
+rotation
+
+Avoid duplicating the same geometry-generation code inside every object.
+
+==================================================
+8. OBJECT REQUIREMENTS
+======================
+
+Every major object should:
+
+1. Have a clear name.
+2. Have a dedicated function or class.
+3. Accept position/scale/rotation where appropriate.
+4. Be reusable.
+5. Be independently testable.
+6. Use OpenGL 3.3-compatible rendering.
+7. Avoid hard-coded screen coordinates whenever possible.
+8. Avoid unnecessary global variables.
+9. Use clear comments.
+10. Compile cleanly with the existing Visual Studio project.
+
+==================================================
+9. EXPECTED OBJECT CATEGORIES
+=============================
+
+Based on the project concept, carefully consider the following categories.
+
+A. ENVIRONMENT
+
+* Ground
+* Grass
+* River
+* Riverbank
+* Sky/background
+* Moon
+* Stars
+* Clouds if required
+
+B. VILLAGE STRUCTURES
+
+* Rural house
+* Roof
+* Door
+* Windows
+* Fence
+* Small hut
+* Other structures explicitly required by the proposal
+
+C. VEGETATION
+
+* Large tree
+* Small tree
+* Tree trunk
+* Branches
+* Leaves/canopy
+* Bushes
+* Grass
+
+D. RIVER ELEMENTS
+
+* River body
+* Riverbank
+* Boat
+* Boat interior
+* Boatman
+* Oar/paddle
+
+The boat must be visually recognizable as a rural boat rather than a generic rectangle.
+
+E. ANIMALS
+
+* Hen/chicken
+* Duck
+* Other animals only if required by the final proposal
+
+F. PEOPLE / GATHERING
+
+* Person
+* Head
+* Body
+* Arms
+* Legs
+* Clothing
+* Group of villagers
+
+The people should be designed as simple recognizable low-poly/2D-style graphical characters suitable for the project.
+
+G. SMALL DETAILS
+
+Examples:
+
+* Lantern
+* Fence
+* Bench
+* Cooking/fire area
+* Fishing elements
+* Vegetation
+* Stones
+* Wooden poles
+* Village path
+
+Only implement details that are justified by the final proposal.
+
+==================================================
+10. BANGLADESHI VISUAL IDENTITY
+===============================
+
+The scene should visually communicate a Bangladeshi rural environment.
+
+Avoid making the environment look like a generic Western countryside.
+
+Use appropriate visual characteristics such as:
+
+* rural hut/house proportions
+* corrugated/tin roofing where appropriate
+* bamboo/wood-like structures
+* river-based transportation
+* villagers
+* local vegetation
+* ducks/chickens
+* rural gathering space
+* simple village pathways
+* appropriate boat design
+
+Do not overcomplicate the geometry.
+
+==================================================
+11. BOAT REQUIREMENT
+====================
+
+The boat is an important required object.
+
+Create the boat as a reusable object.
+
+It should include at minimum:
+
+* hull
+* upper edge
+* interior
+* boatman
+* paddle/oar
+
+Boatman should be a separate reusable object or component.
+
+The boat should later be capable of being positioned on the river and animated horizontally.
+
+However:
+
+DO NOT implement the final boat animation yet.
+
+Only make the object ready for later animation.
+
+==================================================
+12. RIVER REQUIREMENT
+=====================
+
+Create a recognizable river rather than simply drawing a blue rectangle.
+
+At the object stage, implement:
+
+* river body
+* riverbank shape
+* water surface
+* optional simple wave/highlight geometry
+
+Keep the design compatible with later animation.
+
+The river should eventually support moving water/wave effects, but those effects are NOT required at this stage unless they are simple to implement.
+
+==================================================
+13. VILLAGE GATHERING
+=====================
+
+The village gathering is the central visual theme.
+
+Create reusable human/villager objects that can later be instantiated multiple times.
+
+For example:
+
+drawPerson(x, y, scale, ...)
+drawPersonWithClothes(...)
+drawGroupOfPeople(...)
+
+Different positions, scales, clothing colors, and poses should eventually allow multiple villagers to appear as separate people.
+
+Do not hard-code 10 completely different human models.
+
+Build one reusable model and vary its parameters.
+
+==================================================
+14. MOONLIGHT / NIGHT
+=====================
+
+The project remains a moonlit night scene.
+
+Create:
+
+* dark night background
+* moon
+* stars
+* optional clouds
+* basic lighting-compatible object colors
+
+Do not make the moon the primary subject.
+
+The visual hierarchy should remain:
+
+Village gathering
+↓
+Village environment
+↓
+River + boat
+↓
+Moonlit night atmosphere
+
+==================================================
+15. COLOR AND STYLE
+===================
+
+Use a coherent stylized graphical appearance.
+
+Prefer clean colors and simple geometry.
+
+Do not attempt photorealistic rendering.
+
+The scene should be recognizable from a presentation screenshot.
+
+Colors should be configurable rather than scattered throughout the source code.
+
+For example:
+
+struct Color
+{
+float r;
+float g;
+float b;
+};
+
+or an equivalent existing project structure.
+
+==================================================
+16. COORDINATE SYSTEM
+=====================
+
+Use a consistent coordinate system.
+
+If the current project is 2D orthographic:
+
+Use a consistent world coordinate system and projection.
+
+If the project is already using 3D:
+
+Preserve the existing camera/projection architecture.
+
+Do NOT rewrite the entire rendering architecture simply to introduce another coordinate system.
+
+Inspect the current project first.
+
+==================================================
+17. EXISTING CODE SAFETY
+========================
+
+Before modifying anything:
+
+1. Inspect the existing files.
+2. Understand the current rendering pipeline.
+3. Identify the current GLFW initialization.
+4. Identify GLAD initialization.
+5. Identify shader setup.
+6. Identify VAO/VBO handling.
+7. Identify the current `main.cpp`.
+8. Identify Visual Studio project configuration.
+
+Do not delete working code without a reason.
+
+Do not replace the existing project with a completely unrelated template.
+
+If a change is required, make the smallest clean change.
+
+==================================================
+18. BUILD SAFETY
+================
+
+After implementing each major group of objects:
+
+BUILD THE PROJECT.
+
+Fix:
+
+* compiler errors
+* linker errors
+* missing includes
+* duplicate definitions
+* incorrect OpenGL calls
+* shader compilation errors
+* incorrect Visual Studio project file references
+
+Do not assume the code compiles.
+
+The final implementation must compile in Visual Studio 18.10.1.
+
+==================================================
+19. VISUAL TESTING MODE
+=======================
+
+Create a temporary object-testing scene.
+
+The purpose is to display all created objects simultaneously.
+
+For example:
+
+---
+
+OBJECT TEST SCENE
+
+Tree     House       Person Person
+
+Duck     Hen         Gathering Area
+
+River ----------------------------
+
+```
+      Boat + Boatman
+```
+
+## Moon                         Stars
+
+The exact arrangement is not important.
+
+The purpose is to verify that every object exists and renders correctly.
+
+This is NOT the final project composition.
+
+==================================================
+20. IMPLEMENTATION ORDER
+========================
+
+Implement in this order:
+
+PHASE 1
+Rendering/primitive utilities
+
+PHASE 2
+Basic environment
+
+* background
+* ground
+* river
+* riverbank
+
+PHASE 3
+Village structures
+
+* house
+* roof
+* door
+* windows
+* fence
+
+PHASE 4
+Vegetation
+
+* tree
+* branches
+* leaves
+* bushes
+* grass
+
+PHASE 5
+Animals
+
+* hen
+* duck
+
+PHASE 6
+Human characters
+
+* person
+* villagers
+* gathering group
+
+PHASE 7
+Boat system
+
+* boat
+* boat interior
+* boatman
+* paddle
+
+PHASE 8
+Night environment
+
+* moon
+* stars
+* clouds if required
+
+PHASE 9
+Object-test scene
+
+Display all objects together.
+
+STOP HERE.
+
+Do not implement the final project animation/composition yet.
+
+==================================================
+21. DO NOT IMPLEMENT YET
+========================
+
+The following are intentionally postponed:
+
+* final scene composition
+* complete animation system
+* boat movement animation
+* animated water
+* character animation
+* advanced lighting
+* shadows
+* texture system
+* camera animation
+* interactive controls beyond basic testing
+* final UI
+* final presentation effects
+* optimization
+* final polish
+
+Only prepare the objects so these features can be added later.
+
+==================================================
+22. CODE QUALITY
+================
+
+Use clean C++.
+
+Prefer:
+
+using namespace std;
+
+where appropriate.
+
+Avoid unnecessary:
+
+* templates
+* advanced design patterns
+* excessive abstraction
+* external dependencies
+* complicated frameworks
+
+Keep the implementation understandable to a university Computer Graphics student.
+
+Every important function should have a short comment explaining what it creates.
+
+==================================================
+23. AI WORKING PROCEDURE
+========================
+
+Before writing code:
+
+STEP 1:
+Inspect the entire existing project.
+
+STEP 2:
+Read the final project proposal.
+
+STEP 3:
+Produce a concise object inventory.
+
+STEP 4:
+Produce the proposed source/header structure.
+
+STEP 5:
+Identify which existing files need modification.
+
+STEP 6:
+Implement the objects incrementally.
+
+STEP 7:
+Build after each major phase.
+
+STEP 8:
+Fix errors immediately.
+
+STEP 9:
+Create the temporary object-test scene.
+
+STEP 10:
+Stop after all required objects are available.
+
+==================================================
+24. IMPORTANT RESPONSE FORMAT
+=============================
+
+When implementing:
+
+First state:
+
+1. What existing files were inspected.
+2. What objects will be implemented.
+3. What files will be created/modified.
+
+Then implement the code.
+
+For every newly created file, provide the complete file contents.
+
+Do not provide pseudo-code when actual implementation is requested.
+
+Do not omit important sections with comments such as:
+
+// rest of code...
+
+Provide complete compilable code.
+
+==================================================
+25. NO UNNECESSARY PROJECT REBUILD
+==================================
+
+DO NOT:
+
+* create a new Visual Studio solution
+* create a new unrelated CMake project
+* reinstall GLFW
+* reinstall GLAD
+* change compiler toolchain
+* replace existing libraries
+* delete the existing solution
+* overwrite the project blindly
+* introduce another OpenGL loader
+* introduce another windowing library
+
+Work with the existing project.
+
+==================================================
+26. FINAL CHECKLIST
+===================
+
+Before finishing this object-generation stage, verify:
+
+[ ] Project opens in Visual Studio 18.10.1
+
+[ ] OpenGL 3.3 Core Profile is used
+
+[ ] GLFW remains functional
+
+[ ] GLAD remains functional
+
+[ ] Existing project structure is preserved
+
+[ ] Primitive drawing utilities exist
+
+[ ] Village house exists
+
+[ ] Tree exists
+
+[ ] Ground exists
+
+[ ] River exists
+
+[ ] Riverbank exists
+
+[ ] Boat exists
+
+[ ] Boatman exists
+
+[ ] Paddle exists
+
+[ ] Person/villager exists
+
+[ ] Village gathering group can be created
+
+[ ] Hen exists
+
+[ ] Duck exists
+
+[ ] Moon exists
+
+[ ] Stars exist
+
+[ ] Other proposal-required objects exist
+
+[ ] Objects are reusable
+
+[ ] Objects can be positioned/scaled
+
+[ ] Code is modular
+
+[ ] Project compiles
+
+[ ] Object-test scene renders all objects
+
+[ ] Final scene/animation is NOT implemented yet
+
+==================================================
+27. MOST IMPORTANT INSTRUCTION
+==============================
+
+Do not try to finish the entire project in one step.
+
+The current task is:
+
+CREATE THE COMPLETE LIBRARY OF OBJECTS REQUIRED FOR THE FINAL PROJECT.
+
+The next development stage will assemble these objects into the final Bangladeshi village gathering scene.
+
+Preserve the existing OpenGL 3.3 project and build incrementally.

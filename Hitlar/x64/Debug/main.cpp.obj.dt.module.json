@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "Hitlar\\x64\\Debug\\main.obj",
+            "outputs": [
+                "Hitlar\\x64\\Debug\\main.cpp.obj.dt.module.json",
+                "Hitlar\\x64\\Debug\\main.cpp.obj.dt.d.json"
+            ],
+            "requires": []
+        }
+    ]
+}

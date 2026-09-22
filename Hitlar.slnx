@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Hitlar.vcxproj" Id="b0b00457-5311-496d-9729-67fc9fe6bb51" />
+</Solution>
