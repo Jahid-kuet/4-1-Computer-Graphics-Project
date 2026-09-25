@@ -20,10 +20,18 @@ struct PersonParams {
     math::vec3 hairColor    = math::vec3(0.12f, 0.09f, 0.06f);   // dark hair
     bool  hasFan            = false;   // holds traditional handmade fan (Haat Pakha) in right hand
     float fanSway           = 0.0f;    // fanning oscillation angle in radians
+    bool  isWoman           = false;   // wears traditional Bengali Saree with draped head veil (Ghomta) & glass bangles
+    bool  hasTupi           = false;   // wears traditional white cotton Muslim prayer cap (Tupi / টুপি)
 };
 
 namespace Person {
     // Draws a complete villager with hierarchical limbs.
     void draw(Shader& shader, const math::mat4& model,
               const PersonParams& params = PersonParams());
+
+    // Draws an open schoolbook/primer with distinct open pages, center gutter, and printed text.
+    void drawBook(Shader& shader, const math::mat4& model);
+
+    // Draws a traditional rural carved wooden folding bookstand (Rehal / রেহাল)
+    void drawRehal(Shader& shader, const math::mat4& model);
 }

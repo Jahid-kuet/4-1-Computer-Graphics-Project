@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procedural 3D Object Showcase - Bangladeshi Village Scene</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0d14;
+            --bg-surface: #121722;
+            --bg-card: rgba(22, 29, 43, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-blue: #3b82f6;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 2.5rem 1.5rem;
+            background-image: 
+                radial-gradient(circle at 15% 10%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 60%, rgba(59, 130, 246, 0.08) 0%, transparent 45%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.35rem 0.85rem;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 9999px;
+            color: var(--accent-green);
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2.75rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.75rem;
+        }
+
+        p.subtitle {
+            color: var(--text-secondary);
+            font-size: 1.15rem;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+
+        .filters {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .filter-btn {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.5rem 1.1rem;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--accent-green);
+            color: #ffffff;
+            border-color: var(--accent-green);
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.75rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(16, 185, 129, 0.4);
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-img-wrapper {
+            width: 100%;
+            height: 220px;
+            background: #e5e9f0;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .card-img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+
+        .card:hover .card-img-wrapper img {
+            transform: scale(1.05);
+        }
+
+        .card-id {
+            position: absolute;
+            top: 0.75rem;
+            left: 0.75rem;
+            background: rgba(10, 13, 20, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+        }
+
+        .card-content {
+            padding: 1.4rem;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.25rem;
+            flex-grow: 1;
+        }
+
+        .primitive-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 1rem;
+        }
+
+        .tag {
+            font-size: 0.72rem;
+            padding: 0.2rem 0.55rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(59, 130, 246, 0.12);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+        }
+
+        .card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            padding-top: 0.9rem;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+        }
+
+        .modal.open {
+            display: flex;
+        }
+
+        .modal-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-img {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .detail-section {
+            margin-bottom: 1.25rem;
+        }
+
+        .detail-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-text {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        ol.step-list {
+            padding-left: 1.25rem;
+            color: var(--text-secondary);
+        }
+
+        ol.step-list li {
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <span class="badge">Procedural 3D Computer Graphics</span>
+        <h1>Individual 3D Object Showcase</h1>
+        <p class="subtitle">Bangladeshi Rural Night Scene rendered with OpenGL 3.3 Core Profile. Every object is derived strictly from mathematical primitives using affine matrix transformations.</p>
+    </header>
+
+    <div class="filters">
+        <button class="filter-btn active" data-filter="all">All Objects (22)</button>
+        <button class="filter-btn" data-filter="architecture">Architecture & Utility</button>
+        <button class="filter-btn" data-filter="boats">Boats & Rivercraft</button>
+        <button class="filter-btn" data-filter="culture">Culture & Characters</button>
+        <button class="filter-btn" data-filter="trees">Vegetation & Trees</button>
+        <button class="filter-btn" data-filter="fauna">Animals & Birds</button>
+        <button class="filter-btn" data-filter="nature">Environment & Nature</button>
+    </div>
+
+    <div class="grid" id="objectGrid">
+        <!-- Rendered by JS -->
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="detailModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2 id="modalTitle" style="color: #fff; font-size: 1.4rem;"></h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <img id="modalImg" class="modal-img" src="" alt="Object Detail">
+            <div class="detail-section">
+                <div class="detail-title">Geometric Primitives Used</div>
+                <div class="primitive-tags" id="modalTags"></div>
+            </div>
+            <div class="detail-section">
+                <div class="detail-title">Step-by-Step Construction Logic</div>
+                <ol class="step-list" id="modalSteps"></ol>
+            </div>
+            <div class="detail-section">
+                <div class="detail-title">Source File</div>
+                <div class="detail-text" id="modalSource" style="font-family: 'JetBrains Mono', monospace; color: var(--accent-amber);"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const objects = [
+    {
+        id: "01",
+        category: "architecture",
+        name: "Traditional Chouchala House",
+        desc: "Classic 4-sloped pitched hip roof, raised earthen plinth, mud walls, verandah with pillars, and open shutters.",
+        img: "01_house_chouchala.png",
+        tags: ["Unit Cube", "Unit 4-Pyramid", "Unit Cylinder"],
+        source: "src/objects/House.cpp",
+        steps: [
+            "Raised earthen plinth (Viti/Dawa) built from a broad Unit Cube (4.40 × 0.25 × 4.20).",
+            "Four exterior mud walls extruded using a Unit Cube (3.60 × 2.00 × 2.80) with corner timber posts.",
+            "Traditional 4-sloped hip roof (Chouchala) constructed with a Unit 4-Sided Pyramid (4.80 × 1.60 × 4.00) resting at Y = 2.25 with wide overhanging eaves.",
+            "Front verandah (Baranda) supported by 4 slender cylindrical bamboo pillars holding a forward-sloping thatch lean-to roof.",
+            "Handcrafted wooden entrance door and shuttered windows featuring warm interior lantern glow."
+        ]
+    },
+    {
+        id: "02",
+        category: "architecture",
+        name: "Outdoor Clay Cooking Stove",
+        desc: "Traditional mud cooking stove (Matir Chula) with 3-sided bamboo windbreak fence, 3 pot prongs, patil pot, and firewood sticks.",
+        img: "02_clay_cooking_stove.png",
+        tags: ["Unit Cylinder", "Unit Cone", "Unit Sphere", "Unit Cube"],
+        source: "src/objects/House.cpp (House::drawStove, drawStoveFence)",
+        steps: [
+            "Mud stove body modeled as a squat Unit Cylinder (0.42 × 0.22 × 0.38) in baked mud clay earth.",
+            "Three pot-supporting clay prongs modeled as Unit Cones arranged symmetrically at 120° angles.",
+            "Round cooking pot (Patil) modeled as a charcoal-tinted Unit Sphere (0.18 × 0.13 × 0.18).",
+            "Two firewood stick cylinders inserted at gentle angles (12°-15°) into the burner opening.",
+            "Traditional 3-sided bamboo windbreak fence (Bera) with 4 upright corner posts (Unit Cylinders), double horizontal tie-rails (Unit Cubes), and 19 vertical bamboo slats (Unit Cubes) shielding back, left, and right sides while leaving the front open for firewood and cook access.",
+            "Translated a safe distance (2.4m) away from the thatched house eaves into the open swept courtyard for rural fire safety."
+        ]
+    },
+    {
+        id: "03",
+        category: "architecture",
+        name: "Terracotta Water Pitchers",
+        desc: "Handcrafted earthen water pitchers (Matir Kolshi) featuring spherical belly, neck, and flared pouring rim.",
+        img: "03_clay_water_pitchers.png",
+        tags: ["Unit Sphere", "Unit Cylinder"],
+        source: "src/objects/House.cpp (House::drawKolshi)",
+        steps: [
+            "Spherical clay belly using a Unit Sphere (0.22 × 0.20 × 0.22) in terracotta clay.",
+            "Narrow neck cylinder (0.09 × 0.14 × 0.09) rising above the spherical belly.",
+            "Flared rim cylinder (0.14 × 0.04 × 0.14) providing the carrying lip and pouring mouth."
+        ]
+    },
+    {
+        id: "04",
+        category: "boats",
+        name: "Traditional Pal Tola Dingi Nouka (Bangladeshi Country Sailboat)",
+        desc: "Authentic Bengali river sailboat featuring flared timber sheer hull, sculpted Golui prow with auspicious painted eye, swept Pachha stern, Chhoi hood, and billowing cotton sail (Pal) on bamboo mast.",
+        img: "04_dingi_boat.png",
+        tags: ["Flared Sheer Hull", "Billowing Sail (Pal)", "Unit Arch", "Unit Cylinder", "Unit Cube", "Unit Cone", "Unit Sphere"],
+        source: "src/objects/Boat.cpp",
+        steps: [
+            "Continuous flared timber sheer hull with authentic sheer curve sweeping gracefully from midships (Y = 0.20m) to bow (Y = 0.57m) and stern (Y = 0.47m) with keel rocker curve.",
+            "Sculpted wooden Golui (prow beak) extending to Z = 2.75m with polished brass protective cap (Golui Patti) and auspicious folk painted boat eyes (Noukar Chokh).",
+            "Elevated wooden stern thwart (Gura) supporting the seated Boatman, recessed floorboards (Patan), 5 transverse structural thwarts (Goor), and 7 curved internal ribs.",
+            "Iconic arched woven bamboo canopy (Chhoi) with 4 structural arch hoops, longitudinal purlins, and hanging Dietz-style kerosene hurricane lantern.",
+            "Iconic billowing sail (Pal) on a 3.2m vertical bamboo mast (Mastul) with nodal rings, horizontal yard spar (Dondi), aerodynamic forward billow belly (0.38m depth), terracotta folk stripe band, reinforced corner patches (Kona Patti), forestay, shroud stays, and lower sheet ropes (Kasi)."
+        ]
+    },
+    {
+        id: "05",
+        category: "culture",
+        name: "Tubular Kerosene Hurricane Lantern (Hariken)",
+        desc: "Authentic vintage Dietz-style tubular hurricane lantern with bulbous glass globe, wire guard cage, dual side air tubes, brass burner, filler cap, and tiered chimney cowl.",
+        img: "05_hariken_lantern.png",
+        tags: ["Unit Cylinder", "Unit Sphere", "Unit Arch", "Unit Hemisphere", "Unit Cone", "Unit Cube"],
+        source: "src/objects/Charpai.cpp (Charpai::drawLantern)",
+        steps: [
+            "Flanged base rim and tiered oil reservoir tank (fount) modeled with Unit Cylinders, a domed Unit Hemisphere shoulder, and an angled brass filler spout/cap.",
+            "Brass burner throat with perforated globe gallery and horizontal wick adjuster thumbwheel dial.",
+            "Dual-cone emissive incandescent kerosene flame (bright hot white-gold core inside glowing golden flame).",
+            "Swelling bulbous glass globe modeled from a non-uniform Unit Sphere (0.064 × 0.070 × 0.064) in warm glowing amber glass with top/bottom seating collars.",
+            "Protective wire guard cage consisting of 3 horizontal hoops (paired Unit Arches), 4 vertical perimeter ribs, and diagonal crossed brace wires.",
+            "Dual tubular side air tubes with lower elbow joints entering the fount, vertical pipes, stamped handle eyelets, and upper elbows curving into the chimney cowl.",
+            "Tiered ventilated chimney cowl featuring a flared lower skirt, louvered stack, horizontal shade canopy, conical roof, top dome, and brass globe lift ring.",
+            "Tall spring-steel wire bail handle with twin vertical upright arms, overhead semi-circular Unit Arch, and central suspension notch."
+        ]
+    },
+    {
+        id: "06",
+        category: "boats",
+        name: "Seated Boatman (Majhi)",
+        desc: "Traditional boatman with conical bamboo hat (Mathal), checkered red lungi, and long steering oar (Boitha).",
+        img: "06_boatman_majhi.png",
+        tags: ["Unit Cylinder", "Unit Cone", "Unit Cube", "Unit Sphere"],
+        source: "src/objects/Boatman.cpp",
+        steps: [
+            "Anatomically proportioned human rig seated at the stern with red lungi and vest.",
+            "Traditional bamboo conical sunhat (Mathal) tilted at 8° on top of the head with split-bamboo rim trim.",
+            "Long wooden steering oar (Boitha) pivoted beside the boatman's hands extending into the river."
+        ]
+    },
+    {
+        id: "07",
+        category: "culture",
+        name: "Traditional Charpai Bed",
+        desc: "Handcrafted wooden bed with turned cylindrical legs, timber mortise-and-tenon rails, and woven jute webbing.",
+        img: "07_charpai_bed.png",
+        tags: ["Unit Cylinder", "Unit Cube"],
+        source: "src/objects/Charpai.cpp",
+        steps: [
+            "Four corner turned legs modeled as sturdy Unit Cylinders (r = 0.04, h = 0.50).",
+            "Four wooden side and end rails (Cube 0.05 × 0.05) framing the 1.2m × 2.0m sleeping area.",
+            "Criss-cross rope webbing (Niwar) created from 8 longitudinal and 5 transverse interlaced strips."
+        ]
+    },
+    {
+        id: "08",
+        category: "culture",
+        name: "Embroidered Hand Fan (Nakshi Haat Pakha)",
+        desc: "Traditional Bengali cloth fan with 36 accordion-pleated white ruffles (Jhalor), crimson woven fabric disc, concentric white Nakshi embroidery, and wrapped handle.",
+        img: "08_palm_fan_haat_pakha.png",
+        tags: ["Unit Cylinder", "Unit Cube", "Unit Arch", "Unit Sphere"],
+        source: "src/objects/Charpai.cpp (Charpai::drawFan)",
+        steps: [
+            "Bamboo handle with exposed cane neck and tip, red wrapped cotton grip section, and decorative white ferrules.",
+            "Vertical structural bamboo spine running up through the rear face of the fan disc.",
+            "36 radiating accordion-pleated white cloth ruffles (Jhalor) surrounding the outer perimeter with alternating ±18° pleat tilt angles.",
+            "Circular crimson woven fabric fan disc (Pakhar Pata) rotated 90° about the X-axis (R = 0.188, thickness = 0.006) directly facing the viewing plane.",
+            "Bent split-bamboo outer binding hoop clamping the pleated ruffles to the fabric disc.",
+            "Concentric white Nakshi/Alpana embroidery: outer beaded ring of 24 pearl dots, middle ring with 12 floral/leaf motifs, inner white disc, crimson inset field, center kalka rosette hub, and 8 radial embroidery petals."
+        ]
+    },
+    {
+        id: "09",
+        category: "culture",
+        name: "Seated Elder with Haat Pakha",
+        desc: "Dignified village elder seated on Charpai edge with white kurta, maroon lungi, red gamcha, white beard, and fan.",
+        img: "09_seated_elder.png",
+        tags: ["Unit Cylinder", "Unit Cube", "Unit Sphere"],
+        source: "src/objects/Person.cpp",
+        steps: [
+            "Hierarchical human rig seated along the charpai edge with knees bent at 90° and draped lungi legs.",
+            "White cotton kurta tunic, maroon lungi, and traditional red gamcha draped across the shoulder.",
+            "Elder facial identity with white cotton beard and distinguished hair.",
+            "Right hand bent upward firmly holding the handmade Haat Pakha in an authentic resting fanning posture."
+        ]
+    },
+    {
+        id: "10",
+        category: "culture",
+        name: "Child Reading Book",
+        desc: "Village child sitting cross-legged reading an open schoolbook with two distinct angled pages, center spine divider line, and printed text lines.",
+        img: "10_reading_child.png",
+        tags: ["Unit Cylinder", "Unit Cube", "Unit Sphere"],
+        source: "src/objects/Person.cpp (Person::draw, Person::drawBook)",
+        steps: [
+            "Cross-legged seated joint configuration with thighs spread laterally and shins folded inward.",
+            "Scaled down to 0.72× adult proportions, wearing a bright saffron shirt and forest green shorts.",
+            "Torso inclined forward by 14° and head tilted down by 22° focused on the book.",
+            "Open book featuring a navy blue cloth hardcover backing and rounded central spine cylinder.",
+            "Two distinct open page blocks (warm off-white book paper) angled upward at ±3.5° for natural open book curvature.",
+            "Prominent dark center crease line running straight down the spine, clearly dividing the left and right pages.",
+            "Eight printed horizontal text lines (4 on the left page, 4 on the right page) simulating printed storybook text."
+        ]
+    },
+    {
+        id: "11",
+        category: "fauna",
+        name: "Village Hen (Gramin Murgi)",
+        desc: "Domestic courtyard hen with plump body, expressive circular eyes, folded wings, crimson comb and wattle, orange beak, and claw feet.",
+        img: "11_village_hen.png",
+        tags: ["Unit Sphere", "Unit Cone", "Unit Cube", "Unit Cylinder"],
+        source: "src/objects/Hen.cpp",
+        steps: [
+            "Plump elliptical body sphere (0.12 × 0.11 × 0.16) in warm reddish-brown plumage.",
+            "Spherical head crowned with bright red comb, red wattle, and an orange forward cone beak.",
+            "Bilateral circular/elliptical eyes with ivory sclera disc, gloss black pupil, and specular catchlight.",
+            "Angled thin cuboid wings hugging the torso, and an angled cone tail pointing backward-upward.",
+            "Slender cylindrical legs ending in three-toed flattened claw feet."
+        ]
+    },
+    {
+        id: "12",
+        category: "fauna",
+        name: "River Duck (Pati Hash)",
+        desc: "Waterfowl with buoyant boat-shaped body, emerald green mallard head, expressive circular eyes, broad flat bill, and paddle feet.",
+        img: "12_river_duck.png",
+        tags: ["Unit Sphere", "Unit Cone", "Unit Cylinder"],
+        source: "src/objects/Duck.cpp",
+        steps: [
+            "Buoyant flattened body sphere (0.28 × 0.20 × 0.35) in off-white water plumage.",
+            "Emerald green male mallard spherical head poised gracefully above an arched neck.",
+            "Bilateral elliptical eyes with ivory sclera, dark gloss pupil, and high-contrast specular catchlight dot.",
+            "Broad flat shovel-like cone bill (0.06 × 0.10 × 0.03) rotated forward horizontally.",
+            "Wide stance cylindrical legs and an upturned tail cone."
+        ]
+    },
+    {
+        id: "13",
+        category: "trees",
+        name: "Coconut Palm Tree (Narikel Gach)",
+        desc: "Iconic tropical palm with 8-segment curved trunk, leaf scar rings, coconut cluster, and 10 cascading fronds.",
+        img: "13_coconut_palm_tree.png",
+        tags: ["Unit Cylinder", "Unit Sphere", "Unit Cube"],
+        source: "src/objects/Tree.cpp (Tree::drawPalm)",
+        steps: [
+            "Curved leaning trunk built from 8 stacked cylinder segments tilted sequentially by 1.8°.",
+            "Annular dark scar rings encasing every trunk node.",
+            "Cluster of 6 spherical green coconuts nestled circularly around the crown.",
+            "Ten 3-stage cascading fronds that rise, arch over, and droop steeply downward with central rachis and wide leaflet fans."
+        ]
+    },
+    {
+        id: "14",
+        category: "trees",
+        name: "Banana Tree (Kola Gach)",
+        desc: "Smooth green pseudostem, 7 drooping broad paddle leaves, baby banana cluster, and purple flower heart (Mocha).",
+        img: "14_banana_tree.png",
+        tags: ["Unit Cylinder", "Unit Cube", "Unit Sphere"],
+        source: "src/objects/Tree.cpp (Tree::drawBanana)",
+        steps: [
+            "Succulent green pseudostem trunk modeled as a smooth tall cylinder (r = 0.18, h = 2.40).",
+            "Seven broad paddle leaves distributed radially at 51.4° intervals with a 3-part cascading curvature.",
+            "Hanging fruit stalk holding a spiral hand of green baby bananas.",
+            "Teardrop-shaped banana flower blossom (Mocha) hanging at the bottom in rich purple-red."
+        ]
+    },
+    {
+        id: "15",
+        category: "trees",
+        name: "Branching Mango Tree (Aam Gach)",
+        desc: "Sturdy gnarled trunk with buttress roots, 4 spreading limbs, 8-cluster dense spherical foliage canopy, and hanging golden ripe mangoes (Paka Aam).",
+        img: "15_mango_tree.png",
+        tags: ["Unit Cylinder", "Unit Cube", "Unit Sphere"],
+        source: "src/objects/Tree.cpp (Tree::drawGeneral)",
+        steps: [
+            "Gnarled main trunk cylinder (r = 0.40, h = 2.80) with 4 buttress root flares at base.",
+            "Four large structural limbs radiating outward at 90° intervals angled 38° upward.",
+            "Eight dense overlapping spherical foliage clusters creating an organic textured canopy.",
+            "Ten ripe golden mangoes (Paka Aam) dangling in clusters beneath boughs on slender stems with green leaf accents."
+        ]
+    },
+    {
+        id: "16",
+        category: "trees",
+        name: "Dense Bamboo Grove (Bansher Jhar)",
+        desc: "Cluster of 8 tall leaning bamboo culms with swollen nodes and delicate feathery leaf sprays.",
+        img: "16_bamboo_grove.png",
+        tags: ["Unit Cylinder", "Unit Cube"],
+        source: "src/objects/Tree.cpp (Tree::drawBamboo)",
+        steps: [
+            "Clump of 8 tall slender culm cylinders (r = 0.045, h = 4.2 to 5.5m) leaning in natural random directions.",
+            "Swollen culm nodes placed every 0.70m along the length of each stalk.",
+            "Feathery foliage sprays consisting of 4 angled leaf blades fanning out from each apex."
+        ]
+    },
+    {
+        id: "17",
+        category: "nature",
+        name: "Rural Rice Plant (Dhan Gachh)",
+        desc: "Lush green paddy tillers with arching leaf blades and drooping golden ripened grain panicles (Dhaner Shish).",
+        img: "17_rice_plant_dhan.png",
+        tags: ["Unit Cylinder", "Unit Cone", "Unit Sphere"],
+        source: "src/objects/Terrain.cpp (Terrain::drawRiceClump)",
+        steps: [
+            "A clump consists of 5 outward-radiating green tillers tilted at 14° from vertical.",
+            "Slender green cylindrical stalks paired with arching blade cones.",
+            "Golden ripened grain panicles (Dhaner Shish) drooping downward by 52° under the weight of the grain.",
+            "Terminal golden grain beads capping each drooping panicle."
+        ]
+    },
+    {
+        id: "18",
+        category: "nature",
+        name: "National Water Lily (Shapla)",
+        desc: "Floating water lily with flat green lily pad, 6 radiating pale petals, and bright golden pollen center.",
+        img: "18_water_lily_shapla.png",
+        tags: ["Unit Cylinder", "Unit Cone", "Unit Sphere"],
+        source: "src/objects/River.cpp (River::drawShapla)",
+        steps: [
+            "Circular green lily pad cylinder (r = 0.40, h = 0.015) floating on the water surface.",
+            "Six delicate white/pink blossom petals modeled as cones angled 35° upward from the center.",
+            "Spherical golden pollen center (r = 0.04) anchoring the bloom."
+        ]
+    },
+    {
+        id: "19",
+        category: "nature",
+        name: "Riverbank Catkin Reeds (Kashbon)",
+        desc: "Tall river reeds with slender green stems and fluffy white catkin plumes swaying along the riverbank.",
+        img: "19_kashbon_reeds.png",
+        tags: ["Unit Cylinder", "Unit Sphere"],
+        source: "src/objects/River.cpp (River::drawKashbonCluster)",
+        steps: [
+            "Seven slender green reed stalks (r = 0.02, h = 1.2 to 1.55m) swaying with slight natural tilts.",
+            "Fluffy white cylindrical plumes (0.022 × 0.38 × 0.022) adorning the upper section.",
+            "Spherical plume tip caps (r = 0.022) crowning each reed."
+        ]
+    },
+    {
+        id: "20",
+        category: "architecture",
+        name: "Woven Bamboo Fence (Bansh-er Bera)",
+        desc: "Traditional rural fence with upright bamboo posts, horizontal tie-rails, and crossed diagonal pickets.",
+        img: "20_bamboo_fence.png",
+        tags: ["Unit Cylinder", "Unit Cube"],
+        source: "src/objects/Terrain.cpp (Terrain::drawBambooFence)",
+        steps: [
+            "Vertical upright bamboo posts (r = 0.045, h = 1.10m) spaced every 1.0m along the boundary.",
+            "Two horizontal split bamboo rails running at heights Y = 0.35 and Y = 0.85.",
+            "Crossed diagonal bamboo slats angled at ±32° forming sturdy diamond-pattern lattice bays."
+        ]
+    },
+    {
+        id: "21",
+        category: "boats",
+        name: "Bamboo Mooring Stake (Khuti)",
+        desc: "Riverbank bamboo stake driven at an angle into the sandy riverbank with coiled natural jute rope.",
+        img: "21_river_mooring_stake.png",
+        tags: ["Unit Cylinder"],
+        source: "src/objects/River.cpp (River::drawMooringStake)",
+        steps: [
+            "Weathered bamboo cylinder (r = 0.05, h = 0.85) driven at a 10° angle into the riverbank sand.",
+            "Coiled natural coir/jute mooring rope collar (r = 0.075, h = 0.06) wrapped securely around the post."
+        ]
+    },
+    {
+        id: "22",
+        category: "nature",
+        name: "Luminous Full Moon",
+        desc: "Glowing nocturnal celestial sphere with emissive illumination and atmospheric golden corona halo.",
+        img: "22_full_moon.png",
+        tags: ["Unit Sphere"],
+        source: "src/objects/Moon.cpp",
+        steps: [
+            "Core emissive sphere (r = 2.0) in luminous pale yellow-white, bypassing diffuse attenuation.",
+            "Concentric radial atmospheric halo sphere (r = 2.8) providing translucent corona glow in humid night air."
+        ]
+    },
+    {
+        id: "23",
+        category: "architecture",
+        name: "Historic Terracotta Village Mosque",
+        desc: "Ancient Sultanate-era brick mosque with curved cornice, octagonal corner turrets, and central hemispherical dome.",
+        img: "23_village_mosque.png",
+        tags: ["Unit Cube", "Unit Cylinder", "Unit Hemisphere"],
+        source: "src/objects/Mosque.cpp",
+        steps: [
+            "Heavy terracotta brick prayer hall (6.0m × 3.8m × 6.0m) with authentic convex arched cornice curvature.",
+            "Four octagonal corner minaret turrets with banded terracotta collar moldings and cupolas.",
+            "Central hemispherical dome resting on an octagonal squinch drum.",
+            "Arched multi-foil terracotta entrance mihrab doorway and decorative brick jali screens."
+        ]
+    },
+    {
+        id: "24",
+        category: "architecture",
+        name: "Traditional Dochala House",
+        desc: "2-sloped curved thatched gable cottage with front entrance and verandah on the long chala side, mud plinth, and open shutters.",
+        img: "24_house_dochala.png",
+        tags: ["Unit Triangular Prism", "Unit Cube", "Unit Cylinder"],
+        source: "src/objects/House.cpp (House::draw)",
+        steps: [
+            "Triangular prism pitched roof (4.0m × 1.5m × 4.4m) with authentic Bengal curved eave overhangs.",
+            "Front entrance and 4-pillar verandah (Baranda) placed along the authentic long chala frontage.",
+            "Sun-dried mud walls resting on a packed-earth raised plinth (Dawa).",
+            "Functional open wooden shutters angled at ±45° on side ventilation windows."
+        ]
+    },
+    {
+        id: "25",
+        category: "daily_life",
+        name: "Rice Straw Stack (Khorer Paloi / পালা)",
+        desc: "Multi-tiered golden rice straw stack on a raised log cradle, with bulging waist, straw tie-ropes (Badhon), central bamboo pole, and inverted terracotta pot rain-cap (Ulto Kolshi).",
+        img: "25_rice_straw_stack.png",
+        tags: ["Unit Cylinder", "Unit Cone", "Unit Sphere", "Unit Cube"],
+        source: "src/objects/House.cpp (House::drawStrawStack)",
+        steps: [
+            "Raised foundation log cradle (Machang) keeping dry winter cattle fodder off damp earth.",
+            "Central upright bamboo stabilizer pole (Khuti) projecting through the apex with node rings.",
+            "Multi-tiered bulging body: flared weathered base skirt, rounded belly dome, and steep conical thatch cap.",
+            "Three horizontal straw binding ropes (Khorer Badhon) wrapped around waist and belly to prevent wind scattering.",
+            "Iconic inverted terracotta clay pitcher (Ulto Matir Kolshi) placed upside-down over the bamboo pole apex to shed rainwater."
+        ]
+    },
+    {
+        id: "26",
+        category: "architecture",
+        name: "Thatched Cow Shed & Deshi Cow (Gowal Ghor)",
+        desc: "Rural cattle homestead with pitched Dochala thatch roof, split-bamboo rails, hollowed timber feeding trough (Chari), and authentic indigenous Zebu cow.",
+        img: "26_thatched_cow_shed.png",
+        tags: ["Unit Cube", "Unit Cylinder", "Unit Sphere", "Unit Cone"],
+        source: "src/objects/House.cpp (House::drawCowShed, House::drawCow)",
+        steps: [
+            "Six weathered timber posts supporting a pitched Dochala thatch roof oriented with protective eaves.",
+            "Compacted earthen floor with straw bedding (Khor-er Bicha) and hollowed timber feeding trough (Chari) with fresh grass.",
+            "Indigenous Bengali cow (Deshi Goru) resting facing forward with prominent Zebu shoulder hump (Kud).",
+            "Pendulous throat dewlap (Golakomblo), tapering muzzle with nostrils, white-rimmed eyes, and curved ivory horns with dark tips.",
+            "Braided jute halter tether rope (Pagha) anchored from the cow's neck to a corner bamboo post."
+        ]
+    },
+    {
+        id: "27",
+        category: "boats",
+        name: "River Landing Ghat (Kheyaghat)",
+        desc: "Sturdy wooden riverbank jetty with timber piles, plank decking, and stepped water-access ramp.",
+        img: "27_river_landing_ghat.png",
+        tags: ["Unit Cube", "Unit Cylinder"],
+        source: "src/objects/Terrain.cpp (Terrain::drawGhat)",
+        steps: [
+            "Six heavy timber piles driven into the riverbed sediment.",
+            "Weathered longitudinal timber planks forming the landing deck.",
+            "Stepped descent ramp extending into the water for easy boarding of country dingi boats."
+        ]
+    },
+    {
+        id: "28",
+        category: "daily_life",
+        name: "Standing Villager (Gramin Manush)",
+        desc: "Traditional villager wearing cotton kurta and lungi with hands politely folded in front (Haat badha), featuring distinct legs, facial features, mustache, and leather sandals.",
+        img: "28_standing_villager.png",
+        tags: ["Unit Cube", "Unit Cylinder", "Unit Sphere", "Unit Cone"],
+        source: "src/objects/Person.cpp (Person::draw)",
+        steps: [
+            "Respectful Bengali standing posture (Haat badha): arms and hands folded gracefully in front of abdomen.",
+            "Traditional Kurta tunic with Mandarin collar band, front button placket, and side-slit hem skirt (Chak).",
+            "Authentic Bengali mustache (Gnof), nose bridge, dual eyes with iris, eyebrows, and ears.",
+            "Traditional cotton Lungi with two distinct cylindrical leg columns, prominent central front pleat fold (Kocha), and dark leather sandals (Chappal)."
+        ]
+    },
+    {
+        id: "29",
+        category: "daily_life",
+        name: "Parametric Bézier Terracotta Surahi",
+        desc: "Elegant rural earthenware pitcher formed by revolving a smooth cubic Bézier boundary curve 360° around the vertical axis.",
+        img: "29_bezier_terracotta_vase.png",
+        tags: ["Parametric Bézier Surface"],
+        source: "src/objects/CurvedObject.cpp",
+        steps: [
+            "Smooth cubic Bézier generator profile defined by 4 control points P0=(0.14, 0.0), P1=(0.38, 0.22), P2=(0.06, 0.55), P3=(0.18, 0.85).",
+            "Evaluated at 32 parametric height steps using Bernstein polynomials B_i,3(t).",
+            "Revolved across 36 azimuthal slices around the Y-axis to produce a watertight, mathematically smooth terracotta vessel."
+        ]
+    },
+    {
+        id: "30",
+        category: "architecture",
+        name: "Curved Arched Bamboo Footbridge (Bansher Saako)",
+        desc: "Traditional village river-crossing footbridge with continuous smooth parabolic bamboo culms, transverse foot slats, and arched handrails without gaps.",
+        img: "30_bamboo_footbridge.png",
+        tags: ["Curved Parabolic Geometry", "Unit Cylinder", "Unit Cube"],
+        source: "src/objects/CurvedObject.cpp (CurvedObject::drawBambooBridge)",
+        steps: [
+            "Continuous parabolic bamboo culms spanning the river channel along tangent slope pitch angles pitchAngle = -atan2(dy, dz).",
+            "Solid, unbroken handrails and longitudinal runner poles without floating dashes or gaps.",
+            "Transverse split-bamboo foot tread slats tied with authentic coir rope lashings.",
+            "Vertical bamboo stanchions and diagonal A-frame riverbed support pilings."
+        ]
+    }
+];
+
+function renderGrid(filter = "all") {
+    const grid = document.getElementById("objectGrid");
+    grid.innerHTML = "";
+
+    const filtered = filter === "all" ? objects : objects.filter(o => o.category === filter);
+
+    filtered.forEach(obj => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.onclick = () => openModal(obj);
+
+        card.innerHTML = `
+            <div class="card-img-wrapper">
+                <span class="card-id">#${obj.id}</span>
+                <img src="${obj.img}" alt="${obj.name}" loading="lazy">
+            </div>
+            <div class="card-content">
+                <h3 class="card-title">${obj.name}</h3>
+                <p class="card-desc">${obj.desc}</p>
+                <div class="primitive-tags">
+                    ${obj.tags.map(t => `<span class="tag">${t}</span>`).join("")}
+                </div>
+                <div class="card-meta">
+                    <span>${obj.source.split(' ')[0]}</span>
+                    <span>Click for Details &rarr;</span>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function openModal(obj) {
+    document.getElementById("modalTitle").innerText = `#${obj.id} - ${obj.name}`;
+    document.getElementById("modalImg").src = obj.img;
+    document.getElementById("modalSource").innerText = obj.source;
+
+    const tagsContainer = document.getElementById("modalTags");
+    tagsContainer.innerHTML = obj.tags.map(t => `<span class="tag" style="font-size: 0.85rem; padding: 0.3rem 0.7rem;">${t}</span>`).join("");
+
+    const stepsContainer = document.getElementById("modalSteps");
+    stepsContainer.innerHTML = obj.steps.map(s => `<li>${s}</li>`).join("");
+
+    document.getElementById("detailModal").classList.add("open");
+}
+
+function closeModal() {
+    document.getElementById("detailModal").classList.remove("open");
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById("detailModal");
+    if (event.target === modal) {
+        closeModal();
+    }
+};
+
+document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        renderGrid(btn.getAttribute("data-filter"));
+    });
+});
+
+renderGrid();
+</script>
+
+</body>
+</html>

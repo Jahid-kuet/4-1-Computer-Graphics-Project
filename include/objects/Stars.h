@@ -4,6 +4,6 @@
 #include "mathutil.h"
 
 namespace Stars {
-    // Draws many small emissive spheres at deterministic pseudo-random sky positions.
-    void draw(Shader& shader);
+    // Draws many small emissive spheres at deterministic pseudo-random sky positions with twinkling.
+    void draw(Shader& shader, float time = 0.0f);
 }

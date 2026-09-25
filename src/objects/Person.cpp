@@ -16,6 +16,8 @@ namespace Person {
 
 void draw(Shader& shader, const mat4& model, const PersonParams& p)
 {
+    shader.setInt("uUseTexture", 0); // smooth natural skin tones, white cotton kurta, beard, and lungi
+
     // ── Slender, Anatomical Proportions ──────────────────────────
     const float headR     = 0.110f;
     const float torsoH    = 0.420f;
@@ -52,8 +54,32 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
         Primitives::drawCube(shader, shawl, p.gamchaColor);
     }
 
+    // ── Kurta Collar Band & Front Placket Trim ───────────────────
+    mat4 collar = model;
+    collar = translate(collar, vec3(0.0f, torsoTop + 0.010f, 0.0f));
+    collar = scale(collar, vec3(0.058f, 0.022f, 0.058f));
+    Primitives::drawCylinder(shader, collar, p.shirtColor * 0.90f);
+
+    mat4 placket = model;
+    placket = translate(placket, vec3(0.0f, torsoTop - torsoH * 0.20f, chestD + 0.002f));
+    placket = scale(placket, vec3(0.020f, torsoH * 0.38f, 0.005f));
+    Primitives::drawCube(shader, placket, p.shirtColor * 0.85f);
+
+    // ── Kurta Hem & Side Slits (Chak / চাক) ──────────────────────
+    if (!p.seated && !p.crossLegged) {
+        mat4 kurtaHem = model;
+        kurtaHem = translate(kurtaHem, vec3(0.0f, torsoBase - 0.045f, 0.0f));
+        kurtaHem = scale(kurtaHem, vec3(chestW * 2.08f, 0.12f, chestD * 2.06f));
+        Primitives::drawCube(shader, kurtaHem, p.shirtColor);
+
+        // Center hem split / trim
+        mat4 hemSplit = model;
+        hemSplit = translate(hemSplit, vec3(0.0f, torsoBase - 0.075f, chestD + 0.003f));
+        hemSplit = scale(hemSplit, vec3(0.008f, 0.065f, 0.005f));
+        Primitives::drawCube(shader, hemSplit, p.shirtColor * 0.85f);
+    }
+
     // ── 3. Neck (Unit Cylinder) & Head (Unit Sphere) ──────────────
-    // Clean, geometrically explainable canonical primitives
     float headCenterY = torsoTop + headR + 0.030f;
 
     mat4 neck = model;
@@ -65,6 +91,105 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
     head = translate(head, vec3(0.0f, headCenterY, 0.0f));
     head = scale(head, vec3(headR, headR, headR));
     Primitives::drawSphere(shader, head, p.skinColor);
+
+    // ── Expressive Authentic Facial Features ─────────────────────
+    vec3 eyeWhite(0.95f, 0.95f, 0.92f);
+    vec3 eyePupil(0.10f, 0.08f, 0.06f);
+
+    // 1. Nose (defined bridge and tip extending forward along +Z)
+    mat4 nose = model;
+    nose = translate(nose, vec3(0.0f, headCenterY - 0.008f, headR * 0.92f));
+    nose = rotate(nose, radians(15.0f), vec3(1.0f, 0.0f, 0.0f));
+    nose = scale(nose, vec3(0.018f, 0.038f, 0.032f));
+    Primitives::drawCone(shader, nose, p.skinColor * 0.94f);
+
+    // 2. Pair of expressive eyes (sclera + dark iris) & ears
+    for (int s = -1; s <= 1; s += 2) {
+        float fside = (float)s;
+        // Eye white
+        mat4 eyeW = model;
+        eyeW = translate(eyeW, vec3(fside * 0.038f, headCenterY + 0.016f, headR * 0.88f));
+        eyeW = scale(eyeW, vec3(0.016f, 0.012f, 0.014f));
+        Primitives::drawSphere(shader, eyeW, eyeWhite);
+
+        // Pupil / iris
+        mat4 pupil = model;
+        pupil = translate(pupil, vec3(fside * 0.038f, headCenterY + 0.016f, headR * 0.94f));
+        pupil = scale(pupil, vec3(0.009f, 0.009f, 0.009f));
+        Primitives::drawSphere(shader, pupil, eyePupil);
+
+        // Eyebrow
+        mat4 brow = model;
+        brow = translate(brow, vec3(fside * 0.038f, headCenterY + 0.030f, headR * 0.86f));
+        brow = rotate(brow, radians(fside * -6.0f), vec3(0.0f, 0.0f, 1.0f));
+        brow = scale(brow, vec3(0.024f, 0.006f, 0.012f));
+        Primitives::drawCube(shader, brow, p.isElder ? vec3(0.90f) : p.hairColor);
+
+        // Ear lobes on sides of head
+        mat4 ear = model;
+        ear = translate(ear, vec3(fside * (headR * 0.96f), headCenterY, 0.0f));
+        ear = scale(ear, vec3(0.014f, 0.030f, 0.020f));
+        Primitives::drawSphere(shader, ear, p.skinColor);
+    }
+
+    // 3. Traditional Bengali Mustache (Gnof / গোঁফ) for adult villagers
+    if (!p.isElder && !p.crossLegged && !p.isWoman) {
+        for (int s = -1; s <= 1; s += 2) {
+            float fside = (float)s;
+            mat4 stache = model;
+            stache = translate(stache, vec3(fside * 0.022f, headCenterY - 0.030f, headR * 0.88f));
+            stache = rotate(stache, radians(fside * -18.0f), vec3(0.0f, 0.0f, 1.0f));
+            stache = scale(stache, vec3(0.026f, 0.008f, 0.012f));
+            Primitives::drawCube(shader, stache, p.hairColor);
+        }
+    }
+
+    // ── Authentic Hair, Venerable Elder Beard & Prayer Cap ────────
+    if (p.isElder) {
+        // Venerable Elder (Murobbi / মুরুব্বি)
+        vec3 beardCol(0.92f, 0.91f, 0.88f); // soft white cotton beard & hair
+        vec3 tupiCol (0.98f, 0.98f, 0.96f); // white cotton prayer cap (Tupi)
+
+        // 1. Soft white hair fringe around temples and back of head
+        mat4 hair = model;
+        hair = translate(hair, vec3(0.0f, headCenterY + 0.010f, -0.016f));
+        hair = scale(hair, vec3(headR * 1.02f, headR * 0.72f, headR * 0.96f));
+        Primitives::drawSphere(shader, hair, beardCol);
+
+        // 2. Full chin goatee / beard (Paka Daari / পাকা দাড়ি)
+        mat4 chinBeard = model;
+        chinBeard = translate(chinBeard, vec3(0.0f, headCenterY - headR * 0.72f, headR * 0.50f));
+        chinBeard = rotate(chinBeard, radians(-18.0f), vec3(1.0f, 0.0f, 0.0f));
+        chinBeard = scale(chinBeard, vec3(0.072f, 0.098f, 0.062f));
+        Primitives::drawSphere(shader, chinBeard, beardCol);
+
+        // 3. Jawline beard contours on left and right
+        for (int side = -1; side <= 1; side += 2) {
+            float fside = (float)side;
+            mat4 jaw = model;
+            jaw = translate(jaw, vec3(fside * 0.058f, headCenterY - headR * 0.42f, headR * 0.20f));
+            jaw = rotate(jaw, radians(fside * 18.0f), vec3(0.0f, 0.0f, 1.0f));
+            jaw = scale(jaw, vec3(0.038f, 0.075f, 0.060f));
+            Primitives::drawSphere(shader, jaw, beardCol);
+        }
+
+        // 4. Traditional White Cotton Prayer Cap (Tupi / টুপি)
+        mat4 tupiBand = model;
+        tupiBand = translate(tupiBand, vec3(0.0f, headCenterY + headR * 0.65f, 0.0f));
+        tupiBand = scale(tupiBand, vec3(headR * 0.98f, 0.040f, headR * 0.98f));
+        Primitives::drawCylinder(shader, tupiBand, tupiCol * 0.92f);
+
+        mat4 tupiCrown = model;
+        tupiCrown = translate(tupiCrown, vec3(0.0f, headCenterY + headR * 0.82f, 0.0f));
+        tupiCrown = scale(tupiCrown, vec3(headR * 0.90f, 0.038f, headR * 0.90f));
+        Primitives::drawSphere(shader, tupiCrown, tupiCol);
+    } else if (!p.isWoman) {
+        // Natural dark hair cap on crown for adult villagers and child
+        mat4 hair = model;
+        hair = translate(hair, vec3(0.0f, headCenterY + 0.025f, -0.012f));
+        hair = scale(hair, vec3(headR * 1.02f, headR * 0.85f, headR * 0.98f));
+        Primitives::drawSphere(shader, hair, p.hairColor);
+    }
 
     // ── 4. Slender Anatomical Arms & Hands ─────────────────────────
     for (int side = -1; side <= 1; side += 2) {
@@ -182,25 +307,31 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
             Primitives::drawSphere(shader, hand, p.skinColor);
         }
         else {
-            // Standing villager: slender, natural human arms with forward elbow bend
+            // Standing villager: hands held politely and naturally in front of the body
             float fwdSwing = -armAngle;
+
+            // Upper arm hangs naturally down alongside the torso
+            float shoulderPitch = radians(-12.0f) + fwdSwing * 0.35f;
+            float shoulderRoll  = radians(fside * -5.0f);
+            // Internal shoulder rotation angles the elbow hinge inward across the abdomen
+            float shoulderYaw   = radians(fside * -36.0f);
 
             mat4 shoulder = model;
             shoulder = translate(shoulder, vec3(shoulderX, torsoTop - 0.05f, 0.0f));
-            shoulder = rotate(shoulder, fwdSwing, vec3(1.0f, 0.0f, 0.0f));
-            shoulder = rotate(shoulder, radians(fside * -4.0f), vec3(0.0f, 0.0f, 1.0f));
+            shoulder = rotate(shoulder, shoulderPitch, vec3(1.0f, 0.0f, 0.0f));
+            shoulder = rotate(shoulder, shoulderRoll, vec3(0.0f, 0.0f, 1.0f));
+            shoulder = rotate(shoulder, shoulderYaw, vec3(0.0f, 1.0f, 0.0f));
 
-            // Upper arm
+            // Upper arm (slender kurta sleeve)
             mat4 upper = shoulder;
             upper = translate(upper, vec3(0.0f, -upperArmH * 0.5f, 0.0f));
             upper = scale(upper, vec3(armR, upperArmH, armR));
             Primitives::drawCylinder(shader, upper, p.shirtColor);
 
-            // Elbow: bends naturally forward (+Z)
+            // Elbow: pure flexion hinge (-68 deg) swinging forearm across the abdomen
             mat4 elbow = shoulder;
             elbow = translate(elbow, vec3(0.0f, -upperArmH, 0.0f));
-            elbow = rotate(elbow, radians(-14.0f), vec3(1.0f, 0.0f, 0.0f));
-            elbow = rotate(elbow, radians(fside * -3.0f), vec3(0.0f, 1.0f, 0.0f));
+            elbow = rotate(elbow, radians(-68.0f), vec3(1.0f, 0.0f, 0.0f));
 
             // Forearm
             mat4 lower = elbow;
@@ -211,14 +342,32 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
             // Wrist cuff trim
             mat4 cuff = elbow;
             cuff = translate(cuff, vec3(0.0f, -lowerArmH, 0.0f));
-            cuff = scale(cuff, vec3(forearmR * 1.06f, 0.014f, forearmR * 1.06f));
+            cuff = scale(cuff, vec3(forearmR * 1.08f, 0.014f, forearmR * 1.08f));
             Primitives::drawCylinder(shader, cuff, p.shirtColor * 0.88f);
 
-            // Hand
-            mat4 hand = elbow;
-            hand = translate(hand, vec3(0.0f, -lowerArmH - 0.020f, 0.005f));
-            hand = scale(hand, vec3(0.020f, 0.034f, 0.026f));
-            Primitives::drawSphere(shader, hand, p.skinColor);
+            // Respectful Bengali standing posture (Haat badha): hands folded gracefully in front of abdomen
+            float zOffset = (fside < 0) ? 0.014f : -0.008f;
+            float yOffset = (fside < 0) ? 0.008f : -0.004f;
+
+            // 1. Palm (flat box resting cleanly in front of belly)
+            mat4 palm = elbow;
+            palm = translate(palm, vec3(0.0f, -lowerArmH - 0.018f + yOffset, zOffset));
+            palm = scale(palm, vec3(0.020f, 0.038f, 0.030f));
+            Primitives::drawCube(shader, palm, p.skinColor);
+
+            // 2. Curled fingers extending toward midline
+            mat4 fingers = elbow;
+            fingers = translate(fingers, vec3(0.0f, -lowerArmH - 0.044f + yOffset, zOffset - 0.003f));
+            fingers = rotate(fingers, radians(15.0f), vec3(1.0f, 0.0f, 0.0f));
+            fingers = scale(fingers, vec3(0.018f, 0.026f, 0.028f));
+            Primitives::drawCube(shader, fingers, p.skinColor * 0.94f);
+
+            // 3. Thumb tucked naturally along the inner edge
+            mat4 thumb = elbow;
+            thumb = translate(thumb, vec3(0.0f, -lowerArmH - 0.022f + yOffset, zOffset + 0.014f));
+            thumb = rotate(thumb, radians(10.0f), vec3(1.0f, 0.0f, 0.0f));
+            thumb = scale(thumb, vec3(0.016f, 0.022f, 0.010f));
+            Primitives::drawCube(shader, thumb, p.skinColor);
         }
     }
 
@@ -289,55 +438,182 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
     }
     else {
         // Standing Villager:
-        // TWO DISTINCT SLENDER LEGS DRAPED IN LUNGI!
-        // No more bulky single-cylinder oil-drum!
-        float legSpacing = 0.062f; // distance of each leg from body centerline
+        // Authentic Bangladeshi cotton Lungi (লুঙ্গি) — continuous tubular drape!
+        float legSpacing = 0.052f;
         float lungiTopY  = torsoBase + 0.01f;
-        float lungiBotY  = 0.11f;
+        float lungiBotY  = 0.12f;
         float lungiH     = lungiTopY - lungiBotY;
         float lungiMidY  = (lungiTopY + lungiBotY) * 0.5f;
 
-        // Central Pelvis drape (connects waist neatly to the two leg columns)
-        mat4 pelvis = model;
-        pelvis = translate(pelvis, vec3(0.0f, torsoBase - 0.045f, 0.0f));
-        pelvis = scale(pelvis, vec3(waistW * 1.05f, 0.12f, waistD * 1.02f));
-        Primitives::drawCylinder(shader, pelvis, p.pantsColor);
+        // 1. Continuous draped cotton tubular skirt enclosing both legs
+        mat4 lungiWrap = model;
+        lungiWrap = translate(lungiWrap, vec3(0.0f, lungiMidY, 0.0f));
+        lungiWrap = scale(lungiWrap, vec3(waistW * 1.08f, lungiH, waistD * 1.10f));
+        Primitives::drawCylinder(shader, lungiWrap, p.pantsColor);
 
-        // Center front pleat / crease (traditional "Kocha" fold of the Bengali Lungi)
+        // 2. Traditional center front fold / pleat (Kocha / কোঁচা)
         mat4 pleat = model;
-        pleat = translate(pleat, vec3(0.0f, lungiMidY, waistD * 0.65f));
-        pleat = scale(pleat, vec3(0.022f, lungiH * 0.95f, 0.014f));
-        Primitives::drawCube(shader, pleat, p.pantsColor * 0.85f);
+        pleat = translate(pleat, vec3(0.0f, lungiMidY, waistD * 1.04f));
+        pleat = scale(pleat, vec3(0.032f, lungiH * 0.98f, 0.020f));
+        Primitives::drawCube(shader, pleat, p.pantsColor * 0.82f);
 
-        // Two distinct, slender draped leg columns!
+        // 3. Side vertical drape creases for fabric depth
+        for (int side = -1; side <= 1; side += 2) {
+            float fside = (float)side;
+            mat4 fold = model;
+            fold = translate(fold, vec3(fside * (waistW * 0.72f), lungiMidY, 0.0f));
+            fold = scale(fold, vec3(0.022f, lungiH * 0.95f, waistD * 1.04f));
+            Primitives::drawCube(shader, fold, p.pantsColor * 0.90f);
+        }
+
+        // 4. Lungi bottom hem border trim (Paar / পাড়)
+        mat4 hem = model;
+        hem = translate(hem, vec3(0.0f, lungiBotY, 0.0f));
+        hem = scale(hem, vec3(waistW * 1.10f, 0.022f, waistD * 1.12f));
+        Primitives::drawCylinder(shader, hem, p.pantsColor * 0.75f);
+
+        // 5. Exposed ankles & feet with traditional leather sandals (Chappal / স্যান্ডেল)
         for (int side = -1; side <= 1; side += 2) {
             float fside = (float)side;
             float lx = fside * legSpacing;
 
-            // Slender leg column (thigh to ankle)
-            mat4 legCol = model;
-            legCol = translate(legCol, vec3(lx, lungiMidY, 0.0f));
-            legCol = scale(legCol, vec3(0.046f, lungiH, 0.050f));
-            Primitives::drawCylinder(shader, legCol, p.pantsColor);
-
-            // Lungi hem border trim around ankle
-            mat4 hem = model;
-            hem = translate(hem, vec3(lx, lungiBotY, 0.0f));
-            hem = scale(hem, vec3(0.048f, 0.020f, 0.052f));
-            Primitives::drawCylinder(shader, hem, p.pantsColor * 0.82f);
-
-            // Exposed slender ankle below lungi
+            // Slender exposed ankle
             mat4 ankle = model;
             ankle = translate(ankle, vec3(lx, 0.065f, 0.0f));
             ankle = scale(ankle, vec3(0.024f, 0.090f, 0.024f));
             Primitives::drawCylinder(shader, ankle, p.skinColor);
 
-            // Sandaled foot
-            mat4 foot = model;
-            foot = translate(foot, vec3(lx, 0.015f, 0.028f));
-            foot = scale(foot, vec3(0.036f, 0.026f, 0.082f));
-            Primitives::drawCube(shader, foot, vec3(0.28f, 0.18f, 0.10f));
+            // Sandal sole
+            mat4 sole = model;
+            sole = translate(sole, vec3(lx, 0.010f, 0.025f));
+            sole = scale(sole, vec3(0.038f, 0.016f, 0.088f));
+            Primitives::drawCube(shader, sole, vec3(0.24f, 0.16f, 0.10f));
+
+            // Sandal upper strap (leather Y-strap)
+            mat4 strap = model;
+            strap = translate(strap, vec3(lx, 0.024f, 0.020f));
+            strap = scale(strap, vec3(0.036f, 0.012f, 0.040f));
+            Primitives::drawCube(shader, strap, vec3(0.18f, 0.10f, 0.06f));
         }
+    }
+}
+
+void drawBook(Shader& shader, const mat4& model)
+{
+    // Open Bengali Schoolbook / Storybook (বই)
+    // 1. Hardcover / binding underneath (dark navy blue cloth)
+    // 2. Left Page Block & Right Page Block (warm natural off-white paper) angled open
+    // 3. Central Spine Gutter / Dividing Crease Line (dark shadow seam separating pages)
+    // 4. Printed horizontal text lines on both pages
+
+    vec3 coverCol   (0.18f, 0.26f, 0.44f); // dark navy blue cloth binding
+    vec3 pageCol    (0.95f, 0.94f, 0.89f); // warm natural book paper
+    vec3 creaseCol  (0.22f, 0.18f, 0.14f); // dark binding gutter / crease shadow
+    vec3 textCol    (0.42f, 0.40f, 0.38f); // printed ink text lines
+
+    float bookW   = 0.36f;  // total open width along X
+    float bookD   = 0.26f;  // height/depth of page along Z
+    float pageThk = 0.024f; // thickness of page leaf block
+    float pageW   = 0.165f; // width of each open page
+
+    // ── 1. Book Cover & Spine ──────────────────────────────────────
+    // Hardcover backing slightly larger than pages
+    mat4 cover = model;
+    cover = translate(cover, vec3(0.0f, -0.005f, 0.0f));
+    cover = scale(cover, vec3(bookW + 0.024f, 0.010f, bookD + 0.016f));
+    Primitives::drawCube(shader, cover, coverCol);
+
+    // Rounded spine at center bottom
+    mat4 spine = model;
+    spine = translate(spine, vec3(0.0f, -0.006f, 0.0f));
+    spine = rotate(spine, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
+    spine = scale(spine, vec3(0.010f, bookD + 0.016f, 0.010f));
+    Primitives::drawCylinder(shader, spine, coverCol);
+
+    // ── 2. Two Distinct Open Pages (Left & Right Leaf Blocks) ──────
+    // Left Page (tilted up slightly at +3.5 deg for natural open book curve)
+    mat4 pageL = model;
+    pageL = translate(pageL, vec3(-pageW * 0.5f - 0.003f, pageThk * 0.5f, 0.0f));
+    pageL = rotate(pageL, radians(3.5f), vec3(0.0f, 0.0f, 1.0f));
+    pageL = scale(pageL, vec3(pageW, pageThk, bookD));
+    Primitives::drawCube(shader, pageL, pageCol);
+
+    // Right Page (tilted up slightly at -3.5 deg for natural open book curve)
+    mat4 pageR = model;
+    pageR = translate(pageR, vec3(pageW * 0.5f + 0.003f, pageThk * 0.5f, 0.0f));
+    pageR = rotate(pageR, radians(-3.5f), vec3(0.0f, 0.0f, 1.0f));
+    pageR = scale(pageR, vec3(pageW, pageThk, bookD));
+    Primitives::drawCube(shader, pageR, pageCol);
+
+    // ── 3. Prominent Center Crease / Page Divider Line ─────────────
+    // Dark recessed shadow seam running right down the center along Z
+    mat4 crease = model;
+    crease = translate(crease, vec3(0.0f, pageThk + 0.002f, 0.0f));
+    crease = scale(crease, vec3(0.009f, 0.006f, bookD + 0.004f));
+    Primitives::drawCube(shader, crease, creaseCol);
+
+    // ── 4. Printed Horizontal Text Lines on Left and Right Pages ───
+    float lineZOffsets[4] = { -0.075f, -0.025f, 0.025f, 0.075f };
+    float lineW = pageW * 0.72f;
+
+    for (int i = 0; i < 4; i++) {
+        float lz = lineZOffsets[i];
+
+        // Left page text line
+        mat4 lineL = model;
+        lineL = translate(lineL, vec3(-pageW * 0.5f - 0.003f, pageThk + 0.003f, lz));
+        lineL = rotate(lineL, radians(3.5f), vec3(0.0f, 0.0f, 1.0f));
+        lineL = scale(lineL, vec3(lineW, 0.0025f, 0.016f));
+        Primitives::drawCube(shader, lineL, textCol);
+
+        // Right page text line
+        mat4 lineR = model;
+        lineR = translate(lineR, vec3(pageW * 0.5f + 0.003f, pageThk + 0.003f, lz));
+        lineR = rotate(lineR, radians(-3.5f), vec3(0.0f, 0.0f, 1.0f));
+        lineR = scale(lineR, vec3(lineW, 0.0025f, 0.016f));
+        Primitives::drawCube(shader, lineR, textCol);
+    }
+}
+
+void drawRehal(Shader& shader, const mat4& model)
+{
+    // Traditional Rural Wooden Folding Bookstand (Rehal / রেহাল)
+    // Modeled from two interlocking carved seasoned timber planks forming an X-cradle
+    vec3 woodCol   (0.42f, 0.26f, 0.12f); // seasoned dark teak/rosewood
+    vec3 carvedCol (0.34f, 0.20f, 0.08f); // carved relief shadow
+
+    float plankL = 0.38f;  // length of each crossing plank
+    float plankW = 0.28f;  // width along Z
+    float plankT = 0.020f; // thickness
+
+    // Plank 1 (sloping from lower-left to upper-right at 36 deg)
+    mat4 p1 = model;
+    p1 = translate(p1, vec3(0.0f, 0.11f, 0.0f));
+    p1 = rotate(p1, radians(36.0f), vec3(0.0f, 0.0f, 1.0f));
+    mat4 p1S = scale(p1, vec3(plankL, plankT, plankW));
+    Primitives::drawCube(shader, p1S, woodCol);
+
+    // Plank 2 (sloping from lower-right to upper-left at -36 deg)
+    mat4 p2 = model;
+    p2 = translate(p2, vec3(0.0f, 0.11f, 0.0f));
+    p2 = rotate(p2, radians(-36.0f), vec3(0.0f, 0.0f, 1.0f));
+    mat4 p2S = scale(p2, vec3(plankL, plankT, plankW));
+    Primitives::drawCube(shader, p2S, woodCol);
+
+    // Central interlocking hinge pivot cylinder
+    mat4 pivot = model;
+    pivot = translate(pivot, vec3(0.0f, 0.11f, 0.0f));
+    pivot = rotate(pivot, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
+    mat4 pivotS = scale(pivot, vec3(0.022f, plankW + 0.010f, 0.022f));
+    Primitives::drawCylinder(shader, pivotS, carvedCol);
+
+    // 2 Carved ornamental foot arches at base
+    float footOffsets[2] = { -0.13f, 0.13f };
+    for (int i = 0; i < 2; i++) {
+        mat4 foot = model;
+        foot = translate(foot, vec3(footOffsets[i], 0.015f, 0.0f));
+        foot = scale(foot, vec3(0.035f, 0.030f, plankW * 0.95f));
+        Primitives::drawCube(shader, foot, carvedCol);
     }
 }
 

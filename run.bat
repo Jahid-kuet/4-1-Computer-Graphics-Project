@@ -31,18 +31,41 @@ echo CONTROLS:
 echo   Left-Drag Mouse : Orbit Camera Around Object
 echo   Scroll Wheel    : Zoom In / Out
 echo   W / S / A / D   : Move Camera Freely
-echo   Key '1'         : Inspect House (Chouchala ^& Clay Cooking Stove)
-echo   Key '2'         : Inspect Boat (Dingi Nouka with Hanging Hariken)
-echo   Key '3'         : Inspect Charpai, Seated Elder ^& Handmade Fan
-echo   Key '4'         : Inspect Child Reading Book
-echo   Key '5'         : Inspect Trees (1 Palm, 1 Banana, 1 Mango, 1 Bamboo)
-echo   Key '6'         : Inspect Animals (1 Hen ^& 1 Duck)
-echo   Key '7'         : Inspect Rice Tree (Dhan Gachh), Grass ^& Water Grass
-echo   Key '8'         : Full Scene Overview
+echo   SPACE           : Toggle Cinematic Fly-Through Village Tour
+echo   Key 'J'         : Toggle Directional Light (Moonlight/Sunlight ON/OFF)
+echo   Key 'H'         : Cycle 6 Point Lights (Normal / Bright / Amber / OFF)
+echo   Key 'P'         : Pump Tubewell (Interactive Water Flow into Kolshi)
+echo   Key 'B'         : Toggle Summer Breeze (Tree Foliage Wind Sway)
+echo   Key '[' / ']'   : Decrease / Increase Animation Speed (0.25x - 3.0x)
+echo   Key 'K'         : Pause / Resume Continuous Village Animations
+echo   Key 'L'         : Toggle Lighting (0: Moonlit Night ^| 1: Day ^| 2: Unlit Facets ^| 3: Flat)
+echo   Key 'X'         : Toggle Texture Mode (0: Solid ^| 1: Procedural Detailing ^| 2: GPU Texture Maps)
+echo   Key 'V'         : View V - Curved Objects (Bamboo Footbridge ^& Parametric Bézier Vase)
+echo   Key '1'         : View 1 - Courtyard Gathering (Charpai, Elders, Children, Hens)
+echo   Key '2'         : View 2 - River Shore, Landing Ghat, Moored Boat ^& Rowing Boatman
+echo   Key '3'         : View 3 - Historic Terracotta Village Mosque (Ancient Sultanate Masjid)
+echo   Key '4'         : View 4 - North Homestead (Dochala, Cow Shed ^& Straw Stack)
+echo   Key '5'         : View 5 - South Homestead, Straw Stack ^& Terraced Paddy Fields
+echo   Key '6'         : View 6 - Rural Trees ^& Riverbank Reeds
+echo   Key '7'         : View 7 - Village Animals (Hens ^& Ducks)
+echo   Key '8'         : View 8 - Broader View (Moonlit Village Overview matching Concept Artwork)
+echo   Key '9'         : View 9 - Hand-Pump Tubewell ^& Clay Cooking Kitchen
+echo   Key '0'         : View 0 - Thatched Cow Shed ^& Resting Deshi Cow
 echo   Key 'T'         : Toggle Terrain/Ground Visibility
-echo   Key 'L'         : Toggle Lighting (0: Unlit 3D ^| 1: Flat ^| 2: Night)
+echo   Key 'C'         : Capture All 30 Individual Objects to 'object_images/'
 echo   ESC             : Exit
 echo ========================================================
 echo.
 echo Launching 3D Village Scene Window...
 start "" "x64\Debug\Hitlar.exe"
+if errorlevel 1 (
+    echo.
+    echo =========================================================================
+    echo [NOTE: Windows 11 Smart App Control / Device Guard]
+    echo If Windows blocked the binary, choose either:
+    echo   1. Open Hitlar.slnx in Visual Studio and press [Ctrl+F5] (Runs directly!)
+    echo   2. Or turn Off Smart App Control in:
+    echo      Windows Security ^> App ^& browser control ^> Smart App Control ^> Off
+    echo =========================================================================
+)
+

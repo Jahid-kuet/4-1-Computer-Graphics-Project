@@ -178,6 +178,9 @@
     <ClCompile Include="src\objects\Moon.cpp" />
     <ClCompile Include="src\objects\Stars.cpp" />
     <ClCompile Include="src\objects\Fireflies.cpp" />
+    <ClCompile Include="src\objects\Mosque.cpp" />
+    <ClCompile Include="src\Texture.cpp" />
+    <ClCompile Include="src\objects\CurvedObject.cpp" />
   </ItemGroup>
   <!-- Header Files -->
   <ItemGroup>
@@ -185,9 +188,12 @@
     <ClInclude Include="include\Shader.h" />
     <ClInclude Include="include\Camera.h" />
     <ClInclude Include="include\Primitives.h" />
+    <ClInclude Include="include\Texture.h" />
+    <ClInclude Include="include\objects\CurvedObject.h" />
     <ClInclude Include="include\objects\Terrain.h" />
     <ClInclude Include="include\objects\River.h" />
     <ClInclude Include="include\objects\House.h" />
+    <ClInclude Include="include\objects\Mosque.h" />
     <ClInclude Include="include\objects\Tree.h" />
     <ClInclude Include="include\objects\Hen.h" />
     <ClInclude Include="include\objects\Duck.h" />

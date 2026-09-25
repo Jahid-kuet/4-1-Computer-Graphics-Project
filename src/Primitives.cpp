@@ -136,9 +136,14 @@ void generateHemisphere(MeshData& md)
         int k1 = i * (SECTORS + 1);
         int k2 = k1 + SECTORS + 1;
         for (int j = 0; j < SECTORS; j++, k1++, k2++) {
-            if (i != 0)              { idx.push_back(k1); idx.push_back(k2); idx.push_back(k1 + 1); }
-            if (i != halfStacks - 1) { idx.push_back(k1 + 1); idx.push_back(k2); idx.push_back(k2 + 1); }
-            else                     { idx.push_back(k1 + 1); idx.push_back(k2); idx.push_back(k2 + 1); }
+            idx.push_back(k1);
+            idx.push_back(k2);
+            idx.push_back(k1 + 1);
+            if (i != halfStacks - 1) {
+                idx.push_back(k1 + 1);
+                idx.push_back(k2);
+                idx.push_back(k2 + 1);
+            }
         }
     }
 
