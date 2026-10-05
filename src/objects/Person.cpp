@@ -189,7 +189,25 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
         hair = translate(hair, vec3(0.0f, headCenterY + 0.025f, -0.012f));
         hair = scale(hair, vec3(headR * 1.02f, headR * 0.85f, headR * 0.98f));
         Primitives::drawSphere(shader, hair, p.hairColor);
+
+        // Prayer cap (Tupi / টুপি) for non-elders when requested
+        if (p.hasTupi) {
+            vec3 tupiCol(0.98f, 0.98f, 0.96f);
+            mat4 tupiBand = model;
+            tupiBand = translate(tupiBand, vec3(0.0f, headCenterY + headR * 0.65f, 0.0f));
+            tupiBand = scale(tupiBand, vec3(headR * 0.98f, 0.040f, headR * 0.98f));
+            Primitives::drawCylinder(shader, tupiBand, tupiCol * 0.92f);
+
+            mat4 tupiCrown = model;
+            tupiCrown = translate(tupiCrown, vec3(0.0f, headCenterY + headR * 0.82f, 0.0f));
+            tupiCrown = scale(tupiCrown, vec3(headR * 0.90f, 0.038f, headR * 0.90f));
+            Primitives::drawSphere(shader, tupiCrown, tupiCol);
+        }
     }
+
+    bool isWalking = (!p.seated && !p.crossLegged &&
+                      (fabsf(p.leftLegAngle) > 0.02f || fabsf(p.rightLegAngle) > 0.02f ||
+                       fabsf(p.leftArmAngle) > 0.02f || fabsf(p.rightArmAngle) > 0.02f));
 
     // ── 4. Slender Anatomical Arms & Hands ─────────────────────────
     for (int side = -1; side <= 1; side += 2) {
@@ -304,6 +322,42 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
             mat4 hand = elbow;
             hand = translate(hand, vec3(0.0f, -lowerArmH - 0.020f, 0.0f));
             hand = scale(hand, vec3(0.024f, 0.016f, 0.034f));
+            Primitives::drawSphere(shader, hand, p.skinColor);
+        }
+        else if (isWalking) {
+            // Walking villager: natural alternating arm swing in rhythm with strides
+            mat4 shoulder = model;
+            shoulder = translate(shoulder, vec3(shoulderX, torsoTop - 0.05f, 0.0f));
+            shoulder = rotate(shoulder, armAngle, vec3(1.0f, 0.0f, 0.0f));
+            shoulder = rotate(shoulder, radians(fside * -3.5f), vec3(0.0f, 0.0f, 1.0f));
+
+            // Upper arm (slender kurta sleeve)
+            mat4 upper = shoulder;
+            upper = translate(upper, vec3(0.0f, -upperArmH * 0.5f, 0.0f));
+            upper = scale(upper, vec3(armR, upperArmH, armR));
+            Primitives::drawCylinder(shader, upper, p.shirtColor);
+
+            // Elbow: slight natural forward bend (15 deg)
+            mat4 elbow = shoulder;
+            elbow = translate(elbow, vec3(0.0f, -upperArmH, 0.0f));
+            elbow = rotate(elbow, radians(-15.0f), vec3(1.0f, 0.0f, 0.0f));
+
+            // Forearm
+            mat4 lower = elbow;
+            lower = translate(lower, vec3(0.0f, -lowerArmH * 0.5f, 0.0f));
+            lower = scale(lower, vec3(forearmR, lowerArmH, forearmR));
+            Primitives::drawCylinder(shader, lower, p.shirtColor);
+
+            // Wrist cuff trim
+            mat4 cuff = elbow;
+            cuff = translate(cuff, vec3(0.0f, -lowerArmH, 0.0f));
+            cuff = scale(cuff, vec3(forearmR * 1.08f, 0.014f, forearmR * 1.08f));
+            Primitives::drawCylinder(shader, cuff, p.shirtColor * 0.88f);
+
+            // Hand swinging naturally beside thigh
+            mat4 hand = elbow;
+            hand = translate(hand, vec3(0.0f, -lowerArmH - 0.020f, 0.005f));
+            hand = scale(hand, vec3(0.020f, 0.035f, 0.025f));
             Primitives::drawSphere(shader, hand, p.skinColor);
         }
         else {
@@ -435,6 +489,75 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
         skirtDrape = translate(skirtDrape, vec3(0.0f, torsoBase - lowerLegH * 0.42f, upperLegH * 0.86f));
         skirtDrape = scale(skirtDrape, vec3(thighSpacing * 1.30f, lowerLegH * 0.76f, 0.035f));
         Primitives::drawCube(shader, skirtDrape, p.pantsColor);
+    }
+    else if (isWalking) {
+        // Walking Villager:
+        // Articulated striding legs with authentic draped Lungi / Pajama and sandals
+        float legSpacing = 0.060f;
+
+        // Central draped Lungi waist wrap / sash / knot (Malcocha / কোঁচা)
+        mat4 waistWrap = model;
+        waistWrap = translate(waistWrap, vec3(0.0f, torsoBase - 0.045f, 0.0f));
+        waistWrap = scale(waistWrap, vec3(waistW * 1.15f, 0.12f, waistD * 1.18f));
+        Primitives::drawCube(shader, waistWrap, p.pantsColor);
+
+        // Center fold knot
+        mat4 kocha = model;
+        kocha = translate(kocha, vec3(0.0f, torsoBase - 0.070f, waistD * 1.08f));
+        kocha = scale(kocha, vec3(0.042f, 0.12f, 0.024f));
+        Primitives::drawCube(shader, kocha, p.pantsColor * 0.82f);
+
+        // Two articulated striding legs
+        for (int side = -1; side <= 1; side += 2) {
+            float fside = (float)side;
+            float legAngle = (side == -1) ? p.leftLegAngle : p.rightLegAngle;
+            float lx = fside * legSpacing;
+
+            // Hip joint
+            mat4 hip = model;
+            hip = translate(hip, vec3(lx, torsoBase, 0.0f));
+            hip = rotate(hip, legAngle, vec3(1.0f, 0.0f, 0.0f));
+
+            // Thigh (swings with hip stride)
+            mat4 thigh = hip;
+            thigh = translate(thigh, vec3(0.0f, -upperLegH * 0.5f, 0.0f));
+            thigh = scale(thigh, vec3(0.052f, upperLegH, 0.054f));
+            Primitives::drawCylinder(shader, thigh, p.pantsColor);
+
+            // Knee joint (natural flexion on backswing)
+            float kneeFlex = (legAngle < 0.0f) ? (-legAngle * 0.60f) : (legAngle * 0.12f);
+            mat4 knee = hip;
+            knee = translate(knee, vec3(0.0f, -upperLegH, 0.0f));
+            knee = rotate(knee, kneeFlex, vec3(1.0f, 0.0f, 0.0f));
+
+            mat4 kneeSphere = knee;
+            kneeSphere = scale(kneeSphere, vec3(0.048f));
+            Primitives::drawSphere(shader, kneeSphere, p.pantsColor);
+
+            // Shin / lower leg
+            mat4 shin = knee;
+            shin = translate(shin, vec3(0.0f, -lowerLegH * 0.5f, 0.0f));
+            shin = scale(shin, vec3(0.044f, lowerLegH, 0.046f));
+            Primitives::drawCylinder(shader, shin, p.pantsColor);
+
+            // Exposed ankle
+            mat4 ankle = knee;
+            ankle = translate(ankle, vec3(0.0f, -lowerLegH + 0.035f, 0.0f));
+            ankle = scale(ankle, vec3(0.026f, 0.070f, 0.026f));
+            Primitives::drawCylinder(shader, ankle, p.skinColor);
+
+            // Leather sandal sole (touches ground as stride moves)
+            mat4 foot = knee;
+            foot = translate(foot, vec3(0.0f, -lowerLegH + 0.008f, 0.028f));
+            foot = scale(foot, vec3(0.038f, 0.016f, 0.088f));
+            Primitives::drawCube(shader, foot, vec3(0.24f, 0.16f, 0.10f));
+
+            // Leather sandal upper strap
+            mat4 strap = knee;
+            strap = translate(strap, vec3(0.0f, -lowerLegH + 0.022f, 0.024f));
+            strap = scale(strap, vec3(0.036f, 0.012f, 0.040f));
+            Primitives::drawCube(shader, strap, vec3(0.18f, 0.10f, 0.06f));
+        }
     }
     else {
         // Standing Villager:

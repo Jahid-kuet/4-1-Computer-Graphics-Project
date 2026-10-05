@@ -71,7 +71,7 @@ void drawBambooFence(Shader& shader, const mat4& model, const vec3& startPos, fl
     }
 
     // 3. Dense vertical split-bamboo slats (Bansh-er Shola) forming the authentic Bengali screen
-    float slatStep = 0.065f;
+    float slatStep = 0.10f;
     int numSlats = (int)(length / slatStep);
     for (int s = 0; s < numSlats; s++) {
         float sx = ((float)s + 0.5f) * (length / (float)numSlats);
@@ -79,14 +79,8 @@ void drawBambooFence(Shader& shader, const mat4& model, const vec3& startPos, fl
 
         mat4 slat = fm;
         slat = translate(slat, vec3(sx, sh * 0.5f, -0.010f));
-        slat = scale(slat, vec3(0.036f, sh, 0.014f));
+        slat = scale(slat, vec3(0.062f, sh, 0.016f));
         Primitives::drawCube(shader, slat, (s % 2 == 0) ? slatCol1 : slatCol2);
-
-        // Pointed top tip
-        mat4 tip = fm;
-        tip = translate(tip, vec3(sx, sh + 0.025f, -0.010f));
-        tip = scale(tip, vec3(0.028f, 0.050f, 0.014f));
-        Primitives::drawCone(shader, tip, (s % 2 == 0) ? slatCol1 : slatCol2);
     }
 }
 
@@ -116,12 +110,13 @@ void drawRiceClump(Shader& shader, const mat4& model, const vec3& pos, float sca
     vec3 grainCol(0.94f, 0.82f, 0.26f); // golden ripened grain panicle (Dhaner Shish)
     vec3 huskCol (0.86f, 0.72f, 0.22f); // mature grain husk
 
-    // A clump (Gochha) consists of 10 outward radiating stalks with gracefully arching grain heads
-    const int numStalks = 10;
+    // A clump (Gochha) consists of outward radiating stalks with gracefully arching golden grain heads
+    // Adaptive stalk count: detailed 8 stalks for standalone single-object inspection, 4 stalks for village paddy fields
+    const int numStalks = (scaleVal > 1.4f) ? 8 : 4;
     for (int i = 0; i < numStalks; i++) {
         float fi = (float)i;
         float baseAngle = fi * (2.0f * PI / (float)numStalks) + seed * 0.7f;
-        float tiltAngle = 14.0f + sinf(seed + fi * 1.3f) * 6.0f;
+        float tiltAngle = 14.0f + sinf(seed + fi * 1.3f) * 5.0f;
         float h = (0.78f + sinf(seed * 2.0f + fi) * 0.12f) * scaleVal;
 
         mat4 stalk = model;
@@ -132,22 +127,15 @@ void drawRiceClump(Shader& shader, const mat4& model, const vec3& pos, float sca
         // Lower green stalk (cylinder from Y=0 to Y=h*0.75)
         mat4 sM = stalk;
         sM = translate(sM, vec3(0.0f, h * 0.38f, 0.0f));
-        sM = scale(sM, vec3(0.014f * scaleVal, h * 0.76f, 0.014f * scaleVal));
+        sM = scale(sM, vec3(0.016f * scaleVal, h * 0.76f, 0.016f * scaleVal));
         Primitives::drawCylinder(shader, sM, stalkCol);
 
         // Arching rice leaf blade (curving outward)
         mat4 leaf = stalk;
         leaf = translate(leaf, vec3(0.0f, h * 0.40f, 0.02f * scaleVal));
         leaf = rotate(leaf, radians(38.0f), vec3(1.0f, 0.0f, 0.0f));
-        leaf = scale(leaf, vec3(0.024f * scaleVal, h * 0.65f, 0.006f));
+        leaf = scale(leaf, vec3(0.028f * scaleVal, h * 0.65f, 0.008f));
         Primitives::drawCone(shader, leaf, leafCol);
-
-        // Second leaf on other side
-        mat4 leaf2 = stalk;
-        leaf2 = translate(leaf2, vec3(0.0f, h * 0.28f, -0.02f * scaleVal));
-        leaf2 = rotate(leaf2, radians(-32.0f), vec3(1.0f, 0.0f, 0.0f));
-        leaf2 = scale(leaf2, vec3(0.020f * scaleVal, h * 0.55f, 0.005f));
-        Primitives::drawCone(shader, leaf2, leafCol);
 
         // Drooping golden grain panicle (Dhaner Shish) curving gracefully downwards
         // Stage 1: Arching neck (35 degrees)
@@ -156,49 +144,61 @@ void drawRiceClump(Shader& shader, const mat4& model, const vec3& pos, float sca
         panicle1 = rotate(panicle1, radians(35.0f), vec3(1.0f, 0.0f, 0.0f));
         mat4 p1Stem = panicle1;
         p1Stem = translate(p1Stem, vec3(0.0f, 0.06f * scaleVal, 0.0f));
-        p1Stem = scale(p1Stem, vec3(0.010f * scaleVal, 0.12f * scaleVal, 0.010f * scaleVal));
+        p1Stem = scale(p1Stem, vec3(0.012f * scaleVal, 0.12f * scaleVal, 0.012f * scaleVal));
         Primitives::drawCylinder(shader, p1Stem, grainCol);
 
-        // Stage 2: Heavy drooping head (steep 68 degrees downward)
+        // Stage 2: Heavy drooping head with golden ripe grain ear
         mat4 panicle2 = panicle1;
         panicle2 = translate(panicle2, vec3(0.0f, 0.12f * scaleVal, 0.0f));
-        panicle2 = rotate(panicle2, radians(42.0f), vec3(1.0f, 0.0f, 0.0f));
+        panicle2 = rotate(panicle2, radians(44.0f), vec3(1.0f, 0.0f, 0.0f));
         mat4 p2Stem = panicle2;
-        p2Stem = translate(p2Stem, vec3(0.0f, 0.10f * scaleVal, 0.0f));
-        p2Stem = scale(p2Stem, vec3(0.008f * scaleVal, 0.20f * scaleVal, 0.008f * scaleVal));
+        p2Stem = translate(p2Stem, vec3(0.0f, 0.11f * scaleVal, 0.0f));
+        p2Stem = scale(p2Stem, vec3(0.018f * scaleVal, 0.22f * scaleVal, 0.014f * scaleVal));
         Primitives::drawCylinder(shader, p2Stem, grainCol);
 
-        // 7 Golden grain kernels attached along the drooping panicle
-        for (int k = 0; k < 7; k++) {
-            float kt = (float)k / 6.0f;
-            float ky = (0.02f + kt * 0.18f) * scaleVal;
-            float kSide = (k % 2 == 0) ? 1.0f : -1.0f;
-            mat4 grain = panicle2;
-            grain = translate(grain, vec3(kSide * 0.014f * scaleVal, ky, 0.0f));
-            grain = rotate(grain, radians(kSide * 28.0f), vec3(0.0f, 0.0f, 1.0f));
-            grain = scale(grain, vec3(0.014f * scaleVal, 0.038f * scaleVal, 0.012f * scaleVal));
-            Primitives::drawSphere(shader, grain, (k % 2 == 0) ? grainCol : huskCol);
-        }
+        // Drooping tapered apex tip
+        mat4 tip = panicle2;
+        tip = translate(tip, vec3(0.0f, 0.23f * scaleVal, 0.0f));
+        tip = scale(tip, vec3(0.016f * scaleVal, 0.06f * scaleVal, 0.012f * scaleVal));
+        Primitives::drawCone(shader, tip, huskCol);
+
+        // Golden grain clusters along the heavy drooping ear
+        mat4 g1 = panicle2;
+        g1 = translate(g1, vec3(0.012f * scaleVal, 0.07f * scaleVal, 0.0f));
+        g1 = scale(g1, vec3(0.022f * scaleVal, 0.045f * scaleVal, 0.018f * scaleVal));
+        Primitives::drawSphere(shader, g1, grainCol);
+
+        mat4 g2 = panicle2;
+        g2 = translate(g2, vec3(-0.012f * scaleVal, 0.14f * scaleVal, 0.0f));
+        g2 = scale(g2, vec3(0.020f * scaleVal, 0.042f * scaleVal, 0.016f * scaleVal));
+        Primitives::drawSphere(shader, g2, huskCol);
     }
 }
 
 // Helper: Draw a terraced rural Bangladeshi Paddy Field (Dhan Khet / ধান ক্ষেত)
 static void drawPaddyField(Shader& shader, const mat4& model, const vec3& center, float width, float length)
 {
-    vec3 soilCol(0.24f, 0.32f, 0.16f); // damp fertile paddy soil
-    vec3 aalCol (0.46f, 0.36f, 0.22f); // raised clay boundary ridge (Aal)
+    vec3 soilCol (0.20f, 0.28f, 0.16f); // rich fertile damp alluvial silt
+    vec3 waterCol(0.18f, 0.32f, 0.24f); // shallow flooded irrigation water sheen
+    vec3 aalCol  (0.48f, 0.36f, 0.22f); // sun-baked clay boundary ridge (Aal)
 
-    // 1. Muddy field floor (slightly recessed water/earth bed)
+    // 1. Muddy field floor (elevated above base terrain to eliminate any Z-fighting or bleed-through)
     mat4 bed = model;
-    bed = translate(bed, vec3(center.x, 0.006f, center.z));
+    bed = translate(bed, vec3(center.x, 0.016f, center.z));
     bed = scale(bed, vec3(width, 1.0f, length));
     Primitives::drawPlane(shader, bed, soilCol);
+
+    // 1b. Glistening shallow water layer over fertile mud
+    mat4 water = model;
+    water = translate(water, vec3(center.x, 0.018f, center.z));
+    water = scale(water, vec3(width * 0.98f, 1.0f, length * 0.98f));
+    Primitives::drawPlane(shader, water, waterCol);
 
     // 2. Earthen boundary dikes (Aal) bordering all 4 sides of the plot
     float halfW = width * 0.5f;
     float halfL = length * 0.5f;
-    float aalH  = 0.08f;
-    float aalW  = 0.34f;
+    float aalH  = 0.10f;
+    float aalW  = 0.36f;
 
     // North & South dikes
     for (int side = -1; side <= 1; side += 2) {
@@ -230,7 +230,7 @@ static void drawPaddyField(Shader& shader, const mat4& model, const vec3& center
             float seed = (float)(r * 11 + c * 7);
             float jx = sinf(seed) * 0.08f;
             float jz = cosf(seed) * 0.08f;
-            drawRiceClump(shader, model, vec3(x + jx, 0.01f, z + jz), 0.95f, seed);
+            drawRiceClump(shader, model, vec3(x + jx, 0.020f, z + jz), 0.95f, seed);
         }
     }
 }
@@ -254,6 +254,44 @@ static void drawRoadStrip(Shader& shader, const mat4& model, const RoadNode* nod
         seg = scale(seg, vec3(width, 1.0f, len * 1.08f));
         Primitives::drawPlane(shader, seg, color);
     }
+}
+
+// Helper: Draw a richly layered authentic Bangladeshi Grameen Rasta (গ্রামীণ কাঁচা মেঠোপথ)
+// Features raised earthen embankment, sun-baked clay roadbed, central cart/foot track,
+// and sloping shoulder berms.
+static void drawGrameenRasta(Shader& shader, const mat4& model, const RoadNode* nodes, int count, float roadWidth = 2.40f)
+{
+    vec3 centralRoadbed (0.64f, 0.52f, 0.35f); // sun-dried golden-tan sandy loam
+    vec3 cartRuts       (0.58f, 0.46f, 0.30f); // compacted cart/pedestrian track
+    vec3 sideShoulders  (0.48f, 0.38f, 0.22f); // sloping earthen berms
+
+    // Layer 1: Raised base earthen embankment / sloping side shoulders (width + 0.50m)
+    drawRoadStrip(shader, model, nodes, count, roadWidth + 0.50f, sideShoulders, 0.007f);
+
+    // Layer 2: Main crown roadway
+    drawRoadStrip(shader, model, nodes, count, roadWidth, centralRoadbed, 0.010f);
+
+    // Layer 3: Central worn pedestrian / cart rut
+    drawRoadStrip(shader, model, nodes, count, roadWidth * 0.45f, cartRuts, 0.012f);
+}
+
+// Helper: Draw a traditional Bangladeshi roadside / culvert concrete post (সাদা-লাল আরসিসি কালভার্ট পোস্ট)
+static void drawCulvertPost(Shader& shader, const mat4& model, const vec3& pos)
+{
+    vec3 whiteCol(0.92f, 0.90f, 0.86f);
+    vec3 redCol  (0.85f, 0.24f, 0.18f);
+
+    // White base pillar (height 0.52m, square 0.13m x 0.13m)
+    mat4 base = model;
+    base = translate(base, vec3(pos.x, 0.20f, pos.z));
+    base = scale(base, vec3(0.13f, 0.40f, 0.13f));
+    Primitives::drawCube(shader, base, whiteCol);
+
+    // Red top cap
+    mat4 cap = model;
+    cap = translate(cap, vec3(pos.x, 0.46f, pos.z));
+    cap = scale(cap, vec3(0.135f, 0.12f, 0.135f));
+    Primitives::drawCube(shader, cap, redCol);
 }
 
 // Standalone traditional river landing ghat (Nodi-r Ghat / নদীর খেয়া ঘাট)
@@ -363,6 +401,8 @@ void drawGhat(Shader& shader, const mat4& model, const vec3& pos)
 
 void draw(Shader& shader, const mat4& model)
 {
+    shader.setInt("uUseTexture", 0); // authentic untextured earth, courtyard clay, and alluvial paddy fields
+
     // ── Palette ──────────────────────────────────────────────────
     vec3 grassGreen  (0.30f, 0.48f, 0.20f); // lush Bengal green
     vec3 darkGreen   (0.22f, 0.38f, 0.14f); // deeper vegetation green
@@ -372,143 +412,338 @@ void draw(Shader& shader, const mat4& model)
     vec3 footPathCol (0.58f, 0.47f, 0.30f); // earthen branching footpaths
     vec3 brickSoling (0.64f, 0.42f, 0.28f); // brick-soling path leading to mosque
 
-    // ── 1. Base Meadow Terrain ───────────────────────────────────
+    // ── 1. Base Meadow Terrain (Expansive 95m x 95m rural Bengal landscape) ─
     mat4 basePlane = model;
-    basePlane = scale(basePlane, vec3(85.0f, 1.0f, 85.0f));
+    basePlane = scale(basePlane, vec3(96.0f, 1.0f, 96.0f));
     Primitives::drawPlane(shader, basePlane, grassGreen);
 
-    // ── 2. Swept-Clay Courtyards (Uthan) for Different Homesteads ─
-    // A. Main Central Homestead Courtyard (around House 1, Charpai, Child, Stove)
+    // ── 2. Swept-Clay Courtyards (Uthan) Across the Entire Landscape ─
+    // A. Main Central Homestead Courtyard (Moddho Bari)
     mat4 uthan1 = model;
-    uthan1 = translate(uthan1, vec3(-6.5f, 0.005f, -4.5f));
-    uthan1 = scale(uthan1, vec3(17.0f, 1.0f, 18.0f));
+    uthan1 = translate(uthan1, vec3(-11.5f, 0.005f, -4.5f));
+    uthan1 = scale(uthan1, vec3(18.5f, 1.0f, 16.5f));
     Primitives::drawPlane(shader, uthan1, uthanEarth);
 
     mat4 uthan1Border = model;
-    uthan1Border = translate(uthan1Border, vec3(-6.5f, 0.004f, -4.5f));
-    uthan1Border = scale(uthan1Border, vec3(19.0f, 1.0f, 20.0f));
+    uthan1Border = translate(uthan1Border, vec3(-11.5f, 0.004f, -4.5f));
+    uthan1Border = scale(uthan1Border, vec3(21.0f, 1.0f, 19.0f));
     Primitives::drawPlane(shader, uthan1Border, uthanBorder);
 
-    // Front yard extension (gathering area around charpai & lantern)
+    // Front gathering yard extension (around Charpai, Lantern, and Villagers)
     mat4 uthan2 = model;
-    uthan2 = translate(uthan2, vec3(-3.0f, 0.006f, 1.5f));
-    uthan2 = scale(uthan2, vec3(10.0f, 1.0f, 9.0f));
+    uthan2 = translate(uthan2, vec3(-3.2f, 0.006f, 1.2f));
+    uthan2 = scale(uthan2, vec3(9.5f, 1.0f, 8.5f));
     Primitives::drawPlane(shader, uthan2, uthanEarth);
 
-    // B. North Homestead Courtyard (around House 2 & Cow Shed)
+    // B. North Homestead Farmstead Courtyard (Uttar Bari)
     mat4 uthanNorth = model;
-    uthanNorth = translate(uthanNorth, vec3(-14.0f, 0.005f, -7.5f));
-    uthanNorth = scale(uthanNorth, vec3(12.0f, 1.0f, 11.0f));
+    uthanNorth = translate(uthanNorth, vec3(-21.5f, 0.005f, -16.5f));
+    uthanNorth = scale(uthanNorth, vec3(18.0f, 1.0f, 18.0f));
     Primitives::drawPlane(shader, uthanNorth, uthanEarth);
 
-    // C. Mosque Courtyard & Apron (around Village Mosque at North River Bend)
+    // C. West Homestead Courtyard (Paschim Bari)
+    mat4 uthanWest = model;
+    uthanWest = translate(uthanWest, vec3(-27.5f, 0.005f, 5.5f));
+    uthanWest = scale(uthanWest, vec3(18.0f, 1.0f, 20.0f));
+    Primitives::drawPlane(shader, uthanWest, uthanEarth);
+
+    // D. Mosque Courtyard & Apron (North-West Village Sanctuary)
     mat4 uthanMosque = model;
-    uthanMosque = translate(uthanMosque, vec3(-3.8f, 0.005f, -17.5f));
-    uthanMosque = scale(uthanMosque, vec3(12.0f, 1.0f, 13.0f));
+    uthanMosque = translate(uthanMosque, vec3(-33.0f, 0.005f, -34.0f));
+    uthanMosque = scale(uthanMosque, vec3(17.0f, 1.0f, 17.0f));
     Primitives::drawPlane(shader, uthanMosque, uthanEarth);
 
-    // D. South Homestead Courtyard (around House 3 & Straw Stacks)
+    // E. South Homestead Courtyard (Dokkhin Bari)
     mat4 uthanSouth = model;
-    uthanSouth = translate(uthanSouth, vec3(-7.5f, 0.005f, 15.0f));
-    uthanSouth = scale(uthanSouth, vec3(11.0f, 1.0f, 10.0f));
+    uthanSouth = translate(uthanSouth, vec3(-14.5f, 0.005f, 17.0f));
+    uthanSouth = scale(uthanSouth, vec3(18.0f, 1.0f, 15.0f));
     Primitives::drawPlane(shader, uthanSouth, uthanEarth);
 
-    // ── 3. Comprehensive Village Road Network (Gramin Rasta-ghat) ─
-    // Road 1: Main Village Road (North to South spine traversing the whole village)
+    // F. Riverside Fisherman Courtyards (North & South on West Bank terrace)
+    mat4 uthanRiverN = model;
+    uthanRiverN = translate(uthanRiverN, vec3(-9.0f, 0.005f, -21.5f));
+    uthanRiverN = scale(uthanRiverN, vec3(8.5f, 1.0f, 9.0f));
+    Primitives::drawPlane(shader, uthanRiverN, uthanEarth);
+
+    mat4 uthanRiverS = model;
+    uthanRiverS = translate(uthanRiverS, vec3(-8.5f, 0.005f, 7.0f));
+    uthanRiverS = scale(uthanRiverS, vec3(8.5f, 1.0f, 9.0f));
+    Primitives::drawPlane(shader, uthanRiverS, uthanEarth);
+
+    // G. Far-West Artisan & Weaver Colony Courtyard (Tanti Para)
+    mat4 uthanTanti = model;
+    uthanTanti = translate(uthanTanti, vec3(-38.5f, 0.005f, 4.5f));
+    uthanTanti = scale(uthanTanti, vec3(16.0f, 1.0f, 24.0f));
+    Primitives::drawPlane(shader, uthanTanti, uthanEarth);
+
+    // H. North-West Meadow Farmstead Courtyard (Uttar-Paschim Khemotbari)
+    mat4 uthanNW = model;
+    uthanNW = translate(uthanNW, vec3(-26.5f, 0.005f, -28.0f));
+    uthanNW = scale(uthanNW, vec3(17.0f, 1.0f, 18.0f));
+    Primitives::drawPlane(shader, uthanNW, uthanEarth);
+
+    // I. South Agricultural Hamlet Courtyard (Dokkhin-Para Krishi Bari)
+    mat4 uthanSouthDeep = model;
+    uthanSouthDeep = translate(uthanSouthDeep, vec3(-26.5f, 0.005f, 34.0f));
+    uthanSouthDeep = scale(uthanSouthDeep, vec3(24.0f, 1.0f, 12.0f));
+    Primitives::drawPlane(shader, uthanSouthDeep, uthanEarth);
+
+    // J. North Riverside Hamlet Courtyard (House 9A & 9B)
+    mat4 uthanNorthRiver = model;
+    uthanNorthRiver = translate(uthanNorthRiver, vec3(-11.5f, 0.005f, -34.0f));
+    uthanNorthRiver = scale(uthanNorthRiver, vec3(12.0f, 1.0f, 14.0f));
+    Primitives::drawPlane(shader, uthanNorthRiver, uthanEarth);
+
+    // K. Purbopara Central Courtyard (East Village - Translated Far into Eastern Meadow)
+    mat4 uthanEastMid = model;
+    uthanEastMid = translate(uthanEastMid, vec3(35.5f, 0.005f, -1.5f));
+    uthanEastMid = scale(uthanEastMid, vec3(18.0f, 1.0f, 18.0f));
+    Primitives::drawPlane(shader, uthanEastMid, uthanEarth);
+
+    // L. Purbopara North Courtyard (East Village)
+    mat4 uthanEastNorth = model;
+    uthanEastNorth = translate(uthanEastNorth, vec3(34.5f, 0.005f, -22.5f));
+    uthanEastNorth = scale(uthanEastNorth, vec3(16.0f, 1.0f, 20.0f));
+    Primitives::drawPlane(shader, uthanEastNorth, uthanEarth);
+
+    // M. Purbopara South Courtyard (East Village)
+    mat4 uthanEastSouth = model;
+    uthanEastSouth = translate(uthanEastSouth, vec3(31.5f, 0.005f, 19.5f));
+    uthanEastSouth = scale(uthanEastSouth, vec3(14.0f, 1.0f, 16.5f));
+    Primitives::drawPlane(shader, uthanEastSouth, uthanEarth);
+
+    // ── 3. Comprehensive Village Road Network Across the Entire Plane ─
+    // Road 1: Main Village Road (North to South spine spanning the full terrain)
     const RoadNode mainRoad[] = {
-        { -5.8f, -26.0f },
+        { -5.8f, -42.0f },
+        { -5.6f, -32.0f },
         { -5.2f, -18.0f },
         { -4.4f, -10.0f },
         { -3.6f,  -2.0f },
         { -3.4f,   4.0f },
         { -4.2f,  12.0f },
         { -5.0f,  20.0f },
-        { -5.6f,  26.0f }
+        { -5.4f,  30.0f },
+        { -5.6f,  42.0f }
     };
-    drawRoadStrip(shader, model, mainRoad, 8, 2.10f, mainRoadCol, 0.007f);
+    drawRoadStrip(shader, model, mainRoad, 10, 2.10f, mainRoadCol, 0.007f);
 
-    // Road 2: River Ghat Road (Connects Main Road & Courtyard down to the river landing ghat)
+    // Road 2: River Ghat Road (Connects Main Road & Courtyard down to the landing ghat)
     const RoadNode ghatRoad[] = {
         { -3.5f,  0.8f },
         { -1.2f,  0.9f },
         {  1.2f,  1.1f },
         {  3.4f,  1.2f },
-        {  5.2f,  1.2f }  // terminates right at the wooden landing ghat
+        {  5.2f,  1.2f }
     };
     drawRoadStrip(shader, model, ghatRoad, 5, 1.60f, footPathCol, 0.008f);
 
-    // Road 3: Mosque Access Road (Branches east from main road directly to the mosque entrance portal)
+    // Road 3: Mosque Access Road (Traditional brick-soling path leading to North-West Village Mosque)
     const RoadNode mosqueRoad[] = {
-        { -5.2f, -14.2f },
-        { -4.5f, -14.0f },
-        { -3.8f, -13.6f }   // connects to mosque front steps
+        { -21.5f, -23.0f },
+        { -25.5f, -26.0f },
+        { -29.0f, -28.5f },
+        { -33.0f, -28.5f }
     };
-    drawRoadStrip(shader, model, mosqueRoad, 3, 1.65f, brickSoling, 0.008f);
+    drawRoadStrip(shader, model, mosqueRoad, 4, 1.65f, brickSoling, 0.008f);
 
-    // Road 4: North Homestead Path (Leading to Dochala House, Cow Shed & Bamboo Grove)
+    // Road 4: North Homestead Path
     const RoadNode northPath[] = {
-        {  -4.8f, -14.0f },
-        {  -8.0f, -12.5f },
-        { -11.5f, -10.5f },
-        { -14.0f,  -8.0f }
+        {  -4.8f, -13.0f },
+        { -10.0f, -13.2f },
+        { -15.0f, -13.0f },
+        { -21.0f, -13.5f }
     };
     drawRoadStrip(shader, model, northPath, 4, 1.40f, footPathCol, 0.008f);
 
-    // Road 5: South Homestead & Paddy Field Path (Leading to House 3 and Paddy Dikes)
+    // Road 5: West Homestead Path
+    const RoadNode westPath[] = {
+        {  -3.6f,  3.5f },
+        {  -9.5f,  3.8f },
+        { -16.5f,  4.0f },
+        { -23.0f,  4.5f },
+        { -28.5f,  5.8f },
+        { -34.0f,  7.0f }  // extends to Far-West Artisan Colony!
+    };
+    drawRoadStrip(shader, model, westPath, 6, 1.40f, footPathCol, 0.008f);
+
+    // Road 6: South Homestead Path
     const RoadNode southPath[] = {
         {  -4.6f, 14.5f },
-        {  -7.5f, 14.8f },
-        { -11.0f, 15.2f },
-        { -13.5f, 16.0f }
+        {  -7.5f, 16.5f },
+        { -11.5f, 17.5f },
+        { -15.0f, 17.0f }
     };
     drawRoadStrip(shader, model, southPath, 4, 1.35f, footPathCol, 0.008f);
 
-    // Road 6: Riverside Fisherman Path (Runs along riverbank to northern cottage)
+    // Road 7: Riverside Fisherman Path (West Bank)
     const RoadNode riverPath[] = {
         { 5.2f,   1.2f },
         { 4.2f,  -3.5f },
         { 3.2f,  -7.5f },
-        { 1.8f, -11.0f }  // leads to riverside cottage
+        { 1.8f, -11.5f },
+        { 1.5f, -16.5f },
+        { 2.2f, -24.5f },
+        { 1.8f, -32.0f }
     };
-    drawRoadStrip(shader, model, riverPath, 4, 1.30f, footPathCol, 0.008f);
+    drawRoadStrip(shader, model, riverPath, 7, 1.30f, footPathCol, 0.008f);
+
+    // Road 8: South Riverside Path (West Bank)
+    const RoadNode riverSouthPath[] = {
+        { 5.2f,  1.2f },
+        { 4.5f,  4.8f },
+        { 2.8f,  8.0f },
+        { 2.2f, 15.5f }
+    };
+    drawRoadStrip(shader, model, riverSouthPath, 4, 1.25f, footPathCol, 0.008f);
+
+    // Road 9: West-South Connecting Path
+    const RoadNode westSouthLink[] = {
+        { -21.0f,  6.5f },
+        { -19.5f, 10.5f },
+        { -16.5f, 14.5f },
+        { -13.0f, 16.5f }
+    };
+    drawRoadStrip(shader, model, westSouthLink, 4, 1.20f, footPathCol, 0.007f);
+
+    // Road 10: North-West Lane (Leading to North-West Farmstead)
+    const RoadNode nwLane[] = {
+        { -19.5f, -15.5f },
+        { -21.0f, -19.5f },
+        { -21.5f, -23.5f }
+    };
+    drawRoadStrip(shader, model, nwLane, 3, 1.25f, footPathCol, 0.007f);
+
+    // Road 11: Southern Agricultural Field Lane (Leading into southern paddy plots)
+    const RoadNode southFieldLane[] = {
+        { -10.5f, 19.5f },
+        { -14.5f, 25.5f },
+        { -20.5f, 32.5f }
+    };
+    drawRoadStrip(shader, model, southFieldLane, 3, 1.30f, footPathCol, 0.007f);
+
+    // Road 12: East Village Spine Road (Purbopara Rasta through the eastern meadow)
+    const RoadNode eastSpineRoad[] = {
+        { 34.5f, -34.0f },
+        { 33.8f, -20.5f },
+        { 34.0f,  -2.5f },
+        { 34.5f,  12.5f },
+        { 32.5f,  24.5f },
+        { 34.5f,  36.0f }
+    };
+    drawRoadStrip(shader, model, eastSpineRoad, 6, 1.50f, footPathCol, 0.008f);
+
+    // ── Road 13: Nearly Straight Grameen Rasta (গ্রামীণ কাঁচা মেঠোপথ / Riverbank Embankment Village Road) ─
+    // A classic rural Bangladeshi village road running nearly straight north-to-south along the riverbank embankment.
+    const RoadNode grameenRasta[] = {
+        { 22.0f, -44.0f },
+        { 22.0f, -32.0f },
+        { 22.1f, -20.0f },
+        { 22.0f,  -8.0f },
+        { 22.1f,   6.0f },
+        { 22.0f,  20.0f },
+        { 22.1f,  32.0f },
+        { 22.0f,  44.0f }
+    };
+    drawGrameenRasta(shader, model, grameenRasta, 8, 2.40f);
+
+    // Connecting Branch 1: Bamboo Bridge Landing to Grameen Rasta
+    const RoadNode bridgeLink[] = {
+        { 13.5f, -20.5f },
+        { 17.5f, -20.5f },
+        { 22.0f, -20.5f }
+    };
+    drawRoadStrip(shader, model, bridgeLink, 3, 1.50f, footPathCol, 0.008f);
+
+    // Connecting Branch 2: Grameen Rasta to Central Purbopara Homestead Courtyard
+    const RoadNode midVillageLink[] = {
+        { 22.0f, -2.5f },
+        { 27.5f, -2.5f },
+        { 33.5f, -2.5f }
+    };
+    drawRoadStrip(shader, model, midVillageLink, 3, 1.45f, footPathCol, 0.008f);
+
+    // Connecting Branch 3: Grameen Rasta to South Purbopara Homestead Courtyard
+    const RoadNode southVillageLink[] = {
+        { 22.0f, 16.5f },
+        { 28.0f, 16.5f },
+        { 34.0f, 16.5f }
+    };
+    drawRoadStrip(shader, model, southVillageLink, 3, 1.40f, footPathCol, 0.008f);
+
+    // Connecting Branch 4: Grameen Rasta to North Purbopara Homestead Courtyard
+    const RoadNode northVillageLink[] = {
+        { 22.0f, -20.5f },
+        { 27.5f, -20.5f },
+        { 33.0f, -20.5f }
+    };
+    drawRoadStrip(shader, model, northVillageLink, 3, 1.40f, footPathCol, 0.008f);
+
+    // Roadside Culvert Concrete Marker Posts (সাদা-লাল আরসিসি পোস্ট) at bridge approach & ditch crossing
+    drawCulvertPost(shader, model, vec3(20.6f, 0.0f, -21.6f));
+    drawCulvertPost(shader, model, vec3(20.6f, 0.0f, -19.4f));
+    drawCulvertPost(shader, model, vec3(23.4f, 0.0f, -21.6f));
+    drawCulvertPost(shader, model, vec3(23.4f, 0.0f, -19.4f));
 
     // ── 4. River Landing Ghat (Wooden / Bamboo Platform & Steps) ─
     drawGhat(shader, model, vec3(5.6f, 0.0f, 1.2f));
 
     // ── 5. Terraced Paddy Fields (Dhan Khet / ধান ক্ষেত) ─────────
-    // Primary large agricultural paddy field with neat rows of rice plants and raised dikes (Aal)
-    drawPaddyField(shader, model, vec3(-14.5f, 0.0f, 20.5f), 10.5f, 11.5f);
+    // Primary large agricultural paddy field
+    drawPaddyField(shader, model, vec3(-15.5f, 0.0f, 25.5f), 11.5f, 9.5f);
 
-    // Secondary smaller terraced paddy plot near the southern border
-    drawPaddyField(shader, model, vec3(-6.5f, 0.0f, 23.0f), 7.5f, 6.5f);
+    // Secondary adjacent terraced paddy plot in the western agricultural expanse
+    drawPaddyField(shader, model, vec3(-26.5f, 0.0f, 25.5f), 8.5f, 9.5f);
+
+    // Tertiary deep southern agricultural paddy field
+    drawPaddyField(shader, model, vec3(-18.5f, 0.0f, 42.5f), 13.0f, 7.0f);
+
+    // Quaternary eastern agricultural paddy field across the river
+    drawPaddyField(shader, model, vec3(39.5f, 0.0f, 24.5f), 10.0f, 9.0f);
 
     // ── 6. Woven Bamboo Fences (Bansh-er Bera) ───────────────────
-    // Fence 1: Back boundary behind North homestead & cow shed
-    drawBambooFence(shader, model, vec3(-17.5f, 0.0f, -6.5f), 7.0f, 12.0f);
+    // Fence 1: Back boundary behind North Bari cow shed & house
+    drawBambooFence(shader, model, vec3(-28.5f, 0.0f, -14.5f), 7.5f, 12.0f);
 
-    // Fence 2: Separating North cow shed from main courtyard
-    drawBambooFence(shader, model, vec3(-16.0f, 0.0f, -1.5f), 5.5f, 90.0f);
+    // Fence 2: Separating North farmyard from western meadow (spaced forward to clear House 2 verandah)
+    drawBambooFence(shader, model, vec3(-19.2f, 0.0f, -7.5f), 6.0f, 85.0f);
 
-    // Fence 3: Enclosing south side of main courtyard along the path
-    drawBambooFence(shader, model, vec3(-11.5f, 0.0f, 4.5f), 6.0f, 0.0f);
+    // Fence 3: Enclosing south side of main courtyard along west path
+    drawBambooFence(shader, model, vec3(-14.5f, 0.0f, 5.2f), 8.5f, 0.0f);
 
-    // Fence 4: Garden fence near House 3 and paddy fields
-    drawBambooFence(shader, model, vec3(-12.5f, 0.0f, 13.5f), 6.5f, 0.0f);
+    // Fence 4: Garden fence near Dokkhin Bari vegetable trellis
+    drawBambooFence(shader, model, vec3(-14.5f, 0.0f, 20.8f), 6.5f, 0.0f);
 
     // Fence 5: Riverside barrier fence along northern bank
-    drawBambooFence(shader, model, vec3(1.2f, 0.0f, -6.5f), 4.5f, 75.0f);
+    drawBambooFence(shader, model, vec3(1.2f, 0.0f, -7.5f), 4.5f, 75.0f);
 
-    // Fence 6: Foreground courtyard rustic bamboo fence framing the broader view
+    // Fence 6: Foreground courtyard rustic bamboo fence
     drawBambooFence(shader, model, vec3(-5.8f, 0.0f, 3.8f), 6.2f, 4.0f);
     drawBambooFence(shader, model, vec3( 0.8f, 0.0f, 3.9f), 4.0f, 24.0f);
 
-    // ── 7. Meadow Grass Tufts (Scattered along road borders) ─────
+    // Fence 7: Western homestead garden fence
+    drawBambooFence(shader, model, vec3(-29.5f, 0.0f, 4.5f), 7.0f, 90.0f);
+
+    // Fence 8: Southern riverside boundary fence
+    drawBambooFence(shader, model, vec3(-6.5f, 0.0f, 10.5f), 5.0f, 15.0f);
+
+    // Fence 9: Far-West Artisan Colony boundary fence
+    drawBambooFence(shader, model, vec3(-38.5f, 0.0f, 3.5f), 8.0f, 88.0f);
+
+    // Fence 10: Purbopara Eastern homestead garden fence across the river
+    drawBambooFence(shader, model, vec3(36.5f, 0.0f, -5.5f), 6.5f, 85.0f);
+
+    // ── 7. Meadow Grass Tufts Across Full Plane ──────────────────
     drawGrassClump(shader, model, vec3(-4.5f, 0.0f,  5.5f), 1.20f);
     drawGrassClump(shader, model, vec3(-2.8f, 0.0f, -1.5f), 1.10f);
     drawGrassClump(shader, model, vec3(-6.2f, 0.0f, 10.5f), 1.30f);
     drawGrassClump(shader, model, vec3( 2.2f, 0.0f,  3.5f), 1.15f);
     drawGrassClump(shader, model, vec3(-1.5f, 0.0f, -8.5f), 1.25f);
     drawGrassClump(shader, model, vec3(-10.5f, 0.0f, -13.0f), 1.20f);
+    drawGrassClump(shader, model, vec3(-32.0f, 0.0f,  8.5f), 1.25f);
+    drawGrassClump(shader, model, vec3(-21.0f, 0.0f, -27.5f), 1.15f);
+    drawGrassClump(shader, model, vec3( 24.5f, 0.0f,  5.5f), 1.20f);
+    drawGrassClump(shader, model, vec3( 21.0f, 0.0f, -15.5f), 1.20f);
 }
 
 } // namespace Terrain

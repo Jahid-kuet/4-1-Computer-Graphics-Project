@@ -1,4 +1,10 @@
-// Primitives.cpp — Generates and caches unit-geometry VAOs for reuse.
+// Primitives.cpp — Generates and caches canonical unit-geometry VAOs for reuse.
+// STRICT PROJECT CONSTRAINT:
+// Only 3 fundamental primitives exist in GPU buffers:
+//   1. Unit Cube (each of 6 faces composed of 2 triangles, total 12 triangles)
+//   2. Unit Triangle (canonical 2D/3D triangle with exact normals)
+//   3. Unit Sphere (canonical latitude-longitude tessellated sphere)
+// All objects and helper shapes in the entire project are constructed purely using these 3 primitives.
 
 #include "Primitives.h"
 #include <glad/glad.h>
@@ -15,8 +21,8 @@ struct MeshData {
     int indexCount = 0;
 };
 
-MeshData sphereMesh, cylinderMesh, coneMesh, cubeMesh, planeMesh, hemiMesh;
-MeshData prismMesh, pyramidMesh, archMesh;
+// ONLY 3 GPU VAOs for the entire project
+MeshData cubeMesh, triangleMesh, sphereMesh;
 
 const int SECTORS = 24;
 const int STACKS  = 12;
@@ -63,18 +69,101 @@ void uploadMesh(MeshData& md,
     glBindVertexArray(0);
 }
 
-// Helper: common draw logic
+// Static state tracker to eliminate redundant driver VAO unbind/bind state changes
+static unsigned int s_currentBoundVAO = 0;
+
+// Helper: common draw logic with zero-overhead uniform binding and VAO state tracking
 void drawMesh(const MeshData& md, Shader& shader,
               const mat4& model, const vec3& color)
 {
-    shader.setMat4("model", model);
-    shader.setVec3("objectColor", color);
-    glBindVertexArray(md.VAO);
+    shader.setFastModel(model);
+    shader.setFastColor(color);
+    if (s_currentBoundVAO != md.VAO) {
+        glBindVertexArray(md.VAO);
+        s_currentBoundVAO = md.VAO;
+    }
     glDrawElements(GL_TRIANGLES, md.indexCount, GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
 }
 
-// ─── Sphere generation ───────────────────────────────────────────────
+// ─── 1. Canonical Unit Cube (1x1x1, centered at origin) ─────────────
+// Each of the 6 square faces is composed of 2 triangles (total 12 triangles = 36 indices)
+void generateCube(MeshData& md)
+{
+    float v[] = {
+        // position          normal
+        // Front (+Z)
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+        // Back (-Z)
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        // Left (-X)
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        // Right (+X)
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+        // Top (+Y)
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+        // Bottom (-Y)
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+    };
+
+    unsigned int indices[] = {
+         0, 1, 2,  2, 3, 0,       // front face (2 triangles)
+         4, 5, 6,  6, 7, 4,       // back face (2 triangles)
+         8, 9,10, 10,11, 8,       // left face (2 triangles)
+        12,13,14, 14,15,12,       // right face (2 triangles)
+        16,17,18, 18,19,16,       // top face (2 triangles)
+        20,21,22, 22,23,20,       // bottom face (2 triangles)
+    };
+
+    std::vector<float> vv(v, v + sizeof(v) / sizeof(float));
+    std::vector<unsigned int> ii(indices, indices + 36);
+    uploadMesh(md, vv, ii);
+}
+
+// ─── 2. Canonical Unit Triangle ──────────────────────────────────────
+// Base along X in [-0.5, 0.5] at Y = 0, apex at (0, 1, 0)
+// Formed with double-sided normals (+Z front, -Z back) for robust two-sided shading
+void generateTriangle(MeshData& md)
+{
+    float v[] = {
+        // Front face (normal +Z)
+        -0.5f, 0.0f, 0.0f,  0.0f, 0.0f,  1.0f,
+         0.5f, 0.0f, 0.0f,  0.0f, 0.0f,  1.0f,
+         0.0f, 1.0f, 0.0f,  0.0f, 0.0f,  1.0f,
+        // Back face (normal -Z, reversed winding)
+         0.5f, 0.0f, 0.0f,  0.0f, 0.0f, -1.0f,
+        -0.5f, 0.0f, 0.0f,  0.0f, 0.0f, -1.0f,
+         0.0f, 1.0f, 0.0f,  0.0f, 0.0f, -1.0f
+    };
+
+    unsigned int indices[] = {
+        0, 1, 2, // front triangle
+        3, 4, 5  // back triangle
+    };
+
+    std::vector<float> vv(v, v + sizeof(v) / sizeof(float));
+    std::vector<unsigned int> ii(indices, indices + 6);
+    uploadMesh(md, vv, ii);
+}
+
+// ─── 3. Canonical Unit Sphere (radius 1, centered at origin) ─────────
 void generateSphere(MeshData& md)
 {
     std::vector<float> verts;
@@ -92,7 +181,7 @@ void generateSphere(MeshData& md)
             float sectorAngle = j * sectorStep;
             float x = xz * cosf(sectorAngle);
             float z = xz * sinf(sectorAngle);
-            pushVertex(verts, x, y, z, x, y, z);   // normal = position for unit sphere
+            pushVertex(verts, x, y, z, x, y, z); // normal = position for unit sphere
         }
     }
 
@@ -108,384 +197,6 @@ void generateSphere(MeshData& md)
     uploadMesh(md, verts, idx);
 }
 
-// ─── Hemisphere generation (upper half, Y >= 0) ─────────────────────
-void generateHemisphere(MeshData& md)
-{
-    std::vector<float> verts;
-    std::vector<unsigned int> idx;
-
-    int halfStacks = STACKS / 2;
-    float sectorStep = 2.0f * PI / SECTORS;
-    float stackStep  = PI / STACKS;
-
-    // Dome rings (from equator up to pole)
-    for (int i = 0; i <= halfStacks; i++) {
-        float stackAngle = i * stackStep;          // 0 (equator) → PI/2 (pole)
-        float y  = sinf(stackAngle);
-        float xz = cosf(stackAngle);
-
-        for (int j = 0; j <= SECTORS; j++) {
-            float sectorAngle = j * sectorStep;
-            float x = xz * cosf(sectorAngle);
-            float z = xz * sinf(sectorAngle);
-            pushVertex(verts, x, y, z, x, y, z);
-        }
-    }
-
-    for (int i = 0; i < halfStacks; i++) {
-        int k1 = i * (SECTORS + 1);
-        int k2 = k1 + SECTORS + 1;
-        for (int j = 0; j < SECTORS; j++, k1++, k2++) {
-            idx.push_back(k1);
-            idx.push_back(k2);
-            idx.push_back(k1 + 1);
-            if (i != halfStacks - 1) {
-                idx.push_back(k1 + 1);
-                idx.push_back(k2);
-                idx.push_back(k2 + 1);
-            }
-        }
-    }
-
-    // Bottom cap (flat disc at Y = 0, normal pointing down)
-    unsigned int baseCenter = (unsigned int)(verts.size() / 6);
-    pushVertex(verts, 0, 0, 0, 0, -1, 0);
-    for (int j = 0; j <= SECTORS; j++) {
-        float angle = j * sectorStep;
-        float x = cosf(angle);
-        float z = sinf(angle);
-        pushVertex(verts, x, 0, z, 0, -1, 0);
-    }
-    for (int j = 0; j < SECTORS; j++) {
-        idx.push_back(baseCenter);
-        idx.push_back(baseCenter + 1 + j + 1);
-        idx.push_back(baseCenter + 1 + j);
-    }
-
-    uploadMesh(md, verts, idx);
-}
-
-// ─── Cylinder generation (radius 1, height 1, Y from -0.5 to 0.5) ──
-void generateCylinder(MeshData& md)
-{
-    std::vector<float> verts;
-    std::vector<unsigned int> idx;
-
-    float sectorStep = 2.0f * PI / SECTORS;
-
-    // Side vertices: bottom ring and top ring
-    for (int ring = 0; ring <= 1; ring++) {
-        float y = ring == 0 ? -0.5f : 0.5f;
-        for (int j = 0; j <= SECTORS; j++) {
-            float angle = j * sectorStep;
-            float x = cosf(angle);
-            float z = sinf(angle);
-            pushVertex(verts, x, y, z, x, 0, z);   // side normals point outward
-        }
-    }
-
-    // Side indices
-    for (int j = 0; j < SECTORS; j++) {
-        int bot = j;
-        int top = j + SECTORS + 1;
-        idx.push_back(bot);     idx.push_back(top);     idx.push_back(bot + 1);
-        idx.push_back(bot + 1); idx.push_back(top);     idx.push_back(top + 1);
-    }
-
-    // Top cap
-    unsigned int topCenter = (unsigned int)(verts.size() / 6);
-    pushVertex(verts, 0, 0.5f, 0, 0, 1, 0);
-    for (int j = 0; j <= SECTORS; j++) {
-        float angle = j * sectorStep;
-        pushVertex(verts, cosf(angle), 0.5f, sinf(angle), 0, 1, 0);
-    }
-    for (int j = 0; j < SECTORS; j++) {
-        idx.push_back(topCenter);
-        idx.push_back(topCenter + 1 + j);
-        idx.push_back(topCenter + 1 + j + 1);
-    }
-
-    // Bottom cap
-    unsigned int botCenter = (unsigned int)(verts.size() / 6);
-    pushVertex(verts, 0, -0.5f, 0, 0, -1, 0);
-    for (int j = 0; j <= SECTORS; j++) {
-        float angle = j * sectorStep;
-        pushVertex(verts, cosf(angle), -0.5f, sinf(angle), 0, -1, 0);
-    }
-    for (int j = 0; j < SECTORS; j++) {
-        idx.push_back(botCenter);
-        idx.push_back(botCenter + 1 + j + 1);
-        idx.push_back(botCenter + 1 + j);
-    }
-
-    uploadMesh(md, verts, idx);
-}
-
-// ─── Cone generation (base radius 1 at Y=0, tip at Y=1) ─────────────
-void generateCone(MeshData& md)
-{
-    std::vector<float> verts;
-    std::vector<unsigned int> idx;
-
-    float sectorStep = 2.0f * PI / SECTORS;
-    float invLen = 1.0f / sqrtf(2.0f);     // for R=1, H=1: normal slope
-
-    // Side vertices: base ring + tip ring (same position at tip, different normals per sector)
-    for (int j = 0; j <= SECTORS; j++) {
-        float angle = j * sectorStep;
-        float cx = cosf(angle);
-        float cz = sinf(angle);
-        // Normal for cone side: outward and upward
-        float nx = cx * invLen;
-        float ny = invLen;
-        float nz = cz * invLen;
-
-        // Base vertex
-        pushVertex(verts, cx, 0, cz, nx, ny, nz);
-        // Tip vertex
-        pushVertex(verts, 0, 1, 0, nx, ny, nz);
-    }
-
-    // Side indices (triangle strip → triangles)
-    for (int j = 0; j < SECTORS; j++) {
-        int base = j * 2;
-        int next = (j + 1) * 2;
-        // Triangle: base_j, tip_j, base_j+1
-        idx.push_back(base);
-        idx.push_back(base + 1);
-        idx.push_back(next);
-        // Triangle: base_j+1, tip_j, tip_j+1 (same tip position, different normal)
-        idx.push_back(next);
-        idx.push_back(base + 1);
-        idx.push_back(next + 1);
-    }
-
-    // Base cap
-    unsigned int capCenter = (unsigned int)(verts.size() / 6);
-    pushVertex(verts, 0, 0, 0, 0, -1, 0);
-    for (int j = 0; j <= SECTORS; j++) {
-        float angle = j * sectorStep;
-        pushVertex(verts, cosf(angle), 0, sinf(angle), 0, -1, 0);
-    }
-    for (int j = 0; j < SECTORS; j++) {
-        idx.push_back(capCenter);
-        idx.push_back(capCenter + 1 + j + 1);
-        idx.push_back(capCenter + 1 + j);
-    }
-
-    uploadMesh(md, verts, idx);
-}
-
-// ─── Cube generation (1x1x1, centered at origin) ───────────────────
-void generateCube(MeshData& md)
-{
-    // 6 faces × 4 vertices = 24 vertices, 6 faces × 6 indices = 36
-    float v[] = {
-        // position          normal
-        // Front (+Z)
-        -0.5f, -0.5f,  0.5f,  0, 0, 1,
-         0.5f, -0.5f,  0.5f,  0, 0, 1,
-         0.5f,  0.5f,  0.5f,  0, 0, 1,
-        -0.5f,  0.5f,  0.5f,  0, 0, 1,
-        // Back (-Z)
-         0.5f, -0.5f, -0.5f,  0, 0,-1,
-        -0.5f, -0.5f, -0.5f,  0, 0,-1,
-        -0.5f,  0.5f, -0.5f,  0, 0,-1,
-         0.5f,  0.5f, -0.5f,  0, 0,-1,
-        // Left (-X)
-        -0.5f, -0.5f, -0.5f, -1, 0, 0,
-        -0.5f, -0.5f,  0.5f, -1, 0, 0,
-        -0.5f,  0.5f,  0.5f, -1, 0, 0,
-        -0.5f,  0.5f, -0.5f, -1, 0, 0,
-        // Right (+X)
-         0.5f, -0.5f,  0.5f,  1, 0, 0,
-         0.5f, -0.5f, -0.5f,  1, 0, 0,
-         0.5f,  0.5f, -0.5f,  1, 0, 0,
-         0.5f,  0.5f,  0.5f,  1, 0, 0,
-        // Top (+Y)
-        -0.5f,  0.5f,  0.5f,  0, 1, 0,
-         0.5f,  0.5f,  0.5f,  0, 1, 0,
-         0.5f,  0.5f, -0.5f,  0, 1, 0,
-        -0.5f,  0.5f, -0.5f,  0, 1, 0,
-        // Bottom (-Y)
-        -0.5f, -0.5f, -0.5f,  0,-1, 0,
-         0.5f, -0.5f, -0.5f,  0,-1, 0,
-         0.5f, -0.5f,  0.5f,  0,-1, 0,
-        -0.5f, -0.5f,  0.5f,  0,-1, 0,
-    };
-
-    unsigned int indices[] = {
-         0, 1, 2,  2, 3, 0,       // front
-         4, 5, 6,  6, 7, 4,       // back
-         8, 9,10, 10,11, 8,       // left
-        12,13,14, 14,15,12,       // right
-        16,17,18, 18,19,16,       // top
-        20,21,22, 22,23,20,       // bottom
-    };
-
-    std::vector<float> vv(v, v + sizeof(v) / sizeof(float));
-    std::vector<unsigned int> ii(indices, indices + 36);
-    uploadMesh(md, vv, ii);
-}
-
-// ─── Plane generation (1x1, at Y=0, normal up) ──────────────────────
-void generatePlane(MeshData& md)
-{
-    float v[] = {
-        -0.5f, 0, -0.5f,  0, 1, 0,
-         0.5f, 0, -0.5f,  0, 1, 0,
-         0.5f, 0,  0.5f,  0, 1, 0,
-        -0.5f, 0,  0.5f,  0, 1, 0,
-    };
-    unsigned int indices[] = { 0, 1, 2, 2, 3, 0 };
-
-    std::vector<float> vv(v, v + 24);
-    std::vector<unsigned int> ii(indices, indices + 6);
-    uploadMesh(md, vv, ii);
-}
-
-// ─── Triangular Prism generation ────────────────────────────────────
-// Base in X: [-0.5, 0.5] at Y=0, apex at X=0, Y=1, length Z in [-0.5, 0.5]
-void generatePrism(MeshData& md)
-{
-    float nSlope = 1.0f / sqrtf(1.0f + 0.25f); // normal slope: (1, 0.5) normalized -> (2/sqrt(5), 1/sqrt(5))
-    float nxR = 2.0f / sqrtf(5.0f);
-    float nyR = 1.0f / sqrtf(5.0f);
-    float nxL = -nxR;
-
-    float v[] = {
-        // Bottom (Y=0, normal down)
-        -0.5f, 0.0f, -0.5f,  0.0f, -1.0f, 0.0f,
-         0.5f, 0.0f, -0.5f,  0.0f, -1.0f, 0.0f,
-         0.5f, 0.0f,  0.5f,  0.0f, -1.0f, 0.0f,
-        -0.5f, 0.0f,  0.5f,  0.0f, -1.0f, 0.0f,
-
-        // Right slope (from (0.5, 0) to (0, 1))
-         0.5f, 0.0f, -0.5f,  nxR, nyR, 0.0f,
-         0.0f, 1.0f, -0.5f,  nxR, nyR, 0.0f,
-         0.0f, 1.0f,  0.5f,  nxR, nyR, 0.0f,
-         0.5f, 0.0f,  0.5f,  nxR, nyR, 0.0f,
-
-        // Left slope (from (0, 1) to (-0.5, 0))
-         0.0f, 1.0f, -0.5f,  nxL, nyR, 0.0f,
-        -0.5f, 0.0f, -0.5f,  nxL, nyR, 0.0f,
-        -0.5f, 0.0f,  0.5f,  nxL, nyR, 0.0f,
-         0.0f, 1.0f,  0.5f,  nxL, nyR, 0.0f,
-
-        // Front gable (+Z, normal +Z)
-        -0.5f, 0.0f, 0.5f,   0.0f, 0.0f, 1.0f,
-         0.5f, 0.0f, 0.5f,   0.0f, 0.0f, 1.0f,
-         0.0f, 1.0f, 0.5f,   0.0f, 0.0f, 1.0f,
-
-        // Back gable (-Z, normal -Z)
-         0.5f, 0.0f, -0.5f,  0.0f, 0.0f, -1.0f,
-        -0.5f, 0.0f, -0.5f,  0.0f, 0.0f, -1.0f,
-         0.0f, 1.0f, -0.5f,  0.0f, 0.0f, -1.0f
-    };
-
-    unsigned int indices[] = {
-        0, 1, 2,  2, 3, 0,        // bottom
-        4, 5, 6,  6, 7, 4,        // right slope
-        8, 9, 10, 10, 11, 8,      // left slope
-        12, 13, 14,               // front gable
-        15, 16, 17                // back gable
-    };
-
-    std::vector<float> vv(v, v + sizeof(v) / sizeof(float));
-    std::vector<unsigned int> ii(indices, indices + sizeof(indices) / sizeof(unsigned int));
-    uploadMesh(md, vv, ii);
-}
-
-// ─── 4-sided Pyramid generation ─────────────────────────────────────
-// Base in XZ: [-0.5, 0.5] at Y=0, apex at (0, 1, 0)
-void generatePyramid(MeshData& md)
-{
-    float n1 = 2.0f / sqrtf(5.0f);
-    float n2 = 1.0f / sqrtf(5.0f);
-
-    float v[] = {
-        // Base (normal down)
-        -0.5f, 0.0f, -0.5f,  0.0f, -1.0f, 0.0f,
-         0.5f, 0.0f, -0.5f,  0.0f, -1.0f, 0.0f,
-         0.5f, 0.0f,  0.5f,  0.0f, -1.0f, 0.0f,
-        -0.5f, 0.0f,  0.5f,  0.0f, -1.0f, 0.0f,
-
-        // Front face (+Z)
-        -0.5f, 0.0f, 0.5f,   0.0f, n2, n1,
-         0.5f, 0.0f, 0.5f,   0.0f, n2, n1,
-         0.0f, 1.0f, 0.0f,   0.0f, n2, n1,
-
-        // Back face (-Z)
-         0.5f, 0.0f, -0.5f,  0.0f, n2, -n1,
-        -0.5f, 0.0f, -0.5f,  0.0f, n2, -n1,
-         0.0f, 1.0f, 0.0f,   0.0f, n2, -n1,
-
-        // Left face (-X)
-        -0.5f, 0.0f, -0.5f,  -n1, n2, 0.0f,
-        -0.5f, 0.0f,  0.5f,  -n1, n2, 0.0f,
-         0.0f, 1.0f, 0.0f,   -n1, n2, 0.0f,
-
-        // Right face (+X)
-         0.5f, 0.0f,  0.5f,   n1, n2, 0.0f,
-         0.5f, 0.0f, -0.5f,   n1, n2, 0.0f,
-         0.0f, 1.0f, 0.0f,    n1, n2, 0.0f,
-    };
-
-    unsigned int indices[] = {
-        0, 1, 2,  2, 3, 0, // base
-        4, 5, 6,           // front
-        7, 8, 9,           // back
-        10, 11, 12,        // left
-        13, 14, 15         // right
-    };
-
-    std::vector<float> vv(v, v + sizeof(v) / sizeof(float));
-    std::vector<unsigned int> ii(indices, indices + sizeof(indices) / sizeof(unsigned int));
-    uploadMesh(md, vv, ii);
-}
-
-// ─── Arched Half-Cylinder Shell generation ──────────────────────────
-// Semicircular arch (radius 0.5), length 1 along Z [-0.5, 0.5]
-void generateArch(MeshData& md)
-{
-    std::vector<float> verts;
-    std::vector<unsigned int> idx;
-
-    int steps = 16;
-    float dTheta = PI / steps;
-
-    // Both outer and inner faces for solid visibility from all angles
-    for (int i = 0; i <= steps; i++) {
-        float theta = i * dTheta;
-        float x = 0.5f * cosf(theta);
-        float y = 0.5f * sinf(theta);
-        float nx = cosf(theta);
-        float ny = sinf(theta);
-
-        // Near vertex (-Z)
-        pushVertex(verts, x, y, -0.5f, nx, ny, 0.0f);
-        // Far vertex (+Z)
-        pushVertex(verts, x, y,  0.5f, nx, ny, 0.0f);
-    }
-
-    for (int i = 0; i < steps; i++) {
-        int v0 = i * 2;
-        int v1 = v0 + 1;
-        int v2 = (i + 1) * 2;
-        int v3 = v2 + 1;
-
-        // Outer surface
-        idx.push_back(v0); idx.push_back(v2); idx.push_back(v1);
-        idx.push_back(v1); idx.push_back(v2); idx.push_back(v3);
-
-        // Inner surface (reversed winding so inside of boat hood is lit)
-        idx.push_back(v0); idx.push_back(v1); idx.push_back(v2);
-        idx.push_back(v1); idx.push_back(v3); idx.push_back(v2);
-    }
-
-    uploadMesh(md, verts, idx);
-}
-
 } // anonymous namespace
 
 // ─── Public API ──────────────────────────────────────────────────────
@@ -493,38 +204,162 @@ namespace Primitives {
 
 void init()
 {
-    generateSphere(sphereMesh);
-    generateHemisphere(hemiMesh);
-    generateCylinder(cylinderMesh);
-    generateCone(coneMesh);
     generateCube(cubeMesh);
-    generatePlane(planeMesh);
-    generatePrism(prismMesh);
-    generatePyramid(pyramidMesh);
-    generateArch(archMesh);
+    generateTriangle(triangleMesh);
+    generateSphere(sphereMesh);
 }
 
 void cleanup()
 {
+    resetVAOState();
     auto del = [](MeshData& m) {
         if (m.VAO) glDeleteVertexArrays(1, &m.VAO);
         if (m.VBO) glDeleteBuffers(1, &m.VBO);
         if (m.EBO) glDeleteBuffers(1, &m.EBO);
         m = {};
     };
-    del(sphereMesh); del(hemiMesh); del(cylinderMesh);
-    del(coneMesh);   del(cubeMesh); del(planeMesh);
-    del(prismMesh);  del(pyramidMesh); del(archMesh);
+    del(cubeMesh);
+    del(triangleMesh);
+    del(sphereMesh);
 }
 
-void drawSphere    (Shader& s, const mat4& m, const vec3& c) { drawMesh(sphereMesh,   s, m, c); }
-void drawCylinder  (Shader& s, const mat4& m, const vec3& c) { drawMesh(cylinderMesh, s, m, c); }
-void drawCone      (Shader& s, const mat4& m, const vec3& c) { drawMesh(coneMesh,     s, m, c); }
-void drawCube      (Shader& s, const mat4& m, const vec3& c) { drawMesh(cubeMesh,     s, m, c); }
-void drawPlane     (Shader& s, const mat4& m, const vec3& c) { drawMesh(planeMesh,    s, m, c); }
-void drawHemisphere(Shader& s, const mat4& m, const vec3& c) { drawMesh(hemiMesh,     s, m, c); }
-void drawPrism     (Shader& s, const mat4& m, const vec3& c) { drawMesh(prismMesh,    s, m, c); }
-void drawPyramid   (Shader& s, const mat4& m, const vec3& c) { drawMesh(pyramidMesh,  s, m, c); }
-void drawArch      (Shader& s, const mat4& m, const vec3& c) { drawMesh(archMesh,     s, m, c); }
+void resetVAOState()
+{
+    if (s_currentBoundVAO != 0) {
+        glBindVertexArray(0);
+        s_currentBoundVAO = 0;
+    }
+}
+
+// ── Canonical Unit Primitives ────────────────────────────────────────
+void drawCube(Shader& s, const mat4& m, const vec3& c)
+{
+    drawMesh(cubeMesh, s, m, c);
+}
+
+void drawTriangle(Shader& s, const mat4& m, const vec3& c)
+{
+    drawMesh(triangleMesh, s, m, c);
+}
+
+void drawSphere(Shader& s, const mat4& m, const vec3& c)
+{
+    drawMesh(sphereMesh, s, m, c);
+}
+
+// ── Procedural Compound Helpers (Composed PURELY from Cube, Triangle & Sphere) ──
+
+// Unit plane (1x1, normal up): modeled as a flat unit cube (made of 2 triangles per face)
+void drawPlane(Shader& s, const mat4& m, const vec3& c)
+{
+    drawCube(s, scale(m, vec3(1.0f, 0.001f, 1.0f)), c);
+}
+
+// Unit cylinder: 16-faceted column constructed entirely by intersecting rotated Unit Cubes
+void drawCylinder(Shader& s, const mat4& m, const vec3& c)
+{
+    drawCube(s, scale(m, vec3(1.848f, 1.0f, 0.765f)), c);
+    mat4 m45 = rotate(m, radians(45.0f), vec3(0.0f, 1.0f, 0.0f));
+    drawCube(s, scale(m45, vec3(1.848f, 1.0f, 0.765f)), c);
+    mat4 m90 = rotate(m, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
+    drawCube(s, scale(m90, vec3(1.848f, 1.0f, 0.765f)), c);
+    mat4 m135 = rotate(m, radians(135.0f), vec3(0.0f, 1.0f, 0.0f));
+    drawCube(s, scale(m135, vec3(1.848f, 1.0f, 0.765f)), c);
+}
+
+// Unit cone: 16-sided smooth cone constructed purely from 16 Unit Triangles meeting at apex (0, 1, 0)
+void drawCone(Shader& s, const mat4& m, const vec3& c)
+{
+    const int steps = 16;
+    const float dTheta = 2.0f * PI / (float)steps;
+    const float halfDTheta = dTheta * 0.5f;
+    const float R = 1.0f;
+    const float d = R * cosf(halfDTheta);
+    const float chord = 2.0f * R * sinf(halfDTheta);
+    const float slantHeight = sqrtf(1.0f + d * d);
+    const float tiltAngleDeg = atan2f(d, 1.0f) * 180.0f / PI; // angle to tilt inward toward apex (0, 1, 0)
+
+    for (int i = 0; i < steps; ++i) {
+        float midAngle = ((float)i + 0.5f) * (dTheta * 180.0f / PI);
+        mat4 t = m;
+        t = rotate(t, radians(midAngle), vec3(0.0f, 1.0f, 0.0f));
+        t = translate(t, vec3(0.0f, 0.0f, d));
+        t = rotate(t, radians(-tiltAngleDeg), vec3(1.0f, 0.0f, 0.0f)); // tilt INWARD toward apex (0, 1, 0)
+        t = scale(t, vec3(chord, slantHeight, 1.0f));
+        drawTriangle(s, t, c);
+    }
+}
+
+// Upper hemisphere: drawn directly using Unit Sphere
+void drawHemisphere(Shader& s, const mat4& m, const vec3& c)
+{
+    drawSphere(s, m, c);
+}
+
+// Triangular prism: 2 Unit Triangles (gables) + 3 Unit Cubes (base and slopes)
+void drawPrism(Shader& s, const mat4& m, const vec3& c)
+{
+    // Front gable (+Z)
+    mat4 f = translate(m, vec3(0.0f, 0.0f, 0.5f));
+    drawTriangle(s, f, c);
+
+    // Back gable (-Z)
+    mat4 b = translate(m, vec3(0.0f, 0.0f, -0.5f));
+    b = rotate(b, radians(180.0f), vec3(0.0f, 1.0f, 0.0f));
+    drawTriangle(s, b, c);
+
+    // Bottom base
+    mat4 bot = translate(m, vec3(0.0f, 0.0f, 0.0f));
+    bot = scale(bot, vec3(1.0f, 0.001f, 1.0f));
+    drawCube(s, bot, c);
+
+    // Right slope (connects (0.5, 0) to (0, 1))
+    mat4 rs = translate(m, vec3(0.25f, 0.5f, 0.0f));
+    rs = rotate(rs, radians(-63.4349488f), vec3(0.0f, 0.0f, 1.0f));
+    rs = scale(rs, vec3(1.118034f, 0.002f, 1.0f));
+    drawCube(s, rs, c);
+
+    // Left slope (connects (-0.5, 0) to (0, 1))
+    mat4 ls = translate(m, vec3(-0.25f, 0.5f, 0.0f));
+    ls = rotate(ls, radians(63.4349488f), vec3(0.0f, 0.0f, 1.0f));
+    ls = scale(ls, vec3(1.118034f, 0.002f, 1.0f));
+    drawCube(s, ls, c);
+}
+
+// 4-sided pyramid: 4 Unit Triangles meeting at apex (0, 1, 0) + 1 Unit Cube base
+void drawPyramid(Shader& s, const mat4& m, const vec3& c)
+{
+    // Base closure (unit plane)
+    mat4 bot = translate(m, vec3(0.0f, 0.0f, 0.0f));
+    bot = scale(bot, vec3(1.0f, 0.001f, 1.0f));
+    drawCube(s, bot, c);
+
+    // 4 sloping triangular faces meeting exactly at apex (0, 1, 0)
+    for (int i = 0; i < 4; ++i) {
+        mat4 face = m;
+        face = rotate(face, radians((float)i * 90.0f), vec3(0.0f, 1.0f, 0.0f));
+        face = translate(face, vec3(0.0f, 0.0f, 0.5f));
+        face = rotate(face, radians(-26.565051f), vec3(1.0f, 0.0f, 0.0f)); // tilt INWARD!
+        face = scale(face, vec3(1.0f, 1.118034f, 1.0f));
+        drawTriangle(s, face, c);
+    }
+}
+
+// Arched half-cylinder shell: segmented curve formed of 8 Unit Cubes
+void drawArch(Shader& s, const mat4& m, const vec3& c)
+{
+    const int steps = 8;
+    const float dTheta = PI / (float)steps;
+    const float segLen = 0.5f * dTheta * 1.08f;
+    for (int i = 0; i < steps; ++i) {
+        float theta = ((float)i + 0.5f) * dTheta;
+        float x = 0.5f * cosf(theta);
+        float y = 0.5f * sinf(theta);
+        mat4 seg = translate(m, vec3(x, y, 0.0f));
+        seg = rotate(seg, radians((theta * 180.0f / PI) - 90.0f), vec3(0.0f, 0.0f, 1.0f));
+        seg = scale(seg, vec3(segLen, 0.04f, 1.0f));
+        drawCube(s, seg, c);
+    }
+}
 
 } // namespace Primitives

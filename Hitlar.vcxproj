@@ -181,6 +181,8 @@
     <ClCompile Include="src\objects\Mosque.cpp" />
     <ClCompile Include="src\Texture.cpp" />
     <ClCompile Include="src\objects\CurvedObject.cpp" />
+    <ClCompile Include="src\objects\Fisherman.cpp" />
+    <ClCompile Include="src\objects\Sun.cpp" />
   </ItemGroup>
   <!-- Header Files -->
   <ItemGroup>
@@ -202,8 +204,10 @@
     <ClInclude Include="include\objects\Boat.h" />
     <ClInclude Include="include\objects\Boatman.h" />
     <ClInclude Include="include\objects\Moon.h" />
+    <ClInclude Include="include\objects\Sun.h" />
     <ClInclude Include="include\objects\Stars.h" />
     <ClInclude Include="include\objects\Fireflies.h" />
+    <ClInclude Include="include\objects\Fisherman.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

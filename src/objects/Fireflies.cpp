@@ -79,18 +79,18 @@ static FireflyDef generateFirefly(int i)
     }
     else if (cluster == 3) {
         // Cluster 3: Terraced Paddy Fields & Earthen Dikes (Aal)
-        // Gliding over rows of rice plants and irrigation dikes
-        float x = -18.0f + hash(i, 7.1f) * 10.0f;
-        float y =   0.35f + hash(i, 8.2f) * 1.5f;
-        float z = -24.0f + hash(i, 9.3f) * 11.0f;
+        // Gliding over rows of rice plants and flooded irrigation dikes
+        float x = -27.0f + hash(i, 7.1f) * 16.5f;
+        float y =   0.35f + hash(i, 8.2f) * 1.3f;
+        float z =  20.0f + hash(i, 9.3f) * 9.0f;
         f.basePos = vec3(x, y, z);
     }
     else if (cluster == 4) {
-        // Cluster 4: Historic Village Mosque Perimeter & River Bend Shallows
-        // Fluttering near stone steps, ablution tank, date palms and river bend
-        float x =  -6.5f + hash(i, 7.1f) * 6.5f;
-        float y =   0.45f + hash(i, 8.2f) * 2.2f;
-        float z = -21.0f + hash(i, 9.3f) * 8.0f;
+        // Cluster 4: Historic Village Mosque Perimeter & Sanctuary Apron (North-West Corner)
+        // Fluttering near stone steps, ablution tank, date palms and minaret
+        float x = -37.0f + hash(i, 7.1f) * 8.5f;
+        float y =   0.45f + hash(i, 8.2f) * 2.5f;
+        float z = -38.5f + hash(i, 9.3f) * 9.0f;
         f.basePos = vec3(x, y, z);
     }
     else {

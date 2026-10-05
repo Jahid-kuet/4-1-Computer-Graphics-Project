@@ -19,4 +19,10 @@ namespace River {
 
     // Standalone fishing net drying rack (Jal Shukanor Macha) along riverbank
     void drawNetRack(Shader& shader, const math::mat4& model, const math::vec3& pos = math::vec3(0.0f));
+
+    // Swimmers / Bathing villagers bobbing in the river shallows (matching reference image)
+    void drawSwimmers(Shader& shader, const math::mat4& model, float animTime = 0.0f);
+
+    // Distant village huts and straw stacks lining the opposite sandy riverbank
+    void drawFarBankVillage(Shader& shader, const math::mat4& model);
 }

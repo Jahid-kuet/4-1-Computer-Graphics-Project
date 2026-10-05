@@ -118,18 +118,33 @@ vec3 CalcProceduralDetail(vec3 baseCol, vec3 objP, vec3 worldP, vec3 norm, int t
         float fine = sin(worldP.y * 130.0) * 0.12;
         return baseCol * (0.82 + 0.32 * grain + fine);
     }
-    else if (texType == 1) // Clay brick & mortar joints
+    else if (texType == 1) // Clay brick & mortar joints with ancient moss, algae & slime weathering
     {
         vec2 bCoord = pUV * 4.5;
         int row = int(floor(bCoord.y));
         float xOff = (row % 2 != 0) ? 0.5 : 0.0;
         vec2 cell = fract(vec2(bCoord.x + xOff, bCoord.y));
         bool isMortar = (cell.x < 0.07 || cell.y < 0.10);
+
+        // Organic biological weathering noise (moss, damp algae & slime)
+        float bioNoise = sin(worldP.x * 2.8 + sin(worldP.y * 3.4) * 1.8) * cos(worldP.z * 2.6 + worldP.y * 1.5);
+        bioNoise = 0.5 + 0.5 * bioNoise;
+        float heightDamp = clamp(1.0 - (worldP.y - 0.2) / 3.8, 0.0, 1.0);
+        float mossFactor = clamp((bioNoise * 0.70 + heightDamp * 0.60 - 0.35) * 1.8, 0.0, 1.0);
+
+        vec3 brickColor = baseCol * (0.89 + hash21(floor(vec2(bCoord.x + xOff, bCoord.y))) * 0.22);
+        vec3 mortarColor = vec3(0.70, 0.68, 0.62);
+
         if (isMortar) {
-            return vec3(0.72, 0.70, 0.65);
+            // Mortar accumulates moisture and green algae streaks
+            vec3 algaeMortar = mix(mortarColor, vec3(0.22, 0.36, 0.16), clamp(heightDamp * 0.85 + bioNoise * 0.30, 0.0, 1.0));
+            return algaeMortar;
         } else {
-            float noise = hash21(floor(vec2(bCoord.x + xOff, bCoord.y))) * 0.22;
-            return baseCol * (0.89 + noise);
+            // Living velvety moss & dark damp slime
+            vec3 mossColor = vec3(0.22, 0.36, 0.15);
+            vec3 slimeColor = vec3(0.11, 0.18, 0.08);
+            vec3 bioCol = mix(mossColor, slimeColor, bioNoise);
+            return mix(brickColor, bioCol, mossFactor * 0.75);
         }
     }
     else if (texType == 2) // Bamboo weave & split fibers (Chatai / Bansh)
@@ -236,7 +251,11 @@ void main()
     {
         vec2 uv = GetTexCoords(ObjPos, FragPos, normalize(Normal), uTextureType);
         vec4 texSamp = texture(uTexture, uv);
-        baseColor = objectColor * texSamp.rgb * 1.35;
+        if (uTextureType == 1) {
+            baseColor = texSamp.rgb;
+        } else {
+            baseColor = objectColor * texSamp.rgb * 1.35;
+        }
     }
 
     // Object display mode (no lighting yet - for milestone grading)
@@ -323,30 +342,81 @@ void Shader::init(const char* vertexSrc, const char* fragmentSrc)
 
     glDeleteShader(vert);
     glDeleteShader(frag);
+
+    // Pre-cache high-frequency uniforms for zero-overhead hot draw calls
+    m_uniformLocations.clear();
+    locModel = glGetUniformLocation(ID, "model");
+    locObjectColor = glGetUniformLocation(ID, "objectColor");
+    m_uniformLocations["model"] = locModel;
+    m_uniformLocations["objectColor"] = locObjectColor;
 }
 
 void Shader::use() const { glUseProgram(ID); }
 
+int Shader::getUniformLocation(const char* name) const {
+    auto it = m_uniformLocations.find(name);
+    if (it != m_uniformLocations.end()) {
+        return it->second;
+    }
+    int loc = glGetUniformLocation(ID, name);
+    m_uniformLocations[name] = loc;
+    return loc;
+}
+
 // ═══════════════════════════════════════════════════════════════
-// Uniform setters
+// Ultra-fast direct uniform setters (bypasses all string lookups)
 // ═══════════════════════════════════════════════════════════════
+void Shader::setFastModel(const math::mat4& mat) const {
+    if (locModel >= 0) {
+        glUniformMatrix4fv(locModel, 1, GL_FALSE, mat.value_ptr());
+    }
+}
+
+void Shader::setFastColor(const math::vec3& v) const {
+    if (locObjectColor >= 0) {
+        glUniform3f(locObjectColor, v.x, v.y, v.z);
+    }
+}
+
+void Shader::setFastColor(float x, float y, float z) const {
+    if (locObjectColor >= 0) {
+        glUniform3f(locObjectColor, x, y, z);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Uniform getters & setters (accelerated by uniform location cache)
+// ═══════════════════════════════════════════════════════════════
+int Shader::getInt(const char* name) const {
+    GLint val = 0;
+    int loc = getUniformLocation(name);
+    if (loc >= 0) glGetUniformiv(ID, loc, &val);
+    return (int)val;
+}
+
 void Shader::setBool(const char* name, bool value) const {
-    glUniform1i(glGetUniformLocation(ID, name), (int)value);
+    int loc = getUniformLocation(name);
+    if (loc >= 0) glUniform1i(loc, (int)value);
 }
 void Shader::setInt(const char* name, int value) const {
-    glUniform1i(glGetUniformLocation(ID, name), value);
+    int loc = getUniformLocation(name);
+    if (loc >= 0) glUniform1i(loc, value);
 }
 void Shader::setFloat(const char* name, float value) const {
-    glUniform1f(glGetUniformLocation(ID, name), value);
+    int loc = getUniformLocation(name);
+    if (loc >= 0) glUniform1f(loc, value);
 }
 void Shader::setVec3(const char* name, const math::vec3& v) const {
-    glUniform3f(glGetUniformLocation(ID, name), v.x, v.y, v.z);
+    int loc = getUniformLocation(name);
+    if (loc >= 0) glUniform3f(loc, v.x, v.y, v.z);
 }
 void Shader::setVec3(const char* name, float x, float y, float z) const {
-    glUniform3f(glGetUniformLocation(ID, name), x, y, z);
+    int loc = getUniformLocation(name);
+    if (loc >= 0) glUniform3f(loc, x, y, z);
 }
 void Shader::setMat4(const char* name, const math::mat4& mat) const {
-    glUniformMatrix4fv(glGetUniformLocation(ID, name), 1, GL_FALSE, mat.value_ptr());
+    int loc = getUniformLocation(name);
+    if (loc >= 0) glUniformMatrix4fv(loc, 1, GL_FALSE, mat.value_ptr());
 }
 
 // ═══════════════════════════════════════════════════════════════

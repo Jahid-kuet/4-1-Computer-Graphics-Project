@@ -3,10 +3,16 @@
 #pragma once
 
 #include "mathutil.h"
+#include <unordered_map>
+#include <string>
 
 class Shader {
 public:
     unsigned int ID = 0;
+
+    // Pre-cached high-frequency uniform locations
+    int locModel = -1;
+    int locObjectColor = -1;
 
     Shader() = default;
 
@@ -16,7 +22,18 @@ public:
     // Activate this shader program
     void use() const;
 
-    // Uniform setters
+    // Fast cached uniform location query
+    int getUniformLocation(const char* name) const;
+
+    // Ultra-fast direct uniform setters (bypassing all string lookups)
+    void setFastModel(const math::mat4& mat) const;
+    void setFastColor(const math::vec3& v) const;
+    void setFastColor(float x, float y, float z) const;
+
+    // Uniform getters
+    int  getInt  (const char* name) const;
+
+    // Uniform setters (accelerated with cached locations)
     void setBool (const char* name, bool  value) const;
     void setInt  (const char* name, int   value) const;
     void setFloat(const char* name, float value) const;
@@ -30,4 +47,5 @@ public:
 
 private:
     void checkCompileErrors(unsigned int shader, const char* type) const;
+    mutable std::unordered_map<std::string, int> m_uniformLocations;
 };

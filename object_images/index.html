@@ -323,13 +323,15 @@
     </header>
 
     <div class="filters">
-        <button class="filter-btn active" data-filter="all">All Objects (22)</button>
+        <button class="filter-btn active" data-filter="all">All Objects (34)</button>
         <button class="filter-btn" data-filter="architecture">Architecture & Utility</button>
         <button class="filter-btn" data-filter="boats">Boats & Rivercraft</button>
+        <button class="filter-btn" data-filter="vehicles">Rural Vehicles</button>
         <button class="filter-btn" data-filter="culture">Culture & Characters</button>
+        <button class="filter-btn" data-filter="daily_life">Daily Life & Work</button>
         <button class="filter-btn" data-filter="trees">Vegetation & Trees</button>
         <button class="filter-btn" data-filter="fauna">Animals & Birds</button>
-        <button class="filter-btn" data-filter="nature">Environment & Nature</button>
+        <button class="filter-btn" data-filter="nature">Environment & Celestial</button>
     </div>
 
     <div class="grid" id="objectGrid">
@@ -590,15 +592,16 @@ const objects = [
         id: "15",
         category: "trees",
         name: "Branching Mango Tree (Aam Gach)",
-        desc: "Sturdy gnarled trunk with buttress roots, 4 spreading limbs, 8-cluster dense spherical foliage canopy, and hanging golden ripe mangoes (Paka Aam).",
+        desc: "Sturdy gnarled trunk with buttress roots, radiating limbs with sub-branchlets, 27-sphere multi-tiered volumetric canopy with sunlit botanical gradients, 16 perimeter lanceolate leaf sprays, and hanging golden ripe mangoes (Paka Aam).",
         img: "15_mango_tree.png",
-        tags: ["Unit Cylinder", "Unit Cube", "Unit Sphere"],
+        tags: ["Unit Cylinder", "Unit Cube", "Unit Sphere", "Unit Triangle"],
         source: "src/objects/Tree.cpp (Tree::drawGeneral)",
         steps: [
-            "Gnarled main trunk cylinder (r = 0.40, h = 2.80) with 4 buttress root flares at base.",
-            "Four large structural limbs radiating outward at 90° intervals angled 38° upward.",
-            "Eight dense overlapping spherical foliage clusters creating an organic textured canopy.",
-            "Ten ripe golden mangoes (Paka Aam) dangling in clusters beneath boughs on slender stems with green leaf accents."
+            "Gnarled main trunk cylinder (r = 0.42m, h = 2.80m) with 4 buttress root flares at base.",
+            "Four large structural limbs radiating outward at 38° upward with secondary branchlets.",
+            "Twenty-seven dense overlapping volumetric spherical foliage clusters creating an organic, lush canopy.",
+            "Sixteen drooping lanceolate leaf sprays along perimeter adding fine botanical leaf silhouette.",
+            "Twelve ripe golden mangoes (Paka Aam) dangling in clusters beneath boughs on slender stems with green leaf accents."
         ]
     },
     {
@@ -702,15 +705,16 @@ const objects = [
         id: "23",
         category: "architecture",
         name: "Historic Terracotta Village Mosque",
-        desc: "Ancient Sultanate-era brick mosque with curved cornice, octagonal corner turrets, and central hemispherical dome.",
+        desc: "Ancient Sultanate-era brick mosque with authentic biological weathering (living velvety moss cushions, algae-colonized mortar joints, weeping rainwater slime drip streaks, and damp foundation plinth skirts).",
         img: "23_village_mosque.png",
-        tags: ["Unit Cube", "Unit Cylinder", "Unit Hemisphere"],
+        tags: ["Unit Cube", "Unit Cylinder", "Unit Hemisphere", "Biological Weathering"],
         source: "src/objects/Mosque.cpp",
         steps: [
-            "Heavy terracotta brick prayer hall (6.0m × 3.8m × 6.0m) with authentic convex arched cornice curvature.",
-            "Four octagonal corner minaret turrets with banded terracotta collar moldings and cupolas.",
-            "Central hemispherical dome resting on an octagonal squinch drum.",
-            "Arched multi-foil terracotta entrance mihrab doorway and decorative brick jali screens."
+            "Heavy terracotta brick prayer hall (5.6m × 3.3m × 5.8m) with running-bond brickwork, damp base skirting, and aged lime-surkhi mortar joints colonized by green algae.",
+            "3D organic velvety moss cushions (Bryophyta) and dark damp slime bands hugging the ancient dressed red stone plinth perimeter, corner angles, and stair flight edges.",
+            "Vertical rainwater runoff algae and moisture drip streaks weeping down from beneath the roof cornice, Kangura parapet merlons, and balcony corbel brackets.",
+            "Majestic central hemispherical terracotta dome with antique bronze Crescent Moon & Star (Chand-Tara) and moss cushions ringing the stepped lotus petal collar (Padma Pith).",
+            "Front 3-bay multi-cusped veranda colonnade with weeping spandrel algae streaks and traditional ablution cistern (Paka Ozukhana) featuring dripping water taps and slimy overflow drains."
         ]
     },
     {
@@ -816,6 +820,68 @@ const objects = [
             "Solid, unbroken handrails and longitudinal runner poles without floating dashes or gaps.",
             "Transverse split-bamboo foot tread slats tied with authentic coir rope lashings.",
             "Vertical bamboo stanchions and diagonal A-frame riverbed support pilings."
+        ]
+    },
+    {
+        id: "31",
+        category: "vehicles",
+        name: "Traditional Rural Bullock Cart (Gorur Gari)",
+        desc: "Iconic rural Bangladeshi transport cart featuring large 12-spoked timber wheels, arched woven bamboo canopy, rice straw bales, seated Gariyal driver, and a harnessed pair of Deshi draft bullocks.",
+        img: "31_bullock_cart_gorur_gari.png",
+        tags: ["Unit Cylinder", "Unit Cube", "Unit Cone", "Unit Sphere"],
+        source: "src/objects/Terrain.cpp (Terrain::drawBullockCart)",
+        steps: [
+            "Two large R=0.72m wooden wheels with cylindrical timber hubs, 12 radial spokes, and iron rim bands.",
+            "Longitudinal chassis beams, cargo bed platform, and semicircular arched bamboo canopy (Chhoi).",
+            "Loaded cargo of rectangular straw bundles (Bichali) and cylindrical jute grain sacks.",
+            "Carved wooden neck yoke (Jowal), draft tongue, and harnessed pair of white Deshi bullocks with shoulder humps.",
+            "Seated cart driver (Gariyal) in traditional lungi and Mathal hat holding driving stick (Pachni)."
+        ]
+    },
+    {
+        id: "32",
+        category: "vehicles",
+        name: "Round Chhoi Ferry Boat with Passengers",
+        desc: "Authentic country passenger boat with arched golden-straw canopy, seated rowing Majhi, Boitha oar, and traveling village passengers.",
+        img: "32_chhoi_boat_passengers.png",
+        tags: ["Unit Cylinder", "Unit Cube", "Unit Sphere", "Procedural Figures"],
+        source: "src/objects/Boat.cpp (Boat::draw, BOAT_STYLE_ROUND_CHHOI)",
+        steps: [
+            "Curved wooden hull with tapered bow and stern, rub rails, and floorboards.",
+            "Semicircular woven golden straw thatch canopy (Chhoi) over central passenger compartment.",
+            "Stern rowing platform with seated Majhi boatman dynamically rowing with a long wooden Boitha oar.",
+            "Seated village passengers sheltered inside the cabin holding conversation on the river voyage."
+        ]
+    },
+    {
+        id: "33",
+        category: "daily_life",
+        name: "Traditional River Fisherman Hunting Fish (Jele)",
+        desc: "Athletic Bengali fisherman standing on a river dingi casting a circular net (Khepla Jal) with sinkers, leaping silver river fish, bamboo Khalui basket, plunge trap, and Hariken lantern.",
+        img: "33_fisherman_hunting_fish.png",
+        tags: ["Unit Cone", "Unit Sphere", "Unit Cylinder", "Unit Cube"],
+        source: "src/objects/Fisherman.cpp (Fisherman::draw)",
+        steps: [
+            "Slender wooden fishing dingi with ribbed thwart planks moored in shallow river water.",
+            "Standing athletic fisherman poised in cast motion wearing a folded blue lungi.",
+            "Expanding conical cast net (Khepla Jal) with perimeter weighted lead sinkers (Kathi).",
+            "Animated silver river fish (Rui/Ilish) leaping dynamically above the water surface.",
+            "Authentic fishing equipment: woven bamboo fish basket (Khalui), conical bamboo plunge trap (Polo), barbed fish spear (Teta), and brass Hariken lantern."
+        ]
+    },
+    {
+        id: "34",
+        category: "nature",
+        name: "Radiant Daytime Sun (Surjo / সূর্য)",
+        desc: "Procedural celestial Sun shining in the daytime sky dome, featuring an incandescent golden solar core, 16 primary radial sunbeams, and multi-planar prominence flare rays that dynamically cast warm golden daylight across the landscape.",
+        img: "34_radiant_sun.png",
+        tags: ["Unit Sphere", "Unit Cone", "Directional Lighting", "Emissive Shader"],
+        source: "src/objects/Sun.cpp (Sun::draw, Sun::getLightDirection)",
+        steps: [
+            "Incandescent pulsating golden-yellow solar core sphere (R=2.55m) with maximum emissive glow.",
+            "16 primary tapered 3D cone sunbeams radiating outwards symmetrically in the XY plane with alternating long and short flare lengths.",
+            "12 tilted +45° radial sunbeams and 12 tilted -45° radial prominence flare spikes providing full 3D celestial starburst fullness from all camera angles.",
+            "Dynamic directional sunlight calculation (normalize(-sunPosition)) lighting the entire 96m × 96m rural landscape, courtyards, river, and boats."
         ]
     }
 ];

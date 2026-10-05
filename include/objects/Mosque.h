@@ -1,5 +1,11 @@
-// Mosque.h — Historic Old-Style Bengali Rural Village Mosque (ঐতিহাসিক প্রাচীন গ্রামীণ মসজিদ).
-// Inspired by ancient Sultanate & Mughal Bengal terracotta brick architecture (e.g. Goaldi & Bagerhat).
+// Mosque.h — Historic Terracotta Brick & Old Red Stone Mosque (সুলতানি আমলের লাল ইট ও প্রাচীন লাল পাথরের ঐতিহ্যবাহী গ্রামীণ মসজিদ).
+// Inspired by historic 15th-century Bengal Sultanate architecture (Shat Gombuj, Goaldi, Bagha, Atia):
+// Weathered red terracotta brick walls, ancient carved red sandstone foundation plinth & columns,
+// central ribbed terracotta dome with antique bronze Crescent Moon & Star (Chand-Tara),
+// soaring red brick Azaan Minaret with 4 Quad Horn Loudspeakers (চোঙা মাইক),
+// front 3-bay multi-cusped terracotta arched veranda with shoe shelf, stepped Kangura parapet merlons,
+// arched seasoned timber double doors with warm golden interior prayer glow,
+// projecting western Mehrab bay, and red brick ablution platform (Paka Ozukhana) with cistern, brass taps & Bodnas.
 // Procedurally constructed using OpenGL 3.3 canonical geometric primitives.
 #pragma once
 
@@ -7,11 +13,5 @@
 #include "mathutil.h"
 
 namespace Mosque {
-    // Draws an authentic historic rural Bengali village mosque complete with
-    // raised terracotta brick plinth, curved Bengal Sultanate roof cornice (Dochala curve),
-    // four sturdy octagonal corner buttress towers (Burj) with molded ring bands,
-    // central grand terracotta dome with lotus Kalasa, multi-cusped pointed entrance portal
-    // with rosette spandrels and hanging lantern, terracotta jali openwork windows,
-    // projecting western Mehrab bay, and masonry ablution cistern (Paka Houz) with clay Bodnas.
     void draw(Shader& shader, const math::mat4& model);
 }

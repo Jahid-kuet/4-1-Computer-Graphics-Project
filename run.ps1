@@ -41,8 +41,11 @@ Write-Host "  Key '5'         : View 5 - South Homestead, Straw Stack & Terraced
 Write-Host "  Key '6'         : View 6 - Rural Trees & Riverbank Reeds (Palms, Banana, Mango, Bamboo & Kashbon)"
 Write-Host "  Key '7'         : View 7 - Village Animals (Flocks of Hens & River Ducks)"
 Write-Host "  Key '8'         : View 8 - Broader View (Moonlit Village Overview matching Concept Artwork)"
+Write-Host "  Key 'R'         : View R - Grameen Rasta & Traditional Bullock Cart (Gorur Gari)"
+Write-Host "  Key 'G'         : Gorur Gari Chaka 180° Step Advance - Rotates wheels 180° and translates ahead!"
+Write-Host "  Key 'N'         : Dingi Nouka Step Advance - Rows Boitha oar and glides boat ahead on river!"
 Write-Host "  Key 'T'         : Toggle Terrain/Ground Visibility"
-Write-Host "  Key 'C'         : Capture All Individual Objects to 'object_images/'"
+Write-Host "  Key 'C'         : Capture All 31 Individual Objects to 'object_images/'"
 Write-Host "  ESC             : Exit"
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host "Signing binary and launching window..." -ForegroundColor Green

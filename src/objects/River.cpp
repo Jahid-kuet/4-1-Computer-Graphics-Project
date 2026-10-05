@@ -213,21 +213,20 @@ void drawMooringStake(Shader& shader, const mat4& model, const vec3& rootPos)
 
 void draw(Shader& shader, const mat4& model, float time)
 {
-    // ── River Colors ─────────────────────────────────────────────
-    vec3 deepWaterCol (0.08f, 0.26f, 0.42f); // deep Bengal river blue-green
-    vec3 shoreWaterCol(0.15f, 0.45f, 0.58f); // shallower edge water
-    vec3 bankSandCol  (0.52f, 0.40f, 0.25f); // wet sandy/muddy shoreline
-    vec3 bankMudCol   (0.42f, 0.32f, 0.18f); // dark silt / fertile riverbed
-    vec3 rippleCol    (0.35f, 0.65f, 0.80f); // shimmering water ripple
+    // ── River Palette Matching Folk Artwork ──────────────────────
+    vec3 riverWaterCol(0.30f, 0.65f, 0.88f); // Vibrant tranquil sky-river blue
+    vec3 shoreSandCol (0.90f, 0.82f, 0.65f); // Smooth creamy-beige sandy beach strip (Char)
+    vec3 bankGrassCol (0.35f, 0.54f, 0.22f); // Lush green meadow transition
+    vec3 rippleCol    (0.85f, 0.94f, 0.98f); // Stylized crisp white / cyan wave ripples
 
-    const float riverWidth = 7.5f;
+    const float riverWidth = 9.8f;
     const float halfWidth  = riverWidth * 0.5f;
-    const int   numSegments = 22;
-    const float zStart = -28.0f;
-    const float zEnd   =  28.0f;
+    const int   numSegments = 38;
+    const float zStart = -45.0f;
+    const float zEnd   =  45.0f;
     const float stepZ  = (zEnd - zStart) / numSegments;
 
-    // ── 1. Meandering River Water Body & Banks ───────────────────
+    // ── 1. Meandering River Water Body & Smooth Sandy Beach Strips ─
     for (int i = 0; i < numSegments; i++) {
         float z0 = zStart + i * stepZ;
         float z1 = z0 + stepZ;
@@ -240,65 +239,208 @@ void draw(Shader& shader, const mat4& model, float time)
         segM = translate(segM, vec3(xCenter, 0.02f, zMid));
         segM = rotate(segM, angle, vec3(0.0f, 1.0f, 0.0f));
 
-        // Full-width continuous river water surface with moonlit specular shimmer
-        shader.setFloat("shininess", 72.0f);
-        shader.setFloat("specularStrength", 0.90f);
+        // Full-width continuous river water surface with gentle specular shimmer
+        shader.setFloat("shininess", 64.0f);
+        shader.setFloat("specularStrength", 0.65f);
         mat4 water = segM;
         water = scale(water, vec3(riverWidth, 1.0f, stepZ * 1.08f));
-        Primitives::drawPlane(shader, water, deepWaterCol);
+        Primitives::drawPlane(shader, water, riverWaterCol);
         shader.setFloat("shininess", 32.0f);
         shader.setFloat("specularStrength", 0.35f);
 
-        // Left sloped muddy bank (sloping up toward village land)
-        mat4 leftBank = segM;
-        leftBank = translate(leftBank, vec3(-halfWidth - 0.7f, 0.05f, 0.0f));
-        leftBank = rotate(leftBank, radians(15.0f), vec3(0.0f, 0.0f, 1.0f));
-        leftBank = scale(leftBank, vec3(1.6f, 1.0f, stepZ * 1.08f));
-        Primitives::drawPlane(shader, leftBank, bankSandCol);
+        // Near (West) Smooth Sandy Beach Strip (Char / বালুচর)
+        mat4 leftBeach = segM;
+        leftBeach = translate(leftBeach, vec3(-halfWidth - 0.85f, 0.035f, 0.0f));
+        leftBeach = rotate(leftBeach, radians(10.0f), vec3(0.0f, 0.0f, 1.0f));
+        leftBeach = scale(leftBeach, vec3(1.85f, 1.0f, stepZ * 1.08f));
+        Primitives::drawPlane(shader, leftBeach, shoreSandCol);
 
-        // Right sloped muddy bank (far shore)
-        mat4 rightBank = segM;
-        rightBank = translate(rightBank, vec3(halfWidth + 0.7f, 0.05f, 0.0f));
-        rightBank = rotate(rightBank, radians(-15.0f), vec3(0.0f, 0.0f, 1.0f));
-        rightBank = scale(rightBank, vec3(1.6f, 1.0f, stepZ * 1.08f));
-        Primitives::drawPlane(shader, rightBank, bankSandCol);
+        // Far (East) Smooth Sandy Beach Strip (Char / বালুচর)
+        mat4 rightBeach = segM;
+        rightBeach = translate(rightBeach, vec3(halfWidth + 0.95f, 0.035f, 0.0f));
+        rightBeach = rotate(rightBeach, radians(-10.0f), vec3(0.0f, 0.0f, 1.0f));
+        rightBeach = scale(rightBeach, vec3(2.10f, 1.0f, stepZ * 1.08f));
+        Primitives::drawPlane(shader, rightBeach, shoreSandCol);
     }
 
-    // ── 2. River Mooring Stakes on Sandy Shore ──────────────────
+    // ── 2. Stylized Horizontal Water Ripple Lines (Matching Artwork) ─
+    const int numRipples = 38;
+    for (int r = 0; r < numRipples; ++r) {
+        float rz = -41.0f + (float)r * 2.20f + sinf((float)r * 4.3f) * 0.4f;
+        float rx = riverCenterline(rz) + sinf((float)r * 3.1f + time * 0.4f) * 2.6f;
+        float rLen = 0.85f + fabsf(sinf((float)r * 5.2f)) * 1.35f;
+        float flowOffset = fmodf(time * 0.35f + (float)r * 0.6f, 1.0f) * 0.3f;
+
+        mat4 ripM = model;
+        ripM = translate(ripM, vec3(rx, 0.026f, rz + flowOffset));
+        ripM = scale(ripM, vec3(rLen, 1.0f, 0.036f));
+        Primitives::drawPlane(shader, ripM, rippleCol);
+    }
+
+    // ── 3. Swimmers / Bathing Villagers in River Shallows ────────
+    mat4 swimmerGroup = model;
+    swimmerGroup = translate(swimmerGroup, vec3(riverCenterline(-1.0f) - 0.5f, 0.0f, -1.0f));
+    drawSwimmers(shader, swimmerGroup, time);
+
+    // ── 4. River Mooring Stakes on Sandy Shore ──────────────────
     float stakeZ1 = 1.2f;
-    float stakeX1 = riverCenterline(stakeZ1) - halfWidth + 0.2f;
+    float stakeX1 = riverCenterline(stakeZ1) - halfWidth - 0.1f;
     drawMooringStake(shader, model, vec3(stakeX1, 0.04f, stakeZ1));
 
     float stakeZ2 = -9.5f;
-    float stakeX2 = riverCenterline(stakeZ2) - halfWidth + 0.3f;
+    float stakeX2 = riverCenterline(stakeZ2) - halfWidth - 0.1f;
     drawMooringStake(shader, model, vec3(stakeX2, 0.04f, stakeZ2));
 
-    // ── 3. Water Lilies (Shapla) Floating in River Shallows ──────
-    const float shaplaZ[] = { -12.5f, -7.2f, -3.8f, 4.5f, 9.2f, 15.5f };
-    const float shaplaScale[] = { 0.95f, 0.85f, 1.05f, 0.90f, 1.0f, 0.88f };
-    for (int s = 0; s < 6; s++) {
+    // ── 5. Water Lilies (Shapla) Floating in River Shallows ──────
+    const float shaplaZ[] = { -32.0f, -22.5f, -12.5f, -7.2f, -3.8f, 4.5f, 9.2f, 15.5f, 24.5f, 34.0f };
+    const float shaplaScale[] = { 0.90f, 0.95f, 0.95f, 0.85f, 1.05f, 0.90f, 1.0f, 0.88f, 0.92f, 0.88f };
+    for (int s = 0; s < 10; s++) {
         float sz = shaplaZ[s];
-        float sx = riverCenterline(sz) - 2.6f + sinf((float)s * 1.7f) * 0.4f;
+        float sx = riverCenterline(sz) - 3.2f + sinf((float)s * 1.7f) * 0.4f;
         drawShapla(shader, model, vec3(sx, 0.028f, sz), shaplaScale[s]);
     }
 
-    // ── 4. Riverbank Catkin Reeds (Kashbon with Fluffy White Plumes) ─
-    const float kashbonZ[] = { -16.0f, -10.5f, -5.5f, -2.0f, 6.5f, 12.0f, 18.5f };
-    for (int k = 0; k < 7; k++) {
+    // ── 6. Riverbank Catkin Reeds (Kashbon with Fluffy White Plumes) ─
+    const float kashbonZ[] = { -36.0f, -26.0f, -16.0f, -10.5f, -5.5f, -2.0f, 6.5f, 12.0f, 18.5f, 27.0f, 36.0f };
+    for (int k = 0; k < 11; k++) {
         float rz = kashbonZ[k];
-        float rx = riverCenterline(rz) - halfWidth - 1.1f + sinf((float)k * 2.1f) * 0.3f;
+        float rx = riverCenterline(rz) - halfWidth - 1.6f + sinf((float)k * 2.1f) * 0.3f;
         int count = 6 + (k % 3) * 2;
         drawKashbonCluster(shader, model, vec3(rx, 0.0f, rz), count, (float)k * 3.7f);
     }
+}
 
-    // ── 5. Fishing Net Drying Racks (Jal Shukanor Macha) along Riverbank ─
-    float netZ1 = -4.5f;
-    float netX1 = riverCenterline(netZ1) - halfWidth - 1.2f;
-    drawNetRack(shader, model, vec3(netX1, 0.05f, netZ1));
+// ── Swimmers / Bathing Villagers in River Shallows ───────────────
+void drawSwimmers(Shader& shader, const mat4& model, float animTime)
+{
+    shader.setInt("uUseTexture", 0);
 
-    float netZ2 = -14.2f;
-    float netX2 = riverCenterline(netZ2) - halfWidth - 1.0f;
-    drawNetRack(shader, model, vec3(netX2, 0.05f, netZ2));
+    vec3 skinCol  (0.54f, 0.36f, 0.22f); // Warm sun-tanned skin
+    vec3 hairCol  (0.12f, 0.10f, 0.08f); // Dark hair
+    vec3 rippleCol(0.85f, 0.94f, 0.98f); // Water foam ripple ring
+
+    // 4 swimmers arranged in a friendly group in river shallows between boats
+    struct SwimmerData {
+        float x, z;
+        float phase;
+    };
+    const SwimmerData swimmers[4] = {
+        { -0.85f, -1.2f, 0.0f },
+        { -0.15f, -0.6f, 1.4f },
+        {  0.45f,  0.3f, 2.8f },
+        {  1.15f,  0.8f, 4.2f }
+    };
+
+    for (int i = 0; i < 4; ++i) {
+        float bob = (animTime > 0.0f) ? (sinf(animTime * 2.4f + swimmers[i].phase) * 0.016f) : 0.0f;
+        float y = 0.035f + bob;
+
+        mat4 sm = model;
+        sm = translate(sm, vec3(swimmers[i].x, y, swimmers[i].z));
+
+        // Circular water ripple ring around swimmer's neck
+        float rippleScale = 1.0f + (animTime > 0.0f ? fmodf(animTime * 0.8f + (float)i * 0.5f, 1.0f) * 0.3f : 0.0f);
+        mat4 rip = sm;
+        rip = translate(rip, vec3(0.0f, -0.012f, 0.0f));
+        rip = scale(rip, vec3(0.38f * rippleScale, 0.005f, 0.38f * rippleScale));
+        Primitives::drawCylinder(shader, rip, rippleCol);
+
+        // Head sphere
+        mat4 head = sm;
+        head = translate(head, vec3(0.0f, 0.12f, 0.0f));
+        head = scale(head, vec3(0.18f, 0.19f, 0.18f));
+        Primitives::drawSphere(shader, head, skinCol);
+
+        // Dark hair cap
+        mat4 hair = sm;
+        hair = translate(hair, vec3(0.0f, 0.16f, -0.02f));
+        hair = scale(hair, vec3(0.185f, 0.12f, 0.185f));
+        Primitives::drawSphere(shader, hair, hairCol);
+
+        // Wet shoulder tops just breaking water surface
+        mat4 shoulders = sm;
+        shoulders = translate(shoulders, vec3(0.0f, 0.01f, 0.0f));
+        shoulders = scale(shoulders, vec3(0.36f, 0.06f, 0.20f));
+        Primitives::drawCube(shader, shoulders, skinCol);
+    }
+}
+
+// ── Distant Village Huts & Straw Stacks on Opposite Shore ────────
+void drawFarBankVillage(Shader& shader, const mat4& model)
+{
+    shader.setInt("uUseTexture", 0);
+
+    vec3 wallCol  (0.88f, 0.84f, 0.76f); // Whitewashed / light clay walls
+    vec3 roofCol  (0.78f, 0.38f, 0.18f); // Warm terracotta red-brown hip roofs
+    vec3 strawCol (0.76f, 0.62f, 0.28f); // Golden rice straw stack
+    vec3 poleCol  (0.45f, 0.35f, 0.20f); // Bamboo center pole
+
+    struct FarHut {
+        float x, z;
+        float angle;
+        float scaleVal;
+    };
+    const FarHut huts[6] = {
+        { 6.8f, -22.0f,  12.0f, 0.85f },
+        { 7.5f, -16.0f,  -8.0f, 0.90f },
+        { 7.8f,  -7.5f,  15.0f, 0.85f },
+        { 8.1f,   2.5f,  -5.0f, 0.92f },
+        { 7.7f,  12.0f,  10.0f, 0.88f },
+        { 7.1f,  20.0f, -15.0f, 0.85f }
+    };
+
+    for (int h = 0; h < 6; ++h) {
+        float x = huts[h].x;
+        float z = huts[h].z;
+        float s = huts[h].scaleVal;
+
+        mat4 hm = model;
+        hm = translate(hm, vec3(x, 0.06f, z));
+        hm = rotate(hm, radians(huts[h].angle), vec3(0.0f, 1.0f, 0.0f));
+        hm = scale(hm, vec3(s));
+
+        // Plinth
+        mat4 plinth = hm;
+        plinth = translate(plinth, vec3(0.0f, 0.06f, 0.0f));
+        plinth = scale(plinth, vec3(1.9f, 0.12f, 1.5f));
+        Primitives::drawCube(shader, plinth, wallCol * 0.85f);
+
+        // Walls
+        mat4 wall = hm;
+        wall = translate(wall, vec3(0.0f, 0.45f, 0.0f));
+        wall = scale(wall, vec3(1.6f, 0.70f, 1.2f));
+        Primitives::drawCube(shader, wall, wallCol);
+
+        // Terracotta Chouchala 4-sloped Hip Roof
+        mat4 roof = hm;
+        roof = translate(roof, vec3(0.0f, 0.80f, 0.0f));
+        roof = scale(roof, vec3(2.1f, 0.75f, 1.6f));
+        Primitives::drawPyramid(shader, roof, roofCol);
+
+        // Small door
+        mat4 door = hm;
+        door = translate(door, vec3(-0.81f, 0.35f, 0.0f));
+        door = scale(door, vec3(0.02f, 0.45f, 0.35f));
+        Primitives::drawCube(shader, door, vec3(0.28f, 0.16f, 0.08f));
+    }
+
+    // Conical Straw Stacks (Khorer Paloi) on far bank
+    float strawSpots[2][2] = { { 7.8f, -11.5f }, { 8.2f, 7.5f } };
+    for (int sp = 0; sp < 2; ++sp) {
+        mat4 sm = model;
+        sm = translate(sm, vec3(strawSpots[sp][0], 0.06f, strawSpots[sp][1]));
+
+        // Conical straw body
+        mat4 cone = sm;
+        cone = scale(cone, vec3(1.2f, 1.4f, 1.2f));
+        Primitives::drawCone(shader, cone, strawCol);
+
+        // Central bamboo pole
+        mat4 pole = sm;
+        pole = translate(pole, vec3(0.0f, 0.85f, 0.0f));
+        pole = scale(pole, vec3(0.04f, 1.8f, 0.04f));
+        Primitives::drawCylinder(shader, pole, poleCol);
+    }
 }
 
 // ── 5. Standalone Fishing Net Drying Rack (Jal Shukanor Macha) ────

@@ -40,7 +40,7 @@ echo   Key '[' / ']'   : Decrease / Increase Animation Speed (0.25x - 3.0x)
 echo   Key 'K'         : Pause / Resume Continuous Village Animations
 echo   Key 'L'         : Toggle Lighting (0: Moonlit Night ^| 1: Day ^| 2: Unlit Facets ^| 3: Flat)
 echo   Key 'X'         : Toggle Texture Mode (0: Solid ^| 1: Procedural Detailing ^| 2: GPU Texture Maps)
-echo   Key 'V'         : View V - Curved Objects (Bamboo Footbridge ^& Parametric Bézier Vase)
+echo   Key 'V'         : View V - Parametric Curved Bézier Vase (Terracotta Surahi)
 echo   Key '1'         : View 1 - Courtyard Gathering (Charpai, Elders, Children, Hens)
 echo   Key '2'         : View 2 - River Shore, Landing Ghat, Moored Boat ^& Rowing Boatman
 echo   Key '3'         : View 3 - Historic Terracotta Village Mosque (Ancient Sultanate Masjid)
@@ -48,11 +48,14 @@ echo   Key '4'         : View 4 - North Homestead (Dochala, Cow Shed ^& Straw St
 echo   Key '5'         : View 5 - South Homestead, Straw Stack ^& Terraced Paddy Fields
 echo   Key '6'         : View 6 - Rural Trees ^& Riverbank Reeds
 echo   Key '7'         : View 7 - Village Animals (Hens ^& Ducks)
-echo   Key '8'         : View 8 - Broader View (Moonlit Village Overview matching Concept Artwork)
+echo   Key '8'         : View 8 - Grand Full-Plane Panoramic Village View (33 Cottages, West ^& East River Villages)
 echo   Key '9'         : View 9 - Hand-Pump Tubewell ^& Clay Cooking Kitchen
 echo   Key '0'         : View 0 - Thatched Cow Shed ^& Resting Deshi Cow
+echo   Key 'R'         : View R - Grameen Rasta ^& Traditional Bullock Cart (Gorur Gari)
+echo   Key 'G'         : Gorur Gari Chaka 180° Step Advance - Rotates wheels 180° and translates ahead!
+echo   Key 'N'         : Dingi Nouka Step Advance - Rows Boitha oar and glides boat ahead on river!
 echo   Key 'T'         : Toggle Terrain/Ground Visibility
-echo   Key 'C'         : Capture All 30 Individual Objects to 'object_images/'
+echo   Key 'C'         : Capture All 31 Individual Objects to 'object_images/'
 echo   ESC             : Exit
 echo ========================================================
 echo.
