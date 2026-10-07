@@ -267,26 +267,26 @@ void drawCylinder(Shader& s, const mat4& m, const vec3& c)
     drawCube(s, scale(m135, vec3(1.848f, 1.0f, 0.765f)), c);
 }
 
-// Unit cone: 16-sided smooth cone constructed purely from 16 Unit Triangles meeting at apex (0, 1, 0)
+// Unit cone: 16 canonical unit triangles meeting at apex (0, 1, 0)
+// Smooth conical surface: zero fan blades, zero gaps, zero stepped staircase ("siri")!
 void drawCone(Shader& s, const mat4& m, const vec3& c)
 {
-    const int steps = 16;
-    const float dTheta = 2.0f * PI / (float)steps;
-    const float halfDTheta = dTheta * 0.5f;
-    const float R = 1.0f;
-    const float d = R * cosf(halfDTheta);
-    const float chord = 2.0f * R * sinf(halfDTheta);
-    const float slantHeight = sqrtf(1.0f + d * d);
-    const float tiltAngleDeg = atan2f(d, 1.0f) * 180.0f / PI; // angle to tilt inward toward apex (0, 1, 0)
+    const int N = 16;
+    const float dTheta = 2.0f * PI / (float)N;
+    const float R = 0.5f;
+    const float chord = 2.0f * R * sinf(dTheta * 0.5f);
+    const float rMid = R * cosf(dTheta * 0.5f);
+    const float slantLen = sqrtf(rMid * rMid + 1.0f);
+    const float pitchDeg = atan2f(rMid, 1.0f) * 180.0f / PI;
 
-    for (int i = 0; i < steps; ++i) {
-        float midAngle = ((float)i + 0.5f) * (dTheta * 180.0f / PI);
-        mat4 t = m;
-        t = rotate(t, radians(midAngle), vec3(0.0f, 1.0f, 0.0f));
-        t = translate(t, vec3(0.0f, 0.0f, d));
-        t = rotate(t, radians(-tiltAngleDeg), vec3(1.0f, 0.0f, 0.0f)); // tilt INWARD toward apex (0, 1, 0)
-        t = scale(t, vec3(chord, slantHeight, 1.0f));
-        drawTriangle(s, t, c);
+    for (int k = 0; k < N; ++k) {
+        float rotY = (float)k * (360.0f / (float)N);
+        mat4 facet = rotate(m, radians(rotY), vec3(0.0f, 1.0f, 0.0f));
+        facet = translate(facet, vec3(0.0f, 1.0f, 0.0f));
+        facet = rotate(facet, radians(pitchDeg), vec3(1.0f, 0.0f, 0.0f));
+        facet = translate(facet, vec3(0.0f, -slantLen, 0.0f));
+        facet = scale(facet, vec3(chord, slantLen, 1.0f));
+        drawTriangle(s, facet, c);
     }
 }
 
@@ -296,53 +296,75 @@ void drawHemisphere(Shader& s, const mat4& m, const vec3& c)
     drawSphere(s, m, c);
 }
 
-// Triangular prism: 2 Unit Triangles (gables) + 3 Unit Cubes (base and slopes)
+// Triangular prism: constructed purely from Unit Cubes (2 sloping roof slabs + ridge beam + plain flush gable walls)
 void drawPrism(Shader& s, const mat4& m, const vec3& c)
 {
-    // Front gable (+Z)
-    mat4 f = translate(m, vec3(0.0f, 0.0f, 0.5f));
-    drawTriangle(s, f, c);
-
-    // Back gable (-Z)
-    mat4 b = translate(m, vec3(0.0f, 0.0f, -0.5f));
-    b = rotate(b, radians(180.0f), vec3(0.0f, 1.0f, 0.0f));
-    drawTriangle(s, b, c);
-
     // Bottom base
-    mat4 bot = translate(m, vec3(0.0f, 0.0f, 0.0f));
-    bot = scale(bot, vec3(1.0f, 0.001f, 1.0f));
+    mat4 bot = translate(m, vec3(0.0f, 0.001f, 0.0f));
+    bot = scale(bot, vec3(1.0f, 0.002f, 1.0f));
     drawCube(s, bot, c);
 
     // Right slope (connects (0.5, 0) to (0, 1))
     mat4 rs = translate(m, vec3(0.25f, 0.5f, 0.0f));
     rs = rotate(rs, radians(-63.4349488f), vec3(0.0f, 0.0f, 1.0f));
-    rs = scale(rs, vec3(1.118034f, 0.002f, 1.0f));
+    rs = scale(rs, vec3(1.118034f, 0.025f, 1.02f));
     drawCube(s, rs, c);
 
     // Left slope (connects (-0.5, 0) to (0, 1))
     mat4 ls = translate(m, vec3(-0.25f, 0.5f, 0.0f));
     ls = rotate(ls, radians(63.4349488f), vec3(0.0f, 0.0f, 1.0f));
-    ls = scale(ls, vec3(1.118034f, 0.002f, 1.0f));
+    ls = scale(ls, vec3(1.118034f, 0.025f, 1.02f));
     drawCube(s, ls, c);
+
+    // Ridge beam along peak
+    mat4 ridge = translate(m, vec3(0.0f, 1.0f, 0.0f));
+    ridge = scale(ridge, vec3(0.05f, 0.05f, 1.02f));
+    drawCube(s, ridge, c * 0.85f);
+
+    // Plain flat gable ends (+Z and -Z) without stepped siri
+    for (float zGable : { -0.498f, 0.498f }) {
+        // Central vertical panel
+        mat4 mid = translate(m, vec3(0.0f, 0.45f, zGable));
+        mid = scale(mid, vec3(0.50f, 0.90f, 0.015f));
+        drawCube(s, mid, c);
+
+        // Angled side panel right
+        mat4 rSide = translate(m, vec3(0.20f, 0.42f, zGable));
+        rSide = rotate(rSide, radians(-63.4349488f), vec3(0.0f, 0.0f, 1.0f));
+        rSide = scale(rSide, vec3(0.55f, 0.14f, 0.015f));
+        drawCube(s, rSide, c);
+
+        // Angled side panel left
+        mat4 lSide = translate(m, vec3(-0.20f, 0.42f, zGable));
+        lSide = rotate(lSide, radians(63.4349488f), vec3(0.0f, 0.0f, 1.0f));
+        lSide = scale(lSide, vec3(0.55f, 0.14f, 0.015f));
+        drawCube(s, lSide, c);
+    }
 }
 
-// 4-sided pyramid: 4 Unit Triangles meeting at apex (0, 1, 0) + 1 Unit Cube base
+// 4-sided pyramid: 4 canonical unit triangles meeting at apex (0, 1, 0)
+// Plain sloping triangular faces: zero stepped staircase ("siri") and zero origami overlaps!
 void drawPyramid(Shader& s, const mat4& m, const vec3& c)
 {
-    // Base closure (unit plane)
-    mat4 bot = translate(m, vec3(0.0f, 0.0f, 0.0f));
-    bot = scale(bot, vec3(1.0f, 0.001f, 1.0f));
-    drawCube(s, bot, c);
+    const float chord = 1.0f;
+    const float rMid = 0.5f;
+    const float slantLen = 1.118034f;
+    const float pitchDeg = 26.5650512f;
 
-    // 4 sloping triangular faces meeting exactly at apex (0, 1, 0)
-    for (int i = 0; i < 4; ++i) {
-        mat4 face = m;
-        face = rotate(face, radians((float)i * 90.0f), vec3(0.0f, 1.0f, 0.0f));
-        face = translate(face, vec3(0.0f, 0.0f, 0.5f));
-        face = rotate(face, radians(-26.565051f), vec3(1.0f, 0.0f, 0.0f)); // tilt INWARD!
-        face = scale(face, vec3(1.0f, 1.118034f, 1.0f));
-        drawTriangle(s, face, c);
+    for (int k = 0; k < 4; ++k) {
+        float rotY = (float)k * 90.0f;
+        mat4 facet = rotate(m, radians(rotY), vec3(0.0f, 1.0f, 0.0f));
+        facet = translate(facet, vec3(0.0f, 1.0f, 0.0f));
+        facet = rotate(facet, radians(pitchDeg), vec3(1.0f, 0.0f, 0.0f));
+        facet = translate(facet, vec3(0.0f, -slantLen, 0.0f));
+        facet = scale(facet, vec3(chord, slantLen, 1.0f));
+        drawTriangle(s, facet, c);
     }
+
+    // Flat bottom base plate
+    mat4 base = translate(m, vec3(0.0f, 0.002f, 0.0f));
+    base = scale(base, vec3(1.0f, 0.004f, 1.0f));
+    drawCube(s, base, c);
 }
 
 // Arched half-cylinder shell: segmented curve formed of 8 Unit Cubes

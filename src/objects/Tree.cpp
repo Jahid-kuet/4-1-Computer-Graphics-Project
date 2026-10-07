@@ -30,6 +30,163 @@ inline void drawLeaflet(Shader& shader, const mat4& base, float length, float wi
     Primitives::drawTriangle(shader, tip, color * 1.06f);
 }
 
+// ── Highly Realistic Botanical Mango Leaf (Aam Pata / আম পাতা) ──────────
+// Features:
+// 1. Swollen pulvinus base + slender petiole stalk (বোঁটা) connecting blade to twig
+// 2. V-profile blade (two angled side laminae meeting at the central midrib for specular reflection)
+// 3. Realistic two-segment longitudinal gravitational droop (graceful downward arch)
+// 4. Sharp acuminate tapering pointed tip (চোক্কা পাতার ডগা)
+// 5. Distinct raised lighter yellow-green central midrib vein
+// 6. Natural color options: mature deep glossy emerald vs coppery-amber young flush (নবকিশলয়)
+inline void drawMangoLeaf(Shader& shader, const mat4& base, float length, float width, float droopAngle, const vec3& leafCol, bool isYoungFlush = false)
+{
+    vec3 midribCol = isYoungFlush ? vec3(0.58f, 0.38f, 0.14f) : vec3(0.38f, 0.58f, 0.16f);
+    vec3 laminaLeft  = leafCol;
+    vec3 laminaRight = leafCol * 0.88f; // subtle tone contrast across V-keel fold for 3D realism
+
+    // 1. Petiole (leaf stalk / বোঁটা) with swollen pulvinus joint
+    float petioleLen = length * 0.15f;
+    mat4 pM = base;
+    pM = translate(pM, vec3(0.0f, petioleLen * 0.5f, 0.0f));
+    pM = scale(pM, vec3(0.016f, petioleLen, 0.016f));
+    Primitives::drawCylinder(shader, pM, vec3(0.32f, 0.24f, 0.12f));
+
+    mat4 pulvinus = base;
+    pulvinus = scale(pulvinus, vec3(0.024f, 0.035f, 0.024f));
+    Primitives::drawSphere(shader, pulvinus, vec3(0.28f, 0.20f, 0.10f));
+
+    mat4 bladeBase = translate(base, vec3(0.0f, petioleLen, 0.0f));
+
+    // 2. Proximal Blade Segment (arching outward with initial downward droop)
+    float seg1Len = length * 0.48f;
+    mat4 seg1 = bladeBase;
+    seg1 = rotate(seg1, radians(droopAngle * 0.42f), vec3(1.0f, 0.0f, 0.0f));
+
+    // Left half-blade (angled slightly for V-profile dihedral fold)
+    mat4 leftLam1 = seg1;
+    leftLam1 = translate(leftLam1, vec3(-width * 0.24f, seg1Len * 0.5f, 0.0f));
+    leftLam1 = rotate(leftLam1, radians(-14.0f), vec3(0.0f, 1.0f, 0.0f));
+    leftLam1 = scale(leftLam1, vec3(width * 0.48f, seg1Len, 0.005f));
+    Primitives::drawCube(shader, leftLam1, laminaLeft);
+
+    // Right half-blade
+    mat4 rightLam1 = seg1;
+    rightLam1 = translate(rightLam1, vec3(width * 0.24f, seg1Len * 0.5f, 0.0f));
+    rightLam1 = rotate(rightLam1, radians(14.0f), vec3(0.0f, 1.0f, 0.0f));
+    rightLam1 = scale(rightLam1, vec3(width * 0.48f, seg1Len, 0.005f));
+    Primitives::drawCube(shader, rightLam1, laminaRight);
+
+    // Central raised midrib vein (proximal)
+    mat4 midrib1 = seg1;
+    midrib1 = translate(midrib1, vec3(0.0f, seg1Len * 0.5f, 0.003f));
+    midrib1 = scale(midrib1, vec3(0.012f, seg1Len, 0.008f));
+    Primitives::drawCube(shader, midrib1, midribCol);
+
+    // 3. Distal Blade Segment (graceful cascading downward droop following gravity)
+    float seg2Len = length * 0.38f;
+    mat4 seg2 = seg1;
+    seg2 = translate(seg2, vec3(0.0f, seg1Len, 0.0f));
+    seg2 = rotate(seg2, radians(droopAngle * 0.58f), vec3(1.0f, 0.0f, 0.0f));
+
+    // Left half-blade (distal, tapering)
+    mat4 leftLam2 = seg2;
+    leftLam2 = translate(leftLam2, vec3(-width * 0.20f, seg2Len * 0.5f, 0.0f));
+    leftLam2 = rotate(leftLam2, radians(-12.0f), vec3(0.0f, 1.0f, 0.0f));
+    leftLam2 = scale(leftLam2, vec3(width * 0.40f, seg2Len, 0.005f));
+    Primitives::drawCube(shader, leftLam2, laminaLeft);
+
+    // Right half-blade (distal, tapering)
+    mat4 rightLam2 = seg2;
+    rightLam2 = translate(rightLam2, vec3(width * 0.20f, seg2Len * 0.5f, 0.0f));
+    rightLam2 = rotate(rightLam2, radians(12.0f), vec3(0.0f, 1.0f, 0.0f));
+    rightLam2 = scale(rightLam2, vec3(width * 0.40f, seg2Len, 0.005f));
+    Primitives::drawCube(shader, rightLam2, laminaRight);
+
+    // Central raised midrib vein (distal)
+    mat4 midrib2 = seg2;
+    midrib2 = translate(midrib2, vec3(0.0f, seg2Len * 0.5f, 0.003f));
+    midrib2 = scale(midrib2, vec3(0.010f, seg2Len, 0.007f));
+    Primitives::drawCube(shader, midrib2, midribCol);
+
+    // 4. Sharp Acuminate Leaf Tip (চোক্কা পাতার ডগা)
+    float tipLen = length * 0.16f;
+    mat4 tipM = seg2;
+    tipM = translate(tipM, vec3(0.0f, seg2Len, 0.0f));
+    tipM = scale(tipM, vec3(width * 0.36f, tipLen, 1.0f));
+    Primitives::drawTriangle(shader, tipM, leafCol * 1.08f);
+}
+
+// ── Whorled Terminal Rosette of Mango Leaves (আম পাতার থোকা / Pollob) ───
+// Botanical arrangement: 10 drooping lanceolate leaves arranged in two spiraling
+// tiers that hang downward naturally under gravity, forming an umbrella spray.
+inline void drawMangoLeafCluster(Shader& shader, const mat4& twigBase, float clusterScale, const vec3& baseColor, bool hasYoungFlush = false)
+{
+    // Central terminal shoot twiglet
+    mat4 twig = twigBase;
+    twig = scale(twig, vec3(0.024f, 0.28f * clusterScale, 0.024f));
+    Primitives::drawCylinder(shader, twig, vec3(0.34f, 0.24f, 0.12f));
+
+    // Botanical arrangement: 10 leaves in 2 cascading tiers
+    struct LeafInCluster {
+        float yaw;
+        float pitch;      // Base outward tilt away from branch axis
+        float droop;      // Additional downward gravitational droop along blade
+        float lengthMult;
+        float widthMult;
+    };
+
+    static const LeafInCluster clusterLeaves[10] = {
+        // Tier 1: Inner / Upper whorl (4 leaves, spreading outward and drooping)
+        {   0.0f, 52.0f, 38.0f, 0.88f, 0.95f },
+        {  90.0f, 48.0f, 42.0f, 0.84f, 0.92f },
+        { 180.0f, 54.0f, 40.0f, 0.88f, 0.95f },
+        { 270.0f, 50.0f, 44.0f, 0.84f, 0.92f },
+
+        // Tier 2: Outer / Lower cascading whorl (6 mature leaves weeping steeply downward)
+        {  25.0f, 74.0f, 52.0f, 1.05f, 1.00f },
+        {  85.0f, 78.0f, 58.0f, 0.98f, 0.96f },
+        { 145.0f, 72.0f, 50.0f, 1.08f, 1.02f },
+        { 205.0f, 76.0f, 56.0f, 1.02f, 0.98f },
+        { 265.0f, 80.0f, 60.0f, 1.00f, 0.96f },
+        { 325.0f, 74.0f, 54.0f, 1.06f, 1.00f }
+    };
+
+    vec3 flushCol(0.48f, 0.24f, 0.12f); // tender coppery-bronze young shoot (নবকিশলয়)
+
+    for (int i = 0; i < 10; i++) {
+        const auto& lic = clusterLeaves[i];
+        mat4 leafM = twigBase;
+        float attachY = (i < 4 ? (0.16f + (float)i * 0.025f) : (0.06f + (float)(i - 4) * 0.020f)) * clusterScale;
+        leafM = translate(leafM, vec3(0.0f, attachY, 0.0f));
+        leafM = rotate(leafM, radians(lic.yaw), vec3(0.0f, 1.0f, 0.0f));
+        leafM = rotate(leafM, radians(lic.pitch), vec3(1.0f, 0.0f, 0.0f));
+
+        bool isFlush = (hasYoungFlush && (i == 0 || i == 1 || i == 4));
+        vec3 col = isFlush ? flushCol : (baseColor * (0.90f + (float)(i % 4) * 0.07f));
+        float leafLen = 0.72f * clusterScale * lic.lengthMult;
+        float leafWid = 0.14f * clusterScale * lic.widthMult;
+
+        drawMangoLeaf(shader, leafM, leafLen, leafWid, lic.droop, col, isFlush);
+    }
+
+    // Terminal apex bud / young shoot sprouts (মুকুল / নতুন কচি পাতার কুঁড়ি)
+    mat4 bud = twigBase;
+    bud = translate(bud, vec3(0.0f, 0.28f * clusterScale, 0.0f));
+    bud = scale(bud, vec3(0.026f * clusterScale, 0.070f * clusterScale, 0.026f * clusterScale));
+    Primitives::drawCone(shader, bud, hasYoungFlush ? flushCol : vec3(0.34f, 0.54f, 0.15f));
+
+    // Two tiny emerging coppery leaflets at the apex bud
+    if (hasYoungFlush) {
+        for (int e = -1; e <= 1; e += 2) {
+            mat4 emLeaf = twigBase;
+            emLeaf = translate(emLeaf, vec3(0.0f, 0.27f * clusterScale, 0.0f));
+            emLeaf = rotate(emLeaf, radians((float)e * 45.0f), vec3(0.0f, 1.0f, 0.0f));
+            emLeaf = rotate(emLeaf, radians(32.0f), vec3(1.0f, 0.0f, 0.0f));
+            drawMangoLeaf(shader, emLeaf, 0.26f * clusterScale, 0.06f * clusterScale, 28.0f, flushCol, true);
+        }
+    }
+}
+
 } // anonymous namespace
 
 namespace Tree {
@@ -191,13 +348,13 @@ static void drawBanana(Shader& shader, const mat4& model)
 {
     shader.setInt("uUseTexture", 0); // translucent succulent greens and purplish banana mocha
 
-    vec3 trunkBase(0.42f, 0.52f, 0.22f); // pale lime succulent pseudostem
-    vec3 trunkRing(0.32f, 0.40f, 0.16f); // leaf sheath overlap ring
-    vec3 leafCol  (0.15f, 0.48f, 0.13f); // rich lush emerald banana leaf blade
-    vec3 leafMid  (0.38f, 0.58f, 0.20f); // yellow-green central leaf midrib
-    vec3 leafTip  (0.22f, 0.56f, 0.18f); // fresh bright leaf tip
-    vec3 stalkCol (0.28f, 0.44f, 0.16f); // fruit bunch stalk
-    vec3 fruitCol (0.32f, 0.52f, 0.16f); // green baby bananas (Kolar Fona)
+    static const vec3 trunkBase(0.42f, 0.52f, 0.22f); // pale lime succulent pseudostem
+    static const vec3 trunkRing(0.32f, 0.40f, 0.16f); // leaf sheath overlap ring
+    static const vec3 leafCol  (0.15f, 0.48f, 0.13f); // rich lush emerald banana leaf blade
+    static const vec3 leafMid  (0.38f, 0.58f, 0.20f); // yellow-green central leaf midrib
+    static const vec3 leafTip  (0.22f, 0.56f, 0.18f); // fresh bright leaf tip
+    static const vec3 stalkCol (0.28f, 0.44f, 0.16f); // fruit bunch stalk
+    static const vec3 fruitCol (0.32f, 0.52f, 0.16f); // green baby bananas (Kolar Fona)
     vec3 mochaCol (0.44f, 0.08f, 0.14f); // purplish-crimson pendant flower bud (Kolar Mocha / থোড়)
 
     // Succulent pseudostem with 4 layered tapering collars
@@ -371,34 +528,32 @@ static void drawBanana(Shader& shader, const mat4& model)
     Primitives::drawCone(shader, mochaTip, mochaCol * 0.85f);
 }
 
-// ─── 3. Majestic Branching Mango / Banyan Tree (Aam / Bot Gach) ──────
-// Modeled with sturdy gnarled trunk, buttress root flares, radiating limbs,
-// and natural tiered volumetric foliage canopy constructed from organic volumetric
-// spheres (Primitives::drawSphere) arranged in billowing clouds with subtle color gradients,
-// accented with delicate perimeter lanceolate leaves (drawLeaflet) and golden ripe
-// mango fruits (Paka Aam) dangling beneath the canopy.
+// ─── 3. Majestic Branching Mango Tree (Aam Gach / আম গাছ) ─────────────
+// Modeled with sturdy gnarled trunk, buttress root flares, 4 radiating primary limbs,
+// secondary woody branchlets, and a 100% pure botanical foliage canopy constructed
+// from layered cascading rosettes of authentic lanceolate mango leaves (Aam Pata).
+// Zero smooth spherical balloon surfaces! Every leaf features raised central midrib veins,
+// 3D dihedral V-profile folds, acuminate tips, tender coppery-red young flushes (নবকিশলয়),
+// and golden ripe Bengali mango fruits (Paka Aam) dangling beneath the leaves.
 static void drawGeneral(Shader& shader, const mat4& model)
 {
-    shader.setInt("uUseTexture", 0); // vibrant procedural canopy with ripe mangoes
+    shader.setInt("uUseTexture", 0); // vibrant procedural canopy with authentic botanical mango foliage
 
-    vec3 trunkCol (0.36f, 0.26f, 0.16f); // gnarled bark
-    vec3 barkDark (0.28f, 0.20f, 0.12f); // dark bark creases
+    vec3 trunkCol (0.36f, 0.26f, 0.16f); // gnarled woody bark
+    vec3 barkDark (0.24f, 0.16f, 0.08f); // dark bark crevices
 
-    // Foliage canopy gradient palette
-    vec3 foliageSunlit(0.24f, 0.54f, 0.16f); // sunlit golden-green apex highlights
-    vec3 foliageTop   (0.20f, 0.48f, 0.14f); // upper canopy lush mango green
-    vec3 foliageMid   (0.15f, 0.42f, 0.12f); // mid canopy deep mango green
-    vec3 foliageDark  (0.09f, 0.32f, 0.09f); // shaded under-canopy green
-    vec3 foliageCore  (0.06f, 0.24f, 0.06f); // deep interior core shadow green
-    vec3 youngFlush   (0.38f, 0.34f, 0.14f); // tender coppery-bronze new shoots (Aam-er Pollob)
-    vec3 youngFlush2  (0.44f, 0.32f, 0.12f); // fresh reddish-bronze spring growth
-    vec3 stemCol      (0.38f, 0.28f, 0.14f); // mango fruit stem
+    // Botanical mango foliage palette
+    vec3 leafSunlit  (0.24f, 0.54f, 0.16f); // sunlit golden-green apex leaves
+    vec3 leafLush    (0.16f, 0.46f, 0.12f); // rich mature emerald mango leaves
+    vec3 leafDeep    (0.11f, 0.38f, 0.10f); // mid-canopy deep forest green
+    vec3 leafDark    (0.06f, 0.24f, 0.07f); // shaded inner/lower foliage green
+    vec3 stemCol     (0.36f, 0.26f, 0.14f); // woody fruit stalk
 
-    // Sturdy gnarled trunk
+    // ── 1. Sturdy Gnarled Trunk ──────────────────────────────────
     float trunkH = 2.8f;
     mat4 trunk = model;
     trunk = translate(trunk, vec3(0.0f, trunkH * 0.5f, 0.0f));
-    trunk = scale(trunk, vec3(0.42f, trunkH, 0.42f));
+    trunk = scale(trunk, vec3(0.40f, trunkH, 0.40f));
     Primitives::drawCylinder(shader, trunk, trunkCol);
 
     // Buttress root flares at base
@@ -412,8 +567,8 @@ static void drawGeneral(Shader& shader, const mat4& model)
         Primitives::drawCube(shader, root, barkDark);
     }
 
-    // 4 Primary spreading limbs radiating outward
-    float branchAngles[] = { 15.0f, 105.0f, 195.0f, 285.0f };
+    // ── 2. Primary Spreading Limbs & Secondary Woody Boughs ──────
+    float branchAngles[] = { 18.0f, 108.0f, 198.0f, 288.0f };
     for (int b = 0; b < 4; b++) {
         mat4 branch = model;
         branch = translate(branch, vec3(0.0f, trunkH * 0.75f, 0.0f));
@@ -425,114 +580,129 @@ static void drawGeneral(Shader& shader, const mat4& model)
 
         // Secondary branchlet reaching outward into peripheral foliage
         mat4 subB = branch;
-        subB = translate(subB, vec3(0.0f, 0.7f, 0.0f));
+        subB = translate(subB, vec3(0.0f, 0.70f, 0.0f));
         subB = rotate(subB, radians(28.0f), vec3(0.0f, 0.0f, 1.0f));
         subB = translate(subB, vec3(0.0f, 0.45f, 0.0f));
-        subB = scale(subB, vec3(0.11f, 0.95f, 0.11f));
-        Primitives::drawCylinder(shader, subB, trunkCol);
+        mat4 subBM = scale(subB, vec3(0.11f, 0.95f, 0.11f));
+        Primitives::drawCylinder(shader, subBM, trunkCol);
+
+        // Tertiary branchlet twig
+        mat4 subB2 = branch;
+        subB2 = translate(subB2, vec3(0.0f, 0.95f, 0.0f));
+        subB2 = rotate(subB2, radians(-32.0f), vec3(0.0f, 0.0f, 1.0f));
+        subB2 = translate(subB2, vec3(0.0f, 0.38f, 0.0f));
+        mat4 subB2M = scale(subB2, vec3(0.07f, 0.80f, 0.07f));
+        Primitives::drawCylinder(shader, subB2M, trunkCol);
     }
 
-    // ── Volumetric Canopy: Billowing Cloud Spheres (Primitives::drawSphere) ──
-    // Multi-tiered arrangement creating a lush, organic, dome-shaped mango tree canopy
-    struct FoliageSphere {
+    // ── 3. 100% Botanical Foliage Canopy: Layered Rosettes of Mango Leaves ──
+    // Zero smooth spheres! The canopy is built purely out of cascading leaf rosettes
+    // (Aam Pata) organized into 5 natural anatomical zones:
+    // A: Interior Shadow Core (replaces spheres with deep-shaded inner leaves)
+    // B: Apex Crown (sunlit golden-green with coppery young shoots)
+    // C: High Spreading Boughs
+    // D: Mid-Canopy Full Foliage Terraces
+    // E: Lower Drooping Perimeter Skirt
+    struct FoliageCluster {
         float x, y, z;
-        float rx, ry, rz;
+        float pitch, yaw, roll;
+        float scale;
         vec3 color;
+        bool isYoungFlush;
     };
 
-    static const FoliageSphere canopySpheres[] = {
-        // ── 1. Upper Central Crown & Apex ──
-        {  0.10f, 6.10f, -0.10f,  1.55f, 1.10f, 1.55f,  foliageSunlit },
-        {  0.00f, 5.45f,  0.00f,  2.20f, 1.50f, 2.20f,  foliageTop },
-        { -0.25f, 5.15f,  0.30f,  1.90f, 1.35f, 1.90f,  foliageTop },
-        {  0.25f, 5.20f, -0.25f,  1.85f, 1.30f, 1.85f,  foliageSunlit },
+    static const FoliageCluster clusters[] = {
+        // ── A. Interior Density Core (Deep shaded green leaves nestled inside branch forks) ──
+        {  0.00f, 4.30f,  0.00f,  15.0f,   0.0f,   0.0f, 1.35f, leafDark, false },
+        {  0.55f, 4.05f,  0.50f,  20.0f,  45.0f,  10.0f, 1.25f, leafDark, false },
+        { -0.55f, 4.00f, -0.50f,  18.0f, 225.0f, -10.0f, 1.25f, leafDark, false },
+        { -0.50f, 3.95f,  0.55f,  22.0f, 135.0f,   8.0f, 1.25f, leafDark, false },
+        {  0.50f, 4.00f, -0.55f,  18.0f, 315.0f,  -8.0f, 1.25f, leafDark, false },
+        {  0.00f, 4.60f,  0.55f,  25.0f,  90.0f,   0.0f, 1.28f, leafDeep, false },
+        {  0.00f, 4.55f, -0.55f,  25.0f, 270.0f,   0.0f, 1.28f, leafDeep, false },
 
-        // ── 2. Upper Spreading Bough Cloud Lobes ──
-        // East / North-East bough lobes
-        {  2.10f, 4.85f,  0.15f,  1.80f, 1.35f, 1.75f,  foliageTop },
-        {  1.55f, 4.70f, -1.65f,  1.70f, 1.25f, 1.65f,  foliageTop },
-        {  2.35f, 5.10f,  0.55f,  1.15f, 0.90f, 1.15f,  youngFlush },
-        // South / South-East bough lobes
-        {  0.20f, 4.75f,  2.15f,  1.85f, 1.35f, 1.80f,  foliageMid },
-        {  1.60f, 4.55f,  1.50f,  1.65f, 1.25f, 1.60f,  foliageTop },
-        {  0.85f, 4.35f,  2.25f,  1.45f, 1.10f, 1.40f,  foliageSunlit },
-        // West / South-West bough lobes
-        { -2.10f, 4.75f, -0.10f,  1.80f, 1.35f, 1.75f,  foliageMid },
-        { -1.55f, 4.50f,  1.55f,  1.65f, 1.25f, 1.60f,  foliageDark },
-        { -2.30f, 5.05f, -0.55f,  1.15f, 0.85f, 1.15f,  youngFlush2 },
-        // North / North-West bough lobes
-        {  0.15f, 4.90f, -2.10f,  1.80f, 1.30f, 1.75f,  foliageSunlit },
-        { -1.60f, 4.65f, -1.55f,  1.65f, 1.25f, 1.60f,  foliageMid },
+        // ── B. Crown & Apex Tier (Sunlit golden-green & coppery young shoots) ──
+        {  0.00f, 6.10f,  0.00f,  10.0f,   0.0f,   0.0f, 1.20f, leafSunlit, true  },
+        {  0.55f, 5.75f,  0.35f,  28.0f,  30.0f,  12.0f, 1.15f, leafSunlit, false },
+        { -0.55f, 5.70f, -0.35f,  26.0f, 210.0f, -12.0f, 1.15f, leafSunlit, true  },
+        { -0.45f, 5.80f,  0.45f,  30.0f, 135.0f,  10.0f, 1.12f, leafSunlit, false },
+        {  0.45f, 5.65f, -0.45f,  28.0f, 315.0f, -10.0f, 1.12f, leafSunlit, false },
+        {  0.00f, 5.85f,  0.75f,  32.0f,  85.0f,   0.0f, 1.16f, leafSunlit, false },
+        {  0.00f, 5.80f, -0.75f,  30.0f, 265.0f,   0.0f, 1.16f, leafSunlit, true  },
 
-        // ── 3. Lower Drooping Canopy Skirts (Softening lower perimeter) ──
-        {  2.25f, 3.65f,  0.20f,  1.45f, 1.05f, 1.40f,  foliageDark },
-        {  1.75f, 3.50f, -1.45f,  1.40f, 1.00f, 1.35f,  foliageDark },
-        {  1.70f, 3.45f,  1.65f,  1.40f, 0.95f, 1.35f,  foliageMid },
-        {  0.10f, 3.55f,  2.35f,  1.50f, 1.05f, 1.45f,  foliageMid },
-        { -1.65f, 3.40f,  1.70f,  1.40f, 0.95f, 1.35f,  foliageDark },
-        { -2.25f, 3.60f, -0.15f,  1.45f, 1.00f, 1.40f,  foliageDark },
-        { -1.65f, 3.55f, -1.60f,  1.40f, 0.95f, 1.35f,  foliageDark },
-        {  0.15f, 3.65f, -2.25f,  1.45f, 1.00f, 1.40f,  foliageMid },
+        // ── C. Upper Canopy Spreading Boughs (Lush mature emerald mango leaves) ──
+        {  1.65f, 5.10f,  0.25f,  38.0f,  15.0f,  15.0f, 1.22f, leafLush,   false },
+        {  1.35f, 4.90f, -1.20f,  36.0f, 310.0f, -14.0f, 1.18f, leafLush,   false },
+        {  1.20f, 5.00f,  1.25f,  38.0f,  75.0f,  16.0f, 1.20f, leafSunlit, true  },
+        {  0.20f, 5.15f,  1.75f,  40.0f,  90.0f,   8.0f, 1.22f, leafLush,   false },
+        { -1.20f, 4.90f,  1.30f,  37.0f, 150.0f, -15.0f, 1.18f, leafLush,   false },
+        { -1.70f, 5.05f,  0.20f,  38.0f, 195.0f, -12.0f, 1.22f, leafLush,   true  },
+        { -1.30f, 4.85f, -1.25f,  36.0f, 240.0f,  14.0f, 1.18f, leafDeep,   false },
+        {  0.18f, 5.10f, -1.70f,  38.0f, 280.0f,  -8.0f, 1.20f, leafLush,   false },
+        {  2.05f, 4.80f, -0.50f,  42.0f, 340.0f,  18.0f, 1.15f, leafLush,   false },
+        {  0.75f, 5.25f,  1.65f,  40.0f,  65.0f,  12.0f, 1.18f, leafSunlit, false },
+        { -1.95f, 4.75f, -0.65f,  42.0f, 220.0f, -16.0f, 1.15f, leafDeep,   false },
+        { -0.55f, 5.20f, -1.65f,  40.0f, 255.0f, -10.0f, 1.18f, leafLush,   false },
 
-        // ── 4. Interior Core Volume Spheres (Zero hollow gaps, rich solid body) ──
-        {  0.00f, 4.55f,  0.00f,  2.40f, 1.60f, 2.40f,  foliageMid },
-        {  0.65f, 4.10f,  0.55f,  1.50f, 1.20f, 1.50f,  foliageCore },
-        { -0.65f, 4.15f, -0.55f,  1.50f, 1.20f, 1.50f,  foliageCore },
-        { -0.55f, 4.05f,  0.65f,  1.50f, 1.20f, 1.50f,  foliageCore },
-        {  0.55f, 4.15f, -0.65f,  1.50f, 1.20f, 1.50f,  foliageCore }
+        // ── D. Mid-Canopy Spreading Terrace (Dense full foliage canopy) ──
+        {  2.45f, 4.30f,  0.20f,  46.0f,  10.0f,  20.0f, 1.25f, leafLush,   false },
+        {  1.90f, 4.15f, -1.55f,  44.0f, 305.0f, -18.0f, 1.20f, leafDeep,   false },
+        {  1.80f, 4.20f,  1.65f,  46.0f,  70.0f,  18.0f, 1.22f, leafLush,   true  },
+        {  0.30f, 4.35f,  2.40f,  48.0f,  90.0f,  10.0f, 1.26f, leafLush,   false },
+        { -1.75f, 4.10f,  1.85f,  44.0f, 145.0f, -18.0f, 1.20f, leafDeep,   false },
+        { -2.45f, 4.25f,  0.25f,  46.0f, 190.0f, -16.0f, 1.25f, leafLush,   false },
+        { -1.85f, 4.05f, -1.65f,  44.0f, 235.0f,  18.0f, 1.20f, leafDeep,   false },
+        {  0.20f, 4.30f, -2.35f,  48.0f, 275.0f, -10.0f, 1.25f, leafDeep,   false },
+        {  2.60f, 3.90f,  0.85f,  52.0f,  35.0f,  22.0f, 1.18f, leafDeep,   false },
+        {  1.05f, 4.00f,  2.45f,  50.0f,  80.0f,  14.0f, 1.22f, leafLush,   false },
+        { -1.05f, 3.95f,  2.40f,  50.0f, 115.0f, -14.0f, 1.22f, leafLush,   false },
+        { -2.55f, 3.90f, -0.75f,  52.0f, 215.0f, -20.0f, 1.18f, leafDeep,   false },
+        { -0.95f, 4.05f, -2.30f,  50.0f, 260.0f, -12.0f, 1.20f, leafDeep,   false },
+
+        // ── E. Lower Drooping Canopy Skirts (Graceful downward cascading leaves) ──
+        {  2.30f, 3.35f,  0.30f,  58.0f,  15.0f,  24.0f, 1.22f, leafDark,   false },
+        {  1.70f, 3.20f, -1.40f,  56.0f, 310.0f, -22.0f, 1.16f, leafDark,   false },
+        {  1.60f, 3.25f,  1.50f,  58.0f,  65.0f,  20.0f, 1.18f, leafDark,   false },
+        {  0.25f, 3.40f,  2.25f,  60.0f,  90.0f,  12.0f, 1.24f, leafDark,   false },
+        { -1.60f, 3.15f,  1.70f,  56.0f, 140.0f, -20.0f, 1.18f, leafDark,   false },
+        { -2.30f, 3.30f,  0.30f,  58.0f, 195.0f, -22.0f, 1.22f, leafDark,   false },
+        { -1.70f, 3.10f, -1.50f,  56.0f, 240.0f,  22.0f, 1.16f, leafDark,   false },
+        {  0.18f, 3.35f, -2.20f,  60.0f, 280.0f, -12.0f, 1.22f, leafDark,   false },
+        {  2.00f, 3.05f,  1.05f,  62.0f,  40.0f,  25.0f, 1.14f, leafDark,   false },
+        {  0.85f, 3.10f,  2.05f,  60.0f,  85.0f,  15.0f, 1.16f, leafDark,   false },
+        { -2.10f, 3.00f, -0.60f,  62.0f, 210.0f, -24.0f, 1.14f, leafDark,   false },
+        {  0.75f, 3.15f, -1.95f,  60.0f, 275.0f, -14.0f, 1.16f, leafDark,   false }
     };
 
-    for (const auto& fs : canopySpheres) {
-        mat4 sm = model;
-        sm = translate(sm, vec3(fs.x, fs.y, fs.z));
-        sm = scale(sm, vec3(fs.rx, fs.ry, fs.rz));
-        Primitives::drawSphere(shader, sm, fs.color);
+    for (const auto& fc : clusters) {
+        mat4 cM = model;
+        cM = translate(cM, vec3(fc.x, fc.y, fc.z));
+        cM = rotate(cM, radians(fc.yaw), vec3(0.0f, 1.0f, 0.0f));
+        cM = rotate(cM, radians(fc.pitch), vec3(1.0f, 0.0f, 0.0f));
+        cM = rotate(cM, radians(fc.roll), vec3(0.0f, 0.0f, 1.0f));
+        drawMangoLeafCluster(shader, cM, fc.scale, fc.color, fc.isYoungFlush);
     }
 
-    // ── 5. Drooping Lanceolate Mango Leaf Sprays along Perimeter ──
-    // Adds delicate botanical leaf detail around the spherical canopy silhouette
-    const int numSprays = 16;
-    for (int s = 0; s < numSprays; s++) {
-        float sa = (float)s * (2.0f * PI / (float)numSprays) + 0.18f;
-        float sr = 2.40f + (float)(s % 3) * 0.22f;
-        float sy = 3.25f + (float)(s % 2) * 0.35f;
-        vec3 leafC = (s % 4 == 0) ? youngFlush : ((s % 2 == 0) ? foliageTop : foliageMid);
-
-        mat4 mSpr = model;
-        mSpr = translate(mSpr, vec3(cosf(sa) * sr, sy, sinf(sa) * sr));
-        mSpr = rotate(mSpr, atan2f(sinf(sa), cosf(sa)), vec3(0.0f, 1.0f, 0.0f));
-        mSpr = rotate(mSpr, radians(38.0f + (float)(s % 3) * 6.0f), vec3(1.0f, 0.0f, 0.0f));
-        drawLeaflet(shader, mSpr, 0.34f, 0.068f, 14.0f, leafC);
-
-        // Small lateral secondary leaflet for full spray appearance
-        mat4 mSide = mSpr;
-        mSide = translate(mSide, vec3(0.035f, 0.10f, 0.02f));
-        mSide = rotate(mSide, radians(22.0f), vec3(0.0f, 0.0f, 1.0f));
-        drawLeaflet(shader, mSide, 0.24f, 0.052f, 18.0f, leafC * 0.94f);
-    }
-
-    // ── 6. Golden Ripe Mangoes (Paka Aam / পাকা আম) dangling under canopy ──
+    // ── 4. Golden Ripe Mangoes (Paka Aam / পাকা আম) Dangling Beneath Foliage ──
     struct MangoPos { float x, y, z; float stemH; vec3 col; };
     static const MangoPos mangoes[] = {
         // Front-facing clusters
-        {  0.65f, 2.50f,  3.10f, 0.26f, vec3(0.98f, 0.72f, 0.12f) },
-        {  0.92f, 2.40f,  2.95f, 0.34f, vec3(0.92f, 0.50f, 0.12f) }, // twin pair
-        { -0.45f, 2.55f,  3.00f, 0.24f, vec3(0.98f, 0.76f, 0.14f) },
-        {  1.65f, 2.50f,  2.40f, 0.28f, vec3(0.94f, 0.60f, 0.12f) },
-        {  1.92f, 2.38f,  2.15f, 0.36f, vec3(0.90f, 0.46f, 0.10f) }, // twin pair
-        { -1.45f, 2.58f,  2.00f, 0.26f, vec3(0.96f, 0.68f, 0.12f) },
+        {  0.55f, 2.65f,  2.60f, 0.28f, vec3(0.98f, 0.70f, 0.12f) },
+        {  0.80f, 2.55f,  2.45f, 0.36f, vec3(0.92f, 0.48f, 0.10f) }, // twin pair
+        { -0.38f, 2.70f,  2.50f, 0.26f, vec3(0.98f, 0.74f, 0.14f) },
+        {  1.45f, 2.65f,  2.00f, 0.30f, vec3(0.94f, 0.58f, 0.12f) },
+        { -1.25f, 2.72f,  1.75f, 0.28f, vec3(0.96f, 0.66f, 0.12f) },
         // Side and rear clusters
-        {  2.35f, 2.65f,  0.80f, 0.28f, vec3(0.96f, 0.70f, 0.12f) },
-        {  2.50f, 2.52f,  0.55f, 0.36f, vec3(0.92f, 0.54f, 0.12f) }, // twin pair
-        { -2.15f, 2.68f,  0.50f, 0.26f, vec3(0.95f, 0.64f, 0.14f) },
-        {  0.55f, 2.35f,  2.20f, 0.32f, vec3(0.97f, 0.72f, 0.12f) },
-        { -1.85f, 2.60f, -1.10f, 0.28f, vec3(0.96f, 0.68f, 0.12f) },
-        {  1.40f, 2.55f, -1.80f, 0.30f, vec3(0.94f, 0.58f, 0.12f) }
+        {  2.05f, 2.78f,  0.65f, 0.30f, vec3(0.96f, 0.68f, 0.12f) },
+        {  2.20f, 2.65f,  0.45f, 0.38f, vec3(0.92f, 0.52f, 0.12f) }, // twin pair
+        { -1.85f, 2.80f,  0.45f, 0.28f, vec3(0.95f, 0.62f, 0.14f) },
+        { -1.55f, 2.75f, -0.95f, 0.30f, vec3(0.96f, 0.66f, 0.12f) },
+        {  1.20f, 2.70f, -1.55f, 0.32f, vec3(0.94f, 0.56f, 0.12f) }
     };
 
-    vec3 leafAccent(0.18f, 0.48f, 0.14f);
+    vec3 leafAccent(0.16f, 0.44f, 0.12f);
     for (const auto& mp : mangoes) {
-        // Slender curved stem connecting up to the canopy branch
+        // Slender curved pedicel connecting up to the foliage branch
         mat4 stem = model;
         stem = translate(stem, vec3(mp.x, mp.y + mp.stemH * 0.5f, mp.z));
         stem = scale(stem, vec3(0.016f, mp.stemH, 0.016f));
@@ -540,14 +710,14 @@ static void drawGeneral(Shader& shader, const mat4& model)
 
         // Dark green mango leaf attached to stem joint
         mat4 mLeaf = model;
-        mLeaf = translate(mLeaf, vec3(mp.x + 0.042f, mp.y + mp.stemH * 0.82f, mp.z));
-        drawLeaflet(shader, mLeaf, 0.16f, 0.048f, 32.0f, leafAccent);
+        mLeaf = translate(mLeaf, vec3(mp.x + 0.038f, mp.y + mp.stemH * 0.82f, mp.z));
+        drawMangoLeaf(shader, mLeaf, 0.32f, 0.075f, 38.0f, leafAccent);
 
         // Distinctive ripe Bengali mango fruit (kidney/ovoid shape with slight asymmetry)
         mat4 aam = model;
         aam = translate(aam, vec3(mp.x, mp.y, mp.z));
-        aam = rotate(aam, radians(12.0f), vec3(0.0f, 0.0f, 1.0f));
-        aam = scale(aam, vec3(0.14f, 0.21f, 0.13f));
+        aam = rotate(aam, radians(14.0f), vec3(0.0f, 0.0f, 1.0f));
+        aam = scale(aam, vec3(0.12f, 0.18f, 0.11f));
         Primitives::drawSphere(shader, aam, mp.col);
     }
 }

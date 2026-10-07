@@ -66,7 +66,7 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
     Primitives::drawCube(shader, placket, p.shirtColor * 0.85f);
 
     // ── Kurta Hem & Side Slits (Chak / চাক) ──────────────────────
-    if (!p.seated && !p.crossLegged) {
+    if (!p.seated && !p.crossLegged && !p.isWoman) {
         mat4 kurtaHem = model;
         kurtaHem = translate(kurtaHem, vec3(0.0f, torsoBase - 0.045f, 0.0f));
         kurtaHem = scale(kurtaHem, vec3(chestW * 2.08f, 0.12f, chestD * 2.06f));
@@ -77,6 +77,19 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
         hemSplit = translate(hemSplit, vec3(0.0f, torsoBase - 0.075f, chestD + 0.003f));
         hemSplit = scale(hemSplit, vec3(0.008f, 0.065f, 0.005f));
         Primitives::drawCube(shader, hemSplit, p.shirtColor * 0.85f);
+    } else if (p.isWoman) {
+        // Diagonal Saree Anchol drape across chest (from waist over shoulder)
+        mat4 anchol = model;
+        anchol = translate(anchol, vec3(-0.015f, torsoBase + torsoH * 0.52f, 0.038f));
+        anchol = rotate(anchol, radians(-24.0f), vec3(0.0f, 0.0f, 1.0f));
+        anchol = scale(anchol, vec3(chestW * 1.35f, torsoH * 0.96f, chestD * 0.50f));
+        Primitives::drawCube(shader, anchol, p.pantsColor);
+
+        // Saree Anchol border (Paar / পাড়)
+        mat4 ancholPaar = anchol;
+        ancholPaar = translate(ancholPaar, vec3(chestW * 0.50f, 0.0f, 0.005f));
+        ancholPaar = scale(ancholPaar, vec3(0.022f, torsoH * 0.98f, chestD * 0.52f));
+        Primitives::drawCube(shader, ancholPaar, p.gamchaColor);
     }
 
     // ── 3. Neck (Unit Cylinder) & Head (Unit Sphere) ──────────────
@@ -203,6 +216,30 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
             tupiCrown = scale(tupiCrown, vec3(headR * 0.90f, 0.038f, headR * 0.90f));
             Primitives::drawSphere(shader, tupiCrown, tupiCol);
         }
+    } else if (p.isWoman) {
+        // Glossy dark hair bun (Khnopa / খোঁপা) at back of head
+        mat4 bun = model;
+        bun = translate(bun, vec3(0.0f, headCenterY - 0.012f, -headR * 0.90f));
+        bun = scale(bun, vec3(0.062f, 0.058f, 0.052f));
+        Primitives::drawSphere(shader, bun, p.hairColor);
+
+        // Vermilion forehead dot (Tip / টিপ / Bindi)
+        mat4 tip = model;
+        tip = translate(tip, vec3(0.0f, headCenterY + 0.016f, headR * 0.94f));
+        tip = scale(tip, vec3(0.012f, 0.012f, 0.006f));
+        Primitives::drawSphere(shader, tip, vec3(0.85f, 0.12f, 0.10f));
+
+        // Draped Saree Head Veil (Ghomta / ঘোমটা) covering crown, temples, and shoulders
+        mat4 ghomta = model;
+        ghomta = translate(ghomta, vec3(0.0f, headCenterY + 0.022f, -0.012f));
+        ghomta = scale(ghomta, vec3(headR * 1.15f, headR * 1.10f, headR * 1.12f));
+        Primitives::drawSphere(shader, ghomta, p.pantsColor);
+
+        // Ghomta frontal drape fold / border (Paar / পাড়)
+        mat4 ghomtaPaar = model;
+        ghomtaPaar = translate(ghomtaPaar, vec3(0.0f, headCenterY + headR * 0.52f, headR * 0.82f));
+        ghomtaPaar = scale(ghomtaPaar, vec3(headR * 1.05f, 0.018f, 0.022f));
+        Primitives::drawCube(shader, ghomtaPaar, p.gamchaColor);
     }
 
     bool isWalking = (!p.seated && !p.crossLegged &&
@@ -259,8 +296,8 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
                 fan = rotate(fan, radians(15.0f), vec3(0.0f, 0.0f, 1.0f));
                 // Gentle fanning oscillation
                 fan = rotate(fan, p.fanSway, vec3(0.0f, 1.0f, 0.0f));
-                // Center the grip on the handle (handle extends below blade)
-                fan = translate(fan, vec3(0.0f, 0.16f, 0.0f));
+                // Center the grip on the handle (handle shifted by handleX = -0.145f, grip at Y = -0.19f)
+                fan = translate(fan, vec3(0.145f, 0.19f, 0.0f));
                 Charpai::drawFan(shader, fan, 0.0f);
             }
             else {
@@ -445,49 +482,94 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
     }
     else if (p.seated) {
         // Seated Elder on Charpai:
-        // Proper human anatomy: TWO DISTINCT FORWARD THIGHS + DRAPED VERTICAL SHINS!
+        // Authentic human anatomy: pelvis rests on charpai surface, thighs extend horizontally
+        // over the front timber rail, rounded knees curve over the edge, and vertical draped
+        // shins hang freely in open air in front of the charpai (zero clipping/intersection)!
         float thighSpacing = 0.068f;
+        float thighLength  = 0.285f;
+        float seatedShinH  = 0.400f; // natural lower leg length hanging down from bed toward ground
 
-        // Left & Right forward thighs
+        // 1. Pelvis / Buttocks firmly resting on the charpai bed surface
+        mat4 pelvis = model;
+        pelvis = translate(pelvis, vec3(0.0f, torsoBase - 0.005f, -0.015f));
+        pelvis = scale(pelvis, vec3(waistW * 1.55f, 0.090f, waistD * 1.85f));
+        Primitives::drawCube(shader, pelvis, p.pantsColor);
+
+        // Lungi waistband / sash fold around the hips
+        mat4 waistSash = model;
+        waistSash = translate(waistSash, vec3(0.0f, torsoBase + 0.025f, 0.0f));
+        waistSash = scale(waistSash, vec3(waistW * 1.62f, 0.055f, waistD * 1.90f));
+        Primitives::drawCube(shader, waistSash, p.pantsColor * 0.90f);
+
+        // 2. Left & Right thighs extending forward over the bed rail
         for (int side = -1; side <= 1; side += 2) {
             float fside = (float)side;
             float tx = fside * thighSpacing;
 
-            // Horizontal thigh extending forward (+Z) over bed
+            // Horizontal thigh extending forward (+Z) over bed and crossing the front rail
             mat4 thigh = model;
-            thigh = translate(thigh, vec3(tx, torsoBase + 0.040f, upperLegH * 0.46f));
-            thigh = scale(thigh, vec3(0.052f, 0.055f, upperLegH * 0.90f));
+            thigh = translate(thigh, vec3(tx, torsoBase + 0.038f, thighLength * 0.48f));
+            thigh = scale(thigh, vec3(0.056f, 0.058f, thighLength * 0.94f));
             Primitives::drawCube(shader, thigh, p.pantsColor);
 
-            // Rounded knee cap at the front edge of the charpai
+            // Rounded knee cap curving naturally over the outer edge of the charpai rail
             mat4 knee = model;
-            knee = translate(knee, vec3(tx, torsoBase + 0.040f, upperLegH * 0.88f));
-            knee = scale(knee, vec3(0.050f, 0.050f, 0.050f));
+            knee = translate(knee, vec3(tx, torsoBase + 0.035f, thighLength * 0.94f));
+            knee = scale(knee, vec3(0.060f, 0.060f, 0.060f));
             Primitives::drawSphere(shader, knee, p.pantsColor);
 
-            // Vertical draped shin hanging down the front of the charpai
+            // Vertical draped shin hanging down in free air in front of the charpai
+            // Connected seamlessly from knee center down toward ankle
             mat4 shin = model;
-            shin = translate(shin, vec3(tx, torsoBase - lowerLegH * 0.42f, upperLegH * 0.88f));
-            shin = scale(shin, vec3(0.048f, lowerLegH * 0.82f, 0.052f));
+            shin = translate(shin, vec3(tx, torsoBase + 0.035f - seatedShinH * 0.50f, thighLength * 0.94f));
+            shin = scale(shin, vec3(0.052f, seatedShinH, 0.056f));
             Primitives::drawCube(shader, shin, p.pantsColor);
 
-            // Sandaled foot peeking out at ground level
+            // Decorative folded Lungi hem band around lower shin
+            mat4 lungiHem = model;
+            lungiHem = translate(lungiHem, vec3(tx, torsoBase + 0.035f - seatedShinH * 0.96f, thighLength * 0.94f));
+            lungiHem = scale(lungiHem, vec3(0.056f, 0.018f, 0.060f));
+            Primitives::drawCube(shader, lungiHem, p.pantsColor * 0.85f);
+
+            // Bare ankle peeking out below lungi hem
+            mat4 ankle = model;
+            ankle = translate(ankle, vec3(tx, torsoBase + 0.035f - seatedShinH - 0.024f, thighLength * 0.94f));
+            ankle = scale(ankle, vec3(0.028f, 0.048f, 0.028f));
+            Primitives::drawCylinder(shader, ankle, p.skinColor);
+
+            // Traditional Bengali leather / rubber sandal (Chappal)
+            float footY = torsoBase + 0.035f - seatedShinH - 0.048f;
+            float footZ = thighLength * 0.94f + 0.035f;
+
+            // Sandal sole
+            mat4 sole = model;
+            sole = translate(sole, vec3(tx, footY - 0.012f, footZ));
+            sole = scale(sole, vec3(0.038f, 0.014f, 0.096f));
+            Primitives::drawCube(shader, sole, vec3(0.22f, 0.14f, 0.08f));
+
+            // Bare foot resting on sandal
             mat4 foot = model;
-            foot = translate(foot, vec3(tx, torsoBase - lowerLegH, upperLegH * 0.88f + 0.035f));
-            foot = scale(foot, vec3(0.036f, 0.026f, 0.078f));
-            Primitives::drawCube(shader, foot, vec3(0.28f, 0.18f, 0.10f));
+            foot = translate(foot, vec3(tx, footY, footZ));
+            foot = scale(foot, vec3(0.034f, 0.018f, 0.088f));
+            Primitives::drawCube(shader, foot, p.skinColor);
+
+            // Sandal strap across instep
+            mat4 strap = model;
+            strap = translate(strap, vec3(tx, footY + 0.008f, footZ - 0.010f));
+            strap = scale(strap, vec3(0.036f, 0.012f, 0.024f));
+            Primitives::drawCube(shader, strap, vec3(0.24f, 0.15f, 0.09f));
         }
 
         // Lungi fabric drape across the lap between thighs
         mat4 lapDrape = model;
-        lapDrape = translate(lapDrape, vec3(0.0f, torsoBase + 0.025f, upperLegH * 0.44f));
-        lapDrape = scale(lapDrape, vec3(thighSpacing * 1.30f, 0.042f, upperLegH * 0.80f));
+        lapDrape = translate(lapDrape, vec3(0.0f, torsoBase + 0.030f, thighLength * 0.46f));
+        lapDrape = scale(lapDrape, vec3(thighSpacing * 1.35f, 0.048f, thighLength * 0.88f));
         Primitives::drawCube(shader, lapDrape, p.pantsColor);
 
-        // Lungi fabric drape between the hanging shins
+        // Lungi fabric drape hanging down between the shins in front of the charpai
         mat4 skirtDrape = model;
-        skirtDrape = translate(skirtDrape, vec3(0.0f, torsoBase - lowerLegH * 0.42f, upperLegH * 0.86f));
-        skirtDrape = scale(skirtDrape, vec3(thighSpacing * 1.30f, lowerLegH * 0.76f, 0.035f));
+        skirtDrape = translate(skirtDrape, vec3(0.0f, torsoBase + 0.035f - seatedShinH * 0.48f, thighLength * 0.92f));
+        skirtDrape = scale(skirtDrape, vec3(thighSpacing * 1.30f, seatedShinH * 0.82f, 0.036f));
         Primitives::drawCube(shader, skirtDrape, p.pantsColor);
     }
     else if (isWalking) {
@@ -589,11 +671,12 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
             Primitives::drawCube(shader, fold, p.pantsColor * 0.90f);
         }
 
-        // 4. Lungi bottom hem border trim (Paar / পাড়)
+        // 4. Lungi / Saree bottom hem border trim (Paar / পাড়)
+        vec3 hemCol = p.isWoman ? p.gamchaColor : (p.pantsColor * 0.75f);
         mat4 hem = model;
         hem = translate(hem, vec3(0.0f, lungiBotY, 0.0f));
         hem = scale(hem, vec3(waistW * 1.10f, 0.022f, waistD * 1.12f));
-        Primitives::drawCylinder(shader, hem, p.pantsColor * 0.75f);
+        Primitives::drawCylinder(shader, hem, hemCol);
 
         // 5. Exposed ankles & feet with traditional leather sandals (Chappal / স্যান্ডেল)
         for (int side = -1; side <= 1; side += 2) {
@@ -623,79 +706,116 @@ void draw(Shader& shader, const mat4& model, const PersonParams& p)
 
 void drawBook(Shader& shader, const mat4& model)
 {
-    // Open Bengali Schoolbook / Storybook (বই)
-    // 1. Hardcover / binding underneath (dark navy blue cloth)
-    // 2. Left Page Block & Right Page Block (warm natural off-white paper) angled open
-    // 3. Central Spine Gutter / Dividing Crease Line (dark shadow seam separating pages)
-    // 4. Printed horizontal text lines on both pages
+    // Authentic Open Scripture / Storybook (বই) resting naturally in the V-cradle of the Rehal:
+    // Left and right covers rest flush on the inclined wooden planks (zero clipping/intersection)!
+    // Left and right page blocks open outward with warm ivory paper, printed text lines,
+    // chapter headers, margin rules, and a traditional crimson ribbon bookmark (Feeta).
 
-    vec3 coverCol   (0.18f, 0.26f, 0.44f); // dark navy blue cloth binding
-    vec3 pageCol    (0.95f, 0.94f, 0.89f); // warm natural book paper
-    vec3 creaseCol  (0.22f, 0.18f, 0.14f); // dark binding gutter / crease shadow
-    vec3 textCol    (0.42f, 0.40f, 0.38f); // printed ink text lines
+    vec3 coverCol   (0.16f, 0.24f, 0.42f); // rich dark navy cloth hardcover binding
+    vec3 coverTrim  (0.85f, 0.72f, 0.30f); // gold foil border trim on cover
+    vec3 pageCol    (0.96f, 0.95f, 0.90f); // warm natural ivory book paper
+    vec3 creaseCol  (0.20f, 0.16f, 0.12f); // dark gutter shadow seam along central spine
+    vec3 textCol    (0.36f, 0.34f, 0.32f); // printed text lines
+    vec3 ribbonCol  (0.82f, 0.15f, 0.15f); // crimson silk bookmark ribbon (Feeta / ফিতা)
 
-    float bookW   = 0.36f;  // total open width along X
-    float bookD   = 0.26f;  // height/depth of page along Z
-    float pageThk = 0.024f; // thickness of page leaf block
-    float pageW   = 0.165f; // width of each open page
+    const float pivotY  = 0.11f;   // matches Rehal hinge axis height
+    const float plankT  = 0.020f;  // matches Rehal timber thickness
+    const float angle   = 30.0f;   // matches Rehal cradle inclination (120 deg open V)
+    const float pageW   = 0.155f;  // width of each page leaf along the wing
+    const float bookD   = 0.240f;  // height/depth of book along Z
+    const float covThk  = 0.005f;  // cloth cover board thickness
+    const float pageThk = 0.016f;  // page leaf block thickness
 
-    // ── 1. Book Cover & Spine ──────────────────────────────────────
-    // Hardcover backing slightly larger than pages
-    mat4 cover = model;
-    cover = translate(cover, vec3(0.0f, -0.005f, 0.0f));
-    cover = scale(cover, vec3(bookW + 0.024f, 0.010f, bookD + 0.016f));
-    Primitives::drawCube(shader, cover, coverCol);
+    // ── 1. Right Wing: Cover, Pages & Text (inclined at +angle) ───
+    mat4 wingR = model;
+    wingR = translate(wingR, vec3(0.0f, pivotY, 0.0f));
+    wingR = rotate(wingR, radians(angle), vec3(0.0f, 0.0f, 1.0f));
 
-    // Rounded spine at center bottom
-    mat4 spine = model;
-    spine = translate(spine, vec3(0.0f, -0.006f, 0.0f));
-    spine = rotate(spine, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
-    spine = scale(spine, vec3(0.010f, bookD + 0.016f, 0.010f));
-    Primitives::drawCylinder(shader, spine, coverCol);
+    // Right hardcover backing resting flush on top surface of right Rehal plank (y = plankT * 0.5f)
+    mat4 covR = wingR;
+    covR = translate(covR, vec3(0.004f + (pageW + 0.006f) * 0.5f, plankT * 0.5f + covThk * 0.5f, 0.0f));
+    covR = scale(covR, vec3(pageW + 0.006f, covThk, bookD + 0.008f));
+    Primitives::drawCube(shader, covR, coverCol);
 
-    // ── 2. Two Distinct Open Pages (Left & Right Leaf Blocks) ──────
-    // Left Page (tilted up slightly at +3.5 deg for natural open book curve)
-    mat4 pageL = model;
-    pageL = translate(pageL, vec3(-pageW * 0.5f - 0.003f, pageThk * 0.5f, 0.0f));
-    pageL = rotate(pageL, radians(3.5f), vec3(0.0f, 0.0f, 1.0f));
-    pageL = scale(pageL, vec3(pageW, pageThk, bookD));
-    Primitives::drawCube(shader, pageL, pageCol);
-
-    // Right Page (tilted up slightly at -3.5 deg for natural open book curve)
-    mat4 pageR = model;
-    pageR = translate(pageR, vec3(pageW * 0.5f + 0.003f, pageThk * 0.5f, 0.0f));
-    pageR = rotate(pageR, radians(-3.5f), vec3(0.0f, 0.0f, 1.0f));
+    // Right page block resting flush on top of right cover
+    mat4 pageR = wingR;
+    pageR = translate(pageR, vec3(0.006f + pageW * 0.5f, plankT * 0.5f + covThk + pageThk * 0.5f, 0.0f));
     pageR = scale(pageR, vec3(pageW, pageThk, bookD));
     Primitives::drawCube(shader, pageR, pageCol);
 
-    // ── 3. Prominent Center Crease / Page Divider Line ─────────────
-    // Dark recessed shadow seam running right down the center along Z
-    mat4 crease = model;
-    crease = translate(crease, vec3(0.0f, pageThk + 0.002f, 0.0f));
-    crease = scale(crease, vec3(0.009f, 0.006f, bookD + 0.004f));
-    Primitives::drawCube(shader, crease, creaseCol);
+    // Right page chapter header band
+    mat4 hdrR = wingR;
+    hdrR = translate(hdrR, vec3(0.006f + pageW * 0.5f, plankT * 0.5f + covThk + pageThk + 0.001f, -bookD * 0.38f));
+    hdrR = scale(hdrR, vec3(pageW * 0.78f, 0.0018f, 0.016f));
+    Primitives::drawCube(shader, hdrR, coverTrim);
 
-    // ── 4. Printed Horizontal Text Lines on Left and Right Pages ───
-    float lineZOffsets[4] = { -0.075f, -0.025f, 0.025f, 0.075f };
-    float lineW = pageW * 0.72f;
-
-    for (int i = 0; i < 4; i++) {
-        float lz = lineZOffsets[i];
-
-        // Left page text line
-        mat4 lineL = model;
-        lineL = translate(lineL, vec3(-pageW * 0.5f - 0.003f, pageThk + 0.003f, lz));
-        lineL = rotate(lineL, radians(3.5f), vec3(0.0f, 0.0f, 1.0f));
-        lineL = scale(lineL, vec3(lineW, 0.0025f, 0.016f));
-        Primitives::drawCube(shader, lineL, textCol);
-
-        // Right page text line
-        mat4 lineR = model;
-        lineR = translate(lineR, vec3(pageW * 0.5f + 0.003f, pageThk + 0.003f, lz));
-        lineR = rotate(lineR, radians(-3.5f), vec3(0.0f, 0.0f, 1.0f));
-        lineR = scale(lineR, vec3(lineW, 0.0025f, 0.016f));
-        Primitives::drawCube(shader, lineR, textCol);
+    // Right page printed text lines
+    float lineZ[5] = { -bookD * 0.22f, -bookD * 0.08f, bookD * 0.06f, bookD * 0.20f, bookD * 0.34f };
+    for (int i = 0; i < 5; i++) {
+        mat4 line = wingR;
+        line = translate(line, vec3(0.006f + pageW * 0.5f, plankT * 0.5f + covThk + pageThk + 0.001f, lineZ[i]));
+        line = scale(line, vec3(pageW * 0.72f, 0.0018f, 0.014f));
+        Primitives::drawCube(shader, line, textCol);
     }
+
+    // ── 2. Left Wing: Cover, Pages & Text (inclined at -angle) ────
+    mat4 wingL = model;
+    wingL = translate(wingL, vec3(0.0f, pivotY, 0.0f));
+    wingL = rotate(wingL, radians(-angle), vec3(0.0f, 0.0f, 1.0f));
+
+    // Left hardcover backing resting flush on top surface of left Rehal plank (y = plankT * 0.5f)
+    mat4 covL = wingL;
+    covL = translate(covL, vec3(-0.004f - (pageW + 0.006f) * 0.5f, plankT * 0.5f + covThk * 0.5f, 0.0f));
+    covL = scale(covL, vec3(pageW + 0.006f, covThk, bookD + 0.008f));
+    Primitives::drawCube(shader, covL, coverCol);
+
+    // Left page block resting flush on top of left cover
+    mat4 pageL = wingL;
+    pageL = translate(pageL, vec3(-0.006f - pageW * 0.5f, plankT * 0.5f + covThk + pageThk * 0.5f, 0.0f));
+    pageL = scale(pageL, vec3(pageW, pageThk, bookD));
+    Primitives::drawCube(shader, pageL, pageCol);
+
+    // Left page chapter header band
+    mat4 hdrL = wingL;
+    hdrL = translate(hdrL, vec3(-0.006f - pageW * 0.5f, plankT * 0.5f + covThk + pageThk + 0.001f, -bookD * 0.38f));
+    hdrL = scale(hdrL, vec3(pageW * 0.78f, 0.0018f, 0.016f));
+    Primitives::drawCube(shader, hdrL, coverTrim);
+
+    // Left page printed text lines
+    for (int i = 0; i < 5; i++) {
+        mat4 line = wingL;
+        line = translate(line, vec3(-0.006f - pageW * 0.5f, plankT * 0.5f + covThk + pageThk + 0.001f, lineZ[i]));
+        line = scale(line, vec3(pageW * 0.72f, 0.0018f, 0.014f));
+        Primitives::drawCube(shader, line, textCol);
+    }
+
+    // ── 3. Central Spine & Inner Valley Gutter ─────────────────────
+    // Rounded spine cylinder nestled directly along the cradle hinge
+    mat4 spine = model;
+    spine = translate(spine, vec3(0.0f, pivotY + plankT * 0.5f + 0.003f, 0.0f));
+    spine = rotate(spine, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
+    spine = scale(spine, vec3(0.012f, bookD + 0.008f, 0.012f));
+    Primitives::drawCylinder(shader, spine, coverCol);
+
+    // Dark valley gutter crease seam
+    mat4 gutter = model;
+    gutter = translate(gutter, vec3(0.0f, pivotY + plankT * 0.5f + 0.008f, 0.0f));
+    gutter = scale(gutter, vec3(0.008f, 0.010f, bookD));
+    Primitives::drawCube(shader, gutter, creaseCol);
+
+    // ── 4. Traditional Silk Bookmark Ribbon (Feeta / ফিতা) ─────────
+    // Ribbon resting down the center crease between open pages
+    mat4 ribbon = model;
+    ribbon = translate(ribbon, vec3(0.0f, pivotY + plankT * 0.5f + 0.014f, 0.0f));
+    ribbon = scale(ribbon, vec3(0.008f, 0.003f, bookD * 0.95f));
+    Primitives::drawCube(shader, ribbon, ribbonCol);
+
+    // Ribbon tail hanging gracefully past bottom edge of book over Rehal front
+    mat4 ribbonTail = model;
+    ribbonTail = translate(ribbonTail, vec3(0.006f, pivotY - 0.035f, bookD * 0.5f + 0.015f));
+    ribbonTail = rotate(ribbonTail, radians(20.0f), vec3(1.0f, 0.0f, 0.0f));
+    ribbonTail = scale(ribbonTail, vec3(0.008f, 0.075f, 0.002f));
+    Primitives::drawCube(shader, ribbonTail, ribbonCol);
 }
 
 void drawRehal(Shader& shader, const mat4& model)
@@ -703,35 +823,47 @@ void drawRehal(Shader& shader, const mat4& model)
     // Traditional Rural Wooden Folding Bookstand (Rehal / রেহাল)
     // Modeled from two interlocking carved seasoned timber planks forming an X-cradle
     vec3 woodCol   (0.42f, 0.26f, 0.12f); // seasoned dark teak/rosewood
-    vec3 carvedCol (0.34f, 0.20f, 0.08f); // carved relief shadow
+    vec3 woodTrim  (0.50f, 0.32f, 0.16f); // relief highlight
+    vec3 carvedCol (0.32f, 0.18f, 0.08f); // carved relief shadow
 
-    float plankL = 0.38f;  // length of each crossing plank
-    float plankW = 0.28f;  // width along Z
-    float plankT = 0.020f; // thickness
+    const float plankL = 0.38f;  // length of each crossing plank
+    const float plankW = 0.28f;  // width along Z
+    const float plankT = 0.020f; // thickness
+    const float pivotY = 0.11f;
+    const float angle  = 30.0f;  // 30 deg inclination -> 120 deg open V cradle
 
-    // Plank 1 (sloping from lower-left to upper-right at 36 deg)
+    // Plank 1 (sloping from lower-left to upper-right at +30 deg)
     mat4 p1 = model;
-    p1 = translate(p1, vec3(0.0f, 0.11f, 0.0f));
-    p1 = rotate(p1, radians(36.0f), vec3(0.0f, 0.0f, 1.0f));
+    p1 = translate(p1, vec3(0.0f, pivotY, 0.0f));
+    p1 = rotate(p1, radians(angle), vec3(0.0f, 0.0f, 1.0f));
     mat4 p1S = scale(p1, vec3(plankL, plankT, plankW));
     Primitives::drawCube(shader, p1S, woodCol);
 
-    // Plank 2 (sloping from lower-right to upper-left at -36 deg)
+    // Plank 2 (sloping from lower-right to upper-left at -30 deg)
     mat4 p2 = model;
-    p2 = translate(p2, vec3(0.0f, 0.11f, 0.0f));
-    p2 = rotate(p2, radians(-36.0f), vec3(0.0f, 0.0f, 1.0f));
+    p2 = translate(p2, vec3(0.0f, pivotY, 0.0f));
+    p2 = rotate(p2, radians(-angle), vec3(0.0f, 0.0f, 1.0f));
     mat4 p2S = scale(p2, vec3(plankL, plankT, plankW));
     Primitives::drawCube(shader, p2S, woodCol);
 
     // Central interlocking hinge pivot cylinder
     mat4 pivot = model;
-    pivot = translate(pivot, vec3(0.0f, 0.11f, 0.0f));
+    pivot = translate(pivot, vec3(0.0f, pivotY, 0.0f));
     pivot = rotate(pivot, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
     mat4 pivotS = scale(pivot, vec3(0.022f, plankW + 0.010f, 0.022f));
     Primitives::drawCylinder(shader, pivotS, carvedCol);
 
+    // Turned end caps on hinge pivot
+    for (int side = -1; side <= 1; side += 2) {
+        float fside = (float)side;
+        mat4 cap = model;
+        cap = translate(cap, vec3(0.0f, pivotY, fside * (plankW * 0.5f + 0.008f)));
+        cap = scale(cap, vec3(0.028f, 0.028f, 0.016f));
+        Primitives::drawSphere(shader, cap, woodTrim);
+    }
+
     // 2 Carved ornamental foot arches at base
-    float footOffsets[2] = { -0.13f, 0.13f };
+    float footOffsets[2] = { -0.14f, 0.14f };
     for (int i = 0; i < 2; i++) {
         mat4 foot = model;
         foot = translate(foot, vec3(footOffsets[i], 0.015f, 0.0f));

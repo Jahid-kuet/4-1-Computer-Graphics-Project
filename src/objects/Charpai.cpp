@@ -140,43 +140,60 @@ void drawFan(Shader& shader, const mat4& model, float)
 
     float fanCenterY = 0.14f;
     float discRadius = 0.188f;
+    float handleX    = -0.145f; // shifted to one side from middle for effortless wrist fanning action
 
-    // ── 1. Bamboo Handle, Grip Wrap & Structural Spine ─────────────────────────
+    // ── 1. Offset Bamboo Handle, Grip Wrap, Side Spine & Triangulated Brace ────
     // Exposed lower bamboo handle tip
     mat4 handleTip = model;
-    handleTip = translate(handleTip, vec3(0.0f, -0.30f, 0.0f));
+    handleTip = translate(handleTip, vec3(handleX, -0.30f, 0.0f));
     handleTip = scale(handleTip, vec3(0.010f, 0.040f, 0.010f));
     Primitives::drawCylinder(shader, handleTip, handleWood);
 
     // Wrapped red cotton grip section (where the hand holds the fan)
     mat4 grip = model;
-    grip = translate(grip, vec3(0.0f, -0.19f, 0.0f));
+    grip = translate(grip, vec3(handleX, -0.19f, 0.0f));
     grip = scale(grip, vec3(0.013f, 0.180f, 0.013f));
     Primitives::drawCylinder(shader, grip, gripRed);
 
     // Lower decorative white ferrule / binding band
     mat4 ferruleBot = model;
-    ferruleBot = translate(ferruleBot, vec3(0.0f, -0.275f, 0.0f));
+    ferruleBot = translate(ferruleBot, vec3(handleX, -0.275f, 0.0f));
     ferruleBot = scale(ferruleBot, vec3(0.0145f, 0.012f, 0.0145f));
     Primitives::drawCylinder(shader, ferruleBot, whiteTrim);
 
     // Upper decorative white ferrule / binding band
     mat4 ferruleTop = model;
-    ferruleTop = translate(ferruleTop, vec3(0.0f, -0.105f, 0.0f));
+    ferruleTop = translate(ferruleTop, vec3(handleX, -0.105f, 0.0f));
     ferruleTop = scale(ferruleTop, vec3(0.0145f, 0.012f, 0.0145f));
     Primitives::drawCylinder(shader, ferruleTop, whiteTrim);
 
-    // Bamboo shaft neck connecting grip to the fan disc
+    // Bamboo shaft neck connecting grip up to the fan disc rim
     mat4 neck = model;
-    neck = translate(neck, vec3(0.0f, -0.065f, 0.0f));
-    neck = scale(neck, vec3(0.011f, 0.070f, 0.011f));
+    neck = translate(neck, vec3(handleX, -0.045f, 0.0f));
+    neck = scale(neck, vec3(0.011f, 0.110f, 0.011f));
     Primitives::drawCylinder(shader, neck, handleWood);
 
-    // Structural bamboo spine running up through the back of the disc
+    // Side-mounted structural bamboo spine running up along the side edge of the disc on the back
     mat4 spine = model;
-    spine = translate(spine, vec3(0.0f, fanCenterY, -0.007f));
-    spine = scale(spine, vec3(0.009f, discRadius * 2.05f, 0.007f));
+    spine = translate(spine, vec3(handleX, fanCenterY, -0.007f));
+    spine = scale(spine, vec3(0.010f, 0.250f, 0.008f));
     Primitives::drawCylinder(shader, spine, handleWood);
+
+    // Diagonal reinforcing bamboo stay connecting handle neck to disc center (triangulated strength)
+    mat4 brace = model;
+    brace = translate(brace, vec3(handleX * 0.5f, (fanCenterY - 0.01f) * 0.5f, -0.006f));
+    brace = rotate(brace, radians(-44.0f), vec3(0.0f, 0.0f, 1.0f));
+    brace = scale(brace, vec3(0.008f, 0.210f, 0.006f));
+    Primitives::drawCylinder(shader, brace, handleWood);
+
+    // Split-cane binding lashings securing the side bamboo handle to the outer rim hoop
+    vec3 lashingCane(0.42f, 0.30f, 0.15f);
+    for (float ly : { 0.02f, fanCenterY, 0.26f }) {
+        mat4 tie = model;
+        tie = translate(tie, vec3(handleX, ly, -0.003f));
+        tie = scale(tie, vec3(0.013f, 0.010f, 0.013f));
+        Primitives::drawCylinder(shader, tie, lashingCane);
+    }
 
     // ── 2. Wide Accordion-Pleated Cloth Frills / Ruffles (ঝালর) ────────────────
     // Radiating pleated ruffles surrounding the full 360-degree perimeter
@@ -306,7 +323,7 @@ void drawFan(Shader& shader, const mat4& model, float)
     }
 }
 
-void drawLantern(Shader& shader, const mat4& model)
+void drawLantern(Shader& shader, const mat4& model, bool isLit)
 {
     // Authentic Tubular Kerosene Hurricane Lantern (Traditional Rural Bengali Hariken)
     // Modeled procedurally from canonical geometric primitives matching vintage tubular lanterns:
@@ -322,7 +339,7 @@ void drawLantern(Shader& shader, const mat4& model)
     vec3 metalCol  (0.20f, 0.25f, 0.26f); // antique patinated oxidized tin/slate-metal
     vec3 rustCol   (0.38f, 0.26f, 0.16f); // weathered rust/bronze rim accents
     vec3 brassCol  (0.64f, 0.50f, 0.22f); // aged brass (burner, filler cap, wick dial)
-    vec3 glassCol  (0.96f, 0.86f, 0.56f); // warm glowing translucent kerosene glass globe
+    vec3 glassCol  = isLit ? vec3(0.96f, 0.86f, 0.56f) : vec3(0.62f, 0.70f, 0.75f); // glowing amber vs unlit clear glass
     vec3 flameCol  (1.00f, 0.82f, 0.22f); // glowing golden kerosene flame
     vec3 flameCore (1.00f, 0.96f, 0.65f); // hot white-gold flame core
     vec3 wireCol   (0.18f, 0.17f, 0.16f); // dark spring-steel wire (cage & bail handle)
@@ -398,19 +415,21 @@ void drawLantern(Shader& shader, const mat4& model)
     wick = scale(wick, vec3(0.010f, 0.008f, 0.010f));
     Primitives::drawCylinder(shader, wick, vec3(0.24f, 0.18f, 0.12f));
 
-    // Outer warm glowing teardrop flame (Emissive)
-    shader.setFloat("emissive", 1.0f);
-    mat4 flame = model;
-    flame = translate(flame, vec3(0.0f, 0.094f, 0.0f));
-    flame = scale(flame, vec3(0.022f, 0.065f, 0.022f));
-    Primitives::drawCone(shader, flame, flameCol);
+    if (isLit) {
+        // Outer warm glowing teardrop flame (Emissive)
+        shader.setFloat("emissive", 1.0f);
+        mat4 flame = model;
+        flame = translate(flame, vec3(0.0f, 0.094f, 0.0f));
+        flame = scale(flame, vec3(0.022f, 0.065f, 0.022f));
+        Primitives::drawCone(shader, flame, flameCol);
 
-    // Hot incandescent white-gold core
-    mat4 flameIn = model;
-    flameIn = translate(flameIn, vec3(0.0f, 0.094f, 0.0f));
-    flameIn = scale(flameIn, vec3(0.012f, 0.040f, 0.012f));
-    Primitives::drawCone(shader, flameIn, flameCore);
-    shader.setFloat("emissive", 0.0f);
+        // Hot incandescent white-gold core
+        mat4 flameIn = model;
+        flameIn = translate(flameIn, vec3(0.0f, 0.094f, 0.0f));
+        flameIn = scale(flameIn, vec3(0.012f, 0.040f, 0.012f));
+        Primitives::drawCone(shader, flameIn, flameCore);
+        shader.setFloat("emissive", 0.0f);
+    }
 
     // ── 4. Bulbous Glass Globe (Chimney) ─────────────────────────────────────
     // Lower glass seating neck

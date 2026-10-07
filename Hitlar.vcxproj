@@ -183,6 +183,7 @@
     <ClCompile Include="src\objects\CurvedObject.cpp" />
     <ClCompile Include="src\objects\Fisherman.cpp" />
     <ClCompile Include="src\objects\Sun.cpp" />
+    <ClCompile Include="src\objects\RayTracer.cpp" />
   </ItemGroup>
   <!-- Header Files -->
   <ItemGroup>
@@ -208,6 +209,7 @@
     <ClInclude Include="include\objects\Stars.h" />
     <ClInclude Include="include\objects\Fireflies.h" />
     <ClInclude Include="include\objects\Fisherman.h" />
+    <ClInclude Include="include\objects\RayTracer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

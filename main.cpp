@@ -11,8 +11,6 @@
 #include <filesystem>
 #include <string>
 #include <functional>
-#include <chrono>
-#include <thread>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -41,6 +39,7 @@
 #include "Texture.h"
 #include "objects/CurvedObject.h"
 #include "objects/Fisherman.h"
+#include "objects/RayTracer.h"
 
 using namespace math;
 
@@ -62,6 +61,144 @@ static int  g_textureMode = 2; // 0 = Solid Shading, 1 = Procedural GLSL Detaili
 static bool showTerrain  = true; // Key 'T' toggles terrain/river visibility
 static bool g_tourActive = false; // Key SPACE toggles automated fly-through tour
 static bool g_dirLightEnabled = true; // Key 'J' toggles Directional Light (Moonlight/Sunlight)
+static bool g_hardLight = false; // Key 'U': Toggle Hard Light vs Soft Light
+static bool g_wireframe = false; // Key 'Z': Toggle Wireframe Mode
+static bool g_rayTracingMode = false; // Key 'Y': Toggle Real-Time Whitted Ray Tracing Mode
+static int  g_shadingModel = 0; // Key 'M': 0 = Phong Shading (Per-Fragment), 1 = Gouraud Shading (Per-Vertex)
+
+// ─── Village Layout & House Data Structure ───────────────────────────
+// Hard constraint: Precompute static object transforms instead of recalculating every frame.
+// Seeded layout system with minimum distance verification (>= 4.8m between houses)
+// ensuring no houses intersect roads, river channel, or agricultural paddy plots.
+struct VillageHouse {
+    vec3 pos;
+    float yawDeg;
+    HouseStyle style;
+    int variant;         // 0 = Standard Clay, 1 = Large Elder Bari, 2 = Compact Farmer
+    bool withChimney;    // Smoke puffs rising from earthen kitchen chimney
+    mat4 modelMatrix;    // Precomputed model matrix (World transform)
+};
+
+static std::vector<VillageHouse> s_villageHouses = {
+    // ════ BARI 1: MODDHO BARI (CENTRAL HOMESTEAD & GATHERING UTHAN) ════
+    { vec3(-8.5f,  0.0f,  -3.5f),   90.0f, HOUSE_CHOUCHALA, 1, false, mat4::identity() }, // House 1: Central Elder Bari (facing east toward river)
+    { vec3(-16.0f, 0.0f, -11.5f),   90.0f, HOUSE_CHOUCHALA, 0, false, mat4::identity() }, // House 1B: Family & Kitchen Cottage (facing east toward river)
+
+    // ════ BARI 2: UTTAR BARI (NORTH FARMSTEAD & CATTLE HOMESTEAD) ═════
+    { vec3(-24.0f, 0.0f, -13.0f),   90.0f, HOUSE_CHOUCHALA, 1, false, mat4::identity() }, // House 2: Main North Farmhouse (facing east toward river)
+
+    // ════ BARI 3: DOKKHIN BARI (SOUTH AGRICULTURAL HOMESTEAD) ════════
+    { vec3( -8.5f, 0.0f,  14.5f),   90.0f, HOUSE_CHOUCHALA, 1, false, mat4::identity() }, // House 3: Dokkhin Bari Main (facing east toward river)
+    { vec3( -8.5f, 0.0f,  25.5f),   90.0f, HOUSE_CHOUCHALA, 0, false, mat4::identity() }, // House 3B: South Field Worker Cottage (facing east toward river)
+
+    // ════ BARI 4: POSHCHIM BARI (WEST MEADOW HOMESTEAD) ══════════════
+    { vec3(-26.0f, 0.0f,   4.0f),   90.0f, HOUSE_CHOUCHALA, 1, false, mat4::identity() }, // House 4: West Bari Main (facing east toward river)
+
+    // ════ BARI 5: NODI-PAR (RIVERSIDE FISHERMAN SETTLEMENT) ═══════════
+    { vec3(-8.5f,  0.0f, -22.0f),   90.0f, HOUSE_CHOUCHALA, 2, false, mat4::identity() }, // House 5: Riverside Fisherman Cottage (facing east toward river)
+
+    // ════ BARI 6: UTTAR-NODI BARI (NORTH RIVERSIDE HOMESTEAD) ══════════
+    { vec3( -8.5f, 0.0f, -34.0f),   90.0f, HOUSE_CHOUCHALA, 0, false, mat4::identity() }, // House 6: North Riverside Cottage (facing east toward river)
+
+    // ════ BARI 7: TANTI PARA (FAR WEST ARTISAN HOMESTEAD) ════════════
+    { vec3(-38.0f, 0.0f,   6.0f),   90.0f, HOUSE_CHOUCHALA, 1, false, mat4::identity() }, // House 7: Artisan Weaver Cottage (facing east toward river)
+
+    // ════ BARI 8: DOKKHIN-NODI BARI (SOUTH RIVERSIDE MEADOW) ═════════
+    { vec3( -8.5f, 0.0f,  36.5f),   90.0f, HOUSE_CHOUCHALA, 1, false, mat4::identity() }, // House 8: South Riverside Cottage (facing east toward river)
+
+    // ════ BARI 9: PURBOPARA (EAST RIVER MEADOW SETTLEMENT) ══════════
+    { vec3( 34.0f, 0.0f,  -2.0f),  -90.0f, HOUSE_CHOUCHALA, 1, false, mat4::identity() }, // House E1: Central Purbopara (facing west toward river)
+    { vec3( 34.0f, 0.0f, -24.0f),  -90.0f, HOUSE_CHOUCHALA, 0, false, mat4::identity() }, // House E2: North Purbopara (facing west toward river)
+    { vec3( 32.0f, 0.0f,  16.0f),  -90.0f, HOUSE_CHOUCHALA, 0, false, mat4::identity() }, // House E3: South Purbopara (facing west toward river)
+    { vec3( 18.0f, 0.0f, -14.5f),  -90.0f, HOUSE_CHOUCHALA, 2, false, mat4::identity() }  // House E4: River Landing Boatman Hut (facing west toward river)
+};
+
+// ─── Traditional Rural Corrugated Tin Washrooms (টিনের পায়খানা / বাথরুম) ──────
+// One authentic village latrine for each homestead cottage + 1 for the village mosque.
+// Strategically situated at the secluded rear / backside of each house (away from front uthan,
+// cooking chulas, and drinking well) and adjacent to the mosque ablution (Ozukhana) area.
+struct VillageWashroom {
+    vec3 pos;
+    float yawDeg;
+    mat4 modelMatrix;
+};
+
+static std::vector<VillageWashroom> s_villageWashrooms = {
+    // 1. House 1 (Central Elder Bari) - behind house
+    { vec3(-11.5f, 0.0f,  -3.5f),   90.0f, mat4::identity() },
+    // 2. House 1B (Kitchen Cottage) - secluded behind cottage
+    { vec3(-19.0f, 0.0f, -11.5f),   90.0f, mat4::identity() },
+    // 3. House 2 (Main North Farmhouse) - behind farmstead
+    { vec3(-27.0f, 0.0f, -13.0f),   90.0f, mat4::identity() },
+    // 4. House 3 (Dokkhin Bari Main) - behind house
+    { vec3(-11.5f, 0.0f,  14.5f),   90.0f, mat4::identity() },
+    // 5. House 3B (South Field Worker Cottage) - behind cottage
+    { vec3(-11.5f, 0.0f,  25.5f),   90.0f, mat4::identity() },
+    // 6. House 4 (West Bari Main) - behind west homestead
+    { vec3(-29.0f, 0.0f,   4.0f),   90.0f, mat4::identity() },
+    // 7. House 5 (Riverside Fisherman Cottage) - behind fisherman home
+    { vec3(-11.5f, 0.0f, -22.0f),   90.0f, mat4::identity() },
+    // 8. House 6 (North Riverside Cottage) - behind cottage
+    { vec3(-11.5f, 0.0f, -34.0f),   90.0f, mat4::identity() },
+    // 9. House 7 (Artisan Weaver Cottage) - behind cottage
+    { vec3(-41.0f, 0.0f,   6.0f),   90.0f, mat4::identity() },
+    // 10. House 8 (South Riverside Cottage) - behind house
+    { vec3(-11.5f, 0.0f,  36.5f),   90.0f, mat4::identity() },
+    // 11. House E1 (Central Purbopara) - behind cottage
+    { vec3( 37.5f, 0.0f,  -2.0f),  -90.0f, mat4::identity() },
+    // 12. House E2 (North Purbopara) - behind cottage
+    { vec3( 37.5f, 0.0f, -24.0f),  -90.0f, mat4::identity() },
+    // 13. House E3 (South Purbopara) - behind cottage
+    { vec3( 35.5f, 0.0f,  16.0f),  -90.0f, mat4::identity() },
+    // 14. Village Mosque (Historic Terracotta Masjid) - dedicated washroom shifted to courtyard perimeter
+    { vec3(-39.5f, 0.0f, -27.5f),   90.0f, mat4::identity() }
+};
+
+static void validateAndPrecomputeVillageLayout(std::vector<VillageHouse>& houses) {
+    bool hasCollision = false;
+    for (size_t i = 0; i < houses.size(); ++i) {
+        // Houses on left bank (X < 0) face +X (river side / right side) with yaw = 90.0°
+        // Houses on right bank (X > 0) face -X (river side / left side) with yaw = -90.0°
+        if (houses[i].pos.x < 0.0f) {
+            houses[i].yawDeg = 90.0f;
+        } else {
+            houses[i].yawDeg = -90.0f;
+        }
+
+        // Precompute model matrix (Object -> World)
+        mat4 m = mat4::identity();
+        m = translate(m, houses[i].pos);
+        m = rotate(m, radians(houses[i].yawDeg), vec3(0.0f, 1.0f, 0.0f));
+        houses[i].modelMatrix = m;
+
+        // Collision check against every other house
+        for (size_t j = i + 1; j < houses.size(); ++j) {
+            float dx = houses[i].pos.x - houses[j].pos.x;
+            float dz = houses[i].pos.z - houses[j].pos.z;
+            float dist = sqrtf(dx * dx + dz * dz);
+            if (dist < 4.8f) {
+                std::cerr << ">> [LAYOUT CONFLICT] House #" << i << " and #" << j << " too close: " << dist << "m\n";
+                hasCollision = true;
+            }
+        }
+        // River corridor exclusion: X in [3.0m, 15.0m]
+        if (houses[i].pos.x >= 3.0f && houses[i].pos.x <= 15.0f) {
+            std::cerr << ">> [LAYOUT CONFLICT] House #" << i << " intersects river channel at X=" << houses[i].pos.x << "\n";
+            hasCollision = true;
+        }
+    }
+    // Precompute model matrices for all traditional rural washrooms
+    for (size_t i = 0; i < s_villageWashrooms.size(); ++i) {
+        mat4 wm = mat4::identity();
+        wm = translate(wm, s_villageWashrooms[i].pos);
+        wm = rotate(wm, radians(s_villageWashrooms[i].yawDeg), vec3(0.0f, 1.0f, 0.0f));
+        s_villageWashrooms[i].modelMatrix = wm;
+    }
+    if (!hasCollision) {
+        std::cout << ">> [LAYOUT SYSTEM] Successfully validated all " << houses.size()
+                  << " village houses & " << s_villageWashrooms.size() << " washrooms: 0 collisions!\n";
+    }
+}
 
 static void captureAllObjects(GLFWwindow* window, Shader& shader);
 
@@ -114,23 +251,23 @@ struct TourKeyframe {
 
 static const TourKeyframe g_tourFrames[] = {
     {  0.0f, vec3(-3.0f, 1.5f,  0.0f), -40.0f, 26.0f, 48.0f },  // 1: Grand Full-Plane Panoramic Village View (West & East Villages, River, Mosque & Moon)
-    { 10.0f, vec3( 8.8f, 0.60f,  0.0f), -82.0f, 14.0f, 19.5f },  // 2: River & Traditional Boats Panorama (Artwork Perspective)
-    { 19.0f, vec3( 5.5f, 0.80f,  1.2f), -40.0f, 16.0f,  9.0f },  // 3: River Landing Ghat, Net Drying Racks & Fishing Cottages
-    { 28.0f, vec3(-3.5f, 0.75f,  1.0f),  45.0f, 16.0f,  7.2f },  // 4: Central Courtyard Gathering, Elders, Children & Tubewell
-    { 38.0f, vec3(-33.0f, 1.90f,-34.0f),  20.0f, 16.0f, 15.0f },  // 5: Village Mosque & Walking Devout Elder
-    { 48.0f, vec3(-20.5f, 1.20f,-12.5f), 35.0f, 18.0f, 11.5f },  // 6: North Farmstead, Cow Shed, Deshi Cows & Straw Stacks
-    { 58.0f, vec3(-23.0f, 1.20f,  5.5f), 45.0f, 18.0f, 12.5f },  // 7: West Homesteads, Weaver's House & Paddy Granary (Dhaner Gola)
-    { 68.0f, vec3(-11.5f, 1.40f, 18.5f), 30.0f, 20.0f, 14.5f },  // 8: South Homestead, Vegetable Trellis & Terraced Paddy Fields
-    { 78.0f, vec3(-3.0f, 1.5f,  0.0f), -40.0f, 26.0f, 48.0f }   // Loop back to full-plane panoramic village view
+    {  3.2f, vec3( 8.8f, 0.60f,  0.0f), -82.0f, 14.0f, 19.5f },  // 2: River & Traditional Boats Panorama (Artwork Perspective)
+    {  6.5f, vec3( 5.5f, 0.80f,  1.2f), -40.0f, 16.0f,  9.0f },  // 3: River Landing Ghat, Net Drying Racks & Fishing Cottages
+    {  9.8f, vec3(-3.5f, 0.75f,  1.0f),  45.0f, 16.0f,  7.2f },  // 4: Central Courtyard Gathering, Elders, Children & Tubewell
+    { 13.0f, vec3(-33.0f, 1.90f,-34.0f),  20.0f, 16.0f, 15.0f },  // 5: Village Mosque & Walking Devout Elder
+    { 16.2f, vec3(-20.5f, 1.20f,-12.5f), 35.0f, 18.0f, 11.5f },  // 6: North Farmstead, Cow Shed, Deshi Cows & Straw Stacks
+    { 19.5f, vec3(-23.0f, 1.20f,  5.5f), 45.0f, 18.0f, 12.5f },  // 7: West Homesteads, Weaver's House & Paddy Granary (Dhaner Gola)
+    { 22.8f, vec3(-11.5f, 1.40f, 18.5f), 30.0f, 20.0f, 14.5f },  // 8: South Homestead, Vegetable Trellis & Terraced Paddy Fields
+    { 26.0f, vec3(-3.0f, 1.5f,  0.0f), -40.0f, 26.0f, 48.0f }   // Loop back to full-plane panoramic village view
 };
 static const int   g_numTourFrames = 9;
-static const float g_tourDuration  = 78.0f;
+static const float g_tourDuration  = 26.0f;
 static float       g_tourTime      = 0.0f;
 
 // Interactive Controls State
 static float       g_pumpTimer     = 0.0f; // Interactive Tubewell pumping
 static int         g_lanternMode   = 0;    // 0: Normal, 1: High Flame, 2: Soft, 3: Extinguished
-static float       g_animSpeed     = 1.0f; // Animation speed multiplier
+static float       g_animSpeed     = 1.75f; // Animation speed multiplier (natural, lively speed)
 static bool        g_windBreeze    = true; // Summer breeze wind sway
 
 // Interactive Bullock Cart (Gorur Gari) Drive State
@@ -141,38 +278,55 @@ static float       g_cartHeading           = 180.0f;   // Heading angle in degre
 static float       g_cartSpeed             = 0.0f;     // Forward/reverse speed (m/s)
 static float       g_cartWheelRot          = 0.0f;     // Accumulated wheel rotation
 static float       g_cartWalkPhase         = 0.0f;     // Oxen walking stride phase
-static const float CART_MAX_SPEED          = 3.6f;     // Max trotting speed
-static const float CART_ACCEL              = 3.4f;     // Acceleration
-static const float CART_DECEL              = 4.2f;     // Deceleration/friction
-static const float CART_TURN_SPEED         = 55.0f;    // Steering rate (deg/s)
+static const float CART_MAX_SPEED          = 18.0f;    // Fast trotting/galloping speed (m/s)
+static const float CART_ACCEL              = 32.0f;    // Responsive acceleration
+static const float CART_DECEL              = 10.0f;    // Deceleration/ground friction
+static const float CART_TURN_SPEED         = 160.0f;   // Responsive steering rate (deg/s)
 
 // Key 'G' 180-Degree Step Advance State (Chaka Rotates 180° & Translates Ahead)
 static const float CART_WHEEL_RADIUS       = 0.72f;       // Wheel radius in meters
 static const float CART_STEP_ANGLE         = 3.14159265f; // 180 degrees (pi radians)
-static const float CART_STEP_DIST          = CART_STEP_ANGLE * CART_WHEEL_RADIUS; // ~2.26195m
+static const float CART_STEP_DIST          = 3.80f;       // Distance moved ahead (meters) per press on Key 'G'
 static float       g_cartStepDistRemaining = 0.0f;        // Remaining distance to translate ahead
 static int         g_cartStepCount         = 0;           // Total 180-degree steps executed
 
 // Interactive Dingi Nouka (Country Boat) Drive State
 static bool        g_driveBoatMode         = false;    // Toggle with Key 'N'
-static float       g_boatX                 = 9.82f;    // Initial X on River (around Z = 2.6f)
-static float       g_boatZ                 = 2.6f;     // Initial Z on River
-static float       g_boatYaw               = 0.15f;    // Heading angle in radians (aligned with river flow)
+static float       g_boatX                 = 7.5f;     // Initial position moored at River Landing Ghat (X = 7.5f, Z = 1.2f)
+static float       g_boatZ                 = 1.2f;     // Beside the bamboo jetty, safely clear of bathing shallows & fishing boat
+static float       g_boatYaw               = 0.08f;    // Heading angle in radians (aligned with river flow towards south)
 static float       g_boatSpeed             = 0.0f;     // Forward/reverse speed (m/s)
 static float       g_boatOarPhase          = 0.0f;     // Dynamic rowing stroke phase
-static const float BOAT_MAX_SPEED          = 4.2f;     // Max rowing sprint speed
-static const float BOAT_ACCEL              = 2.8f;     // Rowing acceleration
-static const float BOAT_DRAG               = 1.6f;     // Water hydrodynamic drag / resistance
-static const float BOAT_TURN_SPEED         = 1.4f;     // Rudder steering rate (rad/s)
+static const float BOAT_MAX_SPEED          = 20.0f;    // Fast rowing sprint speed (m/s)
+static const float BOAT_ACCEL              = 26.0f;    // Dynamic rowing acceleration
+static const float BOAT_DRAG               = 2.2f;     // Water hydrodynamic drag / resistance
+static const float BOAT_TURN_SPEED         = 4.8f;     // Responsive rudder steering rate (rad/s)
 
 // Key 'N' Step Advance State (Nouka Moves Ahead on Every Press)
-static const float BOAT_STEP_DIST          = 2.0f;     // Distance moved ahead (meters) per rowing stroke on Key 'N'
+static const float BOAT_STEP_DIST          = 4.0f;     // Distance moved ahead (meters) per rowing stroke on Key 'N'
 static float       g_boatStepDistRemaining = 0.0f;     // Remaining distance to glide ahead
 static int         g_boatStepCount         = 0;        // Total boat advance steps executed
 
+// ─── Interactive Halchas (হালচাষ / Draft Oxen Agricultural Plowing) Drive State ─
+static bool        g_drivePlowMode         = false;    // Toggle with Key 'H' or Preset '9'
+static float       g_plowX                 = -24.5f;   // Position on agricultural field
+static float       g_plowZ                 =  27.0f;
+static float       g_plowHeading           =   0.0f;   // Heading angle in degrees
+static float       g_plowSpeed             =   0.0f;   // Forward/reverse speed (m/s)
+static float       g_plowWalkPhase         =   0.0f;   // Dynamic leg stride and walking phase
+static const float PLOW_MAX_SPEED          =   8.5f;   // Responsive plowing speed (m/s)
+static const float PLOW_ACCEL              =  20.0f;   // Acceleration
+static const float PLOW_DECEL              =   9.0f;   // Soil drag friction deceleration
+static const float PLOW_TURN_SPEED         = 140.0f;   // Responsive steering rate (deg/s)
+
+// Key 'H' Step Advance State (Oxen & Farmer Advance on Every Press)
+static const float PLOW_STEP_DIST          =   2.80f;  // Distance moved ahead (meters) per plow step on Key 'H'
+static float       g_plowStepDistRemaining =   0.0f;   // Remaining distance to advance ahead
+static int         g_plowStepCount         =   0;      // Total plowing steps executed
+
 static void keyCallback(GLFWwindow* window, int key, int, int action, int)
 {
-    if (action != GLFW_PRESS && ((key != GLFW_KEY_G && key != GLFW_KEY_N) || action != GLFW_REPEAT)) return;
+    if (action != GLFW_PRESS && ((key != GLFW_KEY_G && key != GLFW_KEY_N && key != GLFW_KEY_H) || action != GLFW_REPEAT)) return;
 
     if (key == GLFW_KEY_ESCAPE) {
         glfwSetWindowShouldClose(window, true);
@@ -190,10 +344,24 @@ static void keyCallback(GLFWwindow* window, int key, int, int action, int)
             std::cout << ">> CINEMATIC TOUR: PAUSED (Manual camera control)\n";
         }
     }
-    // Key 'P': Interactive Tubewell Pumping Action
+    // Key 'P': Interactive Tubewell Water Pumping Scene
     else if (key == GLFW_KEY_P) {
-        g_pumpTimer = 3.6f;
-        std::cout << ">> TUBEWELL PUMP ACTIVATED! Pumping groundwater into clay Kolshi! [Water flowing!]\n";
+        g_tourActive    = false;
+        g_driveCartMode = false;
+        g_driveBoatMode = false;
+        g_drivePlowMode = false;
+        g_pumpTimer     = 4.5f;
+
+        // Frame the tubewell water pumping scene (tubewell at -4.2, 5.8)
+        camera.target   = vec3(-4.2f, 0.45f, 5.8f);
+        camera.yaw      = radians(24.0f);
+        camera.pitch    = radians(16.0f);
+        camera.distance = 3.5f;
+        camera.updatePosition();
+
+        std::cout << "\n>> [KEY 'P' ACTIVATED] TUBEWELL WATER PUMPING SCENE:\n"
+                  << "   * Camera focused on Tubewell (Chapa Kol) at (-4.2, 5.8)\n"
+                  << "   * Pumping groundwater into clay Kolshi with active water stream!\n";
     }
     // Key 'J': Toggle Directional Light (Moonlight / Sunlight) On / Off
     else if (key == GLFW_KEY_J) {
@@ -202,8 +370,8 @@ static void keyCallback(GLFWwindow* window, int key, int, int action, int)
                   << (g_dirLightEnabled ? "ENABLED (Silvery Moonlight Blending)" : "DISABLED (Pure Point Light Inspection!)")
                   << std::endl;
     }
-    // Key 'H': Toggle 6 Point Lights (Courtyard, Moored Boat, Cruising Boat, Mosque, Stove, Ghat)
-    else if (key == GLFW_KEY_H) {
+    // Key 'O': Toggle 6 Point Lights (Courtyard, Moored Boat, Cruising Boat, Mosque, Stove, Ghat)
+    else if (key == GLFW_KEY_O) {
         g_lanternMode = (g_lanternMode + 1) % 4;
         const char* lanternNames[] = {
             "Normal Golden Glow (1.0x - All 6 Point Lights Active)",
@@ -247,6 +415,21 @@ static void keyCallback(GLFWwindow* window, int key, int, int action, int)
     else if (key == GLFW_KEY_T) {
         showTerrain = !showTerrain;
         std::cout << "Terrain / Ground: " << (showTerrain ? "VISIBLE" : "HIDDEN (Freestanding Objects Only)") << std::endl;
+    }
+    // Key 'U': Hard Light vs Soft Light Toggle (Lab Topic 3)
+    else if (key == GLFW_KEY_U) {
+        g_hardLight = !g_hardLight;
+        std::cout << ">> [LIGHTING MODE] "
+                  << (g_hardLight ? "HARD LIGHT: Directional beam with sharp terminator & steep falloff."
+                                  : "SOFT LIGHT: Smooth wide diffuse falloff with boosted ambient wrap.")
+                  << std::endl;
+    }
+    // Key 'Z': Wireframe Rasterization Toggle (Lab Topic / Inspection)
+    else if (key == GLFW_KEY_Z) {
+        g_wireframe = !g_wireframe;
+        std::cout << ">> [POLYGON MODE] "
+                  << (g_wireframe ? "WIREFRAME (glPolygonMode GL_LINE)" : "SOLID SURFACE (glPolygonMode GL_FILL)")
+                  << std::endl;
     }
     // Camera Presets for Village Inspection
     else if (key == GLFW_KEY_1) {
@@ -348,15 +531,17 @@ static void keyCallback(GLFWwindow* window, int key, int, int action, int)
         std::cout << "View 8: Grand Full-Plane Panoramic Village View - Richly Distributed Bangladeshi Rural Village (33 Cottages, 10 Homesteads, West & East River Villages, Courtyards, River, Mosque, Fields & Moon)\n";
     }
     else if (key == GLFW_KEY_9) {
-        g_tourActive = false;
+        g_tourActive    = false;
         g_driveCartMode = false;
         g_driveBoatMode = false;
-        camera.target   = vec3(1.2f, 0.55f, -2.6f);
-        camera.yaw      = radians(-22.0f);
-        camera.pitch    = radians(14.0f);
-        camera.distance = 3.6f;
+        g_drivePlowMode = true;
+        camera.target   = vec3(g_plowX, 1.25f, g_plowZ);
+        camera.yaw      = radians(-g_plowHeading + 180.0f);
+        camera.pitch    = radians(20.0f);
+        camera.distance = 8.5f;
         camera.updatePosition();
-        std::cout << "View 9: Riverbank Duck House (Hash-er Ghor) with Ducks Resting Inside at Night\n";
+        std::cout << "View 9: Traditional Halchas Field (হালচাষ - Draft Oxen & Farmer Preparing Land)\n"
+                  << "   * Controls: [Key 'H'] Step Ahead | [W / Up]: Forward | [S / Down]: Reverse | [A/D]: Steer\n";
     }
     else if (key == GLFW_KEY_0) {
         g_tourActive = false;
@@ -409,6 +594,45 @@ static void keyCallback(GLFWwindow* window, int key, int, int action, int)
     else if (key == GLFW_KEY_C) {
         if (g_window && g_shader) {
             captureAllObjects(g_window, *g_shader);
+        }
+    }
+    // Key 'Y': Toggle Real-Time Whitted Ray Tracing Mode
+    else if (key == GLFW_KEY_Y) {
+        g_rayTracingMode = !g_rayTracingMode;
+        if (g_rayTracingMode) {
+            std::cout << "\n=======================================================\n"
+                      << ">> [RAY TRACING ENGINE ACTIVATED - KEY 'Y']\n"
+                      << "   * Real-Time Whitted-Style Recursive Ray Tracing (GLSL 330 Core)\n"
+                      << "   * Primary Rays: Cast from perspective camera through screen pixels\n"
+                      << "   * Analytic Geometry: Ray-Sphere, Ray-Plane & Ray-Box slab intersections\n"
+                      << "   * Shadow Rays: Direct occlusion testing for sharp ray-traced shadows\n"
+                      << "   * Reflection Rays: Multi-bounce specular mirror reflections (River & Brass)\n"
+                      << "   * Interactive: Orbit camera with Mouse / WASD to watch dynamic reflections!\n"
+                      << "   * Press [Key 'Y'] again to return to 3D rasterized village scene.\n"
+                      << "=======================================================\n";
+        } else {
+            std::cout << ">> [RAY TRACING ENGINE] Switched back to Real-Time Rasterized 3D Village.\n";
+        }
+    }
+    // Key 'M': Toggle Shading Model (Phong Shading vs Gouraud Shading)
+    else if (key == GLFW_KEY_M) {
+        g_shadingModel = (g_shadingModel + 1) % 2;
+        if (g_shadingModel == 0) {
+            std::cout << "\n=======================================================\n"
+                      << ">> [SHADING MODEL: PHONG SHADING (Per-Fragment Lighting)]\n"
+                      << "   * Surface normals interpolated across polygon faces\n"
+                      << "   * Blinn-Phong equation evaluated at every individual fragment\n"
+                      << "   * Accurate specular highlights and smooth curved silhouettes\n"
+                      << "   * Press [Key 'M'] to switch to Gouraud Shading\n"
+                      << "=======================================================\n";
+        } else {
+            std::cout << "\n=======================================================\n"
+                      << ">> [SHADING MODEL: GOURAUD SHADING (Per-Vertex Lighting)]\n"
+                      << "   * Ambient, Diffuse & Specular evaluated at each VERTEX\n"
+                      << "   * Vertex illumination linearly interpolated across triangle fragments\n"
+                      << "   * Ultra-fast execution via hardware rasterizer interpolation\n"
+                      << "   * Press [Key 'M'] to switch back to Phong Shading\n"
+                      << "=======================================================\n";
         }
     }
     // Key 'R': Inspect / Enter Interactive Driving Mode for Gorur Gari
@@ -483,6 +707,32 @@ static void keyCallback(GLFWwindow* window, int key, int, int action, int)
                   << "   * Boat Position: (" << std::fixed << std::setprecision(2)
                   << g_boatX << ", " << g_boatZ << ") | Heading: "
                   << (int)std::round(g_boatYaw * (180.0f / PI)) << "°\n";
+    }
+    // Key 'H': Halchas step advance & interactive plow driving (হালচাষ - বলদ গরু ও কৃষক)
+    else if (key == GLFW_KEY_H) {
+        g_drivePlowMode = true; // Switch camera to follow Halchas Plowing team
+        g_driveCartMode = false;
+        g_driveBoatMode = false;
+        g_tourActive    = false;
+
+        // Ensure camera looks directly at the plowing team from behind
+        camera.target   = vec3(g_plowX, 1.25f, g_plowZ);
+        camera.yaw      = radians(-g_plowHeading + 180.0f);
+        camera.pitch    = radians(18.0f);
+        camera.distance = 7.8f;
+        camera.updatePosition();
+
+        // Queue a step advance: move oxen and plow ahead by 1.6 meters with animated walking stride
+        g_plowStepDistRemaining += PLOW_STEP_DIST;
+        g_plowStepCount++;
+
+        std::cout << "\n>> [KEY 'H' PRESSED] Halchas (হালচাষ) Step #" << g_plowStepCount << ":\n"
+                  << "   * Pair of Draft Oxen (বলদ গরু) & Farmer Plowing Ahead!\n"
+                  << "   * Plowing Advance: +" << PLOW_STEP_DIST << "m\n"
+                  << "   * Position: (" << std::fixed << std::setprecision(2)
+                  << g_plowX << ", " << g_plowZ << ") | Heading: "
+                  << (int)std::round(g_plowHeading) << "°\n"
+                  << "   * Real-time Controls: [W / Up]: Forward | [S / Down]: Reverse | [A / Left]: Steer Left | [D / Right]: Steer Right\n";
     }
 }
 
@@ -584,10 +834,10 @@ static void captureAllObjects(GLFWwindow* window, Shader& shader)
         },
         {
             "02_clay_cooking_stove",
-            "Outdoor Clay Cooking Stove (Matir Chula with 3-Sided Bamboo Fence)",
-            vec3(0.08f, 0.20f, 0.16f), 1.80f, 18.0f, 20.0f,
+            "Outdoor Clay Cooking Stove (Matir Chula with Seated Woman Cooking Food)",
+            vec3(0.10f, 0.24f, 0.22f), 2.05f, 20.0f, 24.0f,
             [](Shader& s) {
-                House::drawStove(s, mat4::identity(), true);
+                House::drawStove(s, mat4::identity(), true, 0.5f);
             }
         },
         {
@@ -642,7 +892,7 @@ static void captureAllObjects(GLFWwindow* window, Shader& shader)
         {
             "09_seated_elder",
             "Seated Elder on Charpai Holding Haat Pakha",
-            vec3(0.18f, 0.52f, 0.0f), 2.35f, 138.0f, 12.0f,
+            vec3(0.36f, 0.48f, 0.0f), 2.35f, 138.0f, 12.0f,
             [](Shader& s) {
                 Charpai::draw(s, mat4::identity());
                 PersonParams elder;
@@ -656,7 +906,7 @@ static void captureAllObjects(GLFWwindow* window, Shader& shader)
                 elder.hasFan      = true;
                 elder.fanSway     = 0.0f;
                 mat4 elderM = mat4::identity();
-                elderM = translate(elderM, vec3(0.20f, 0.50f, 0.0f));
+                elderM = translate(elderM, vec3(0.36f, 0.47f, 0.0f));
                 elderM = rotate(elderM, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
                 Person::draw(s, elderM, elder);
             }
@@ -677,10 +927,7 @@ static void captureAllObjects(GLFWwindow* window, Shader& shader)
                 mat4 rehalM = childM;
                 rehalM = translate(rehalM, vec3(0.0f, 0.00f, 0.35f));
                 Person::drawRehal(s, rehalM);
-                mat4 bookM = rehalM;
-                bookM = translate(bookM, vec3(0.0f, 0.155f, 0.0f));
-                bookM = rotate(bookM, radians(20.0f), vec3(1.0f, 0.0f, 0.0f));
-                Person::drawBook(s, bookM);
+                Person::drawBook(s, rehalM);
             }
         },
         {
@@ -791,18 +1038,16 @@ static void captureAllObjects(GLFWwindow* window, Shader& shader)
         },
         {
             "24_house_dochala",
-            "Traditional Dochala House (2-Sloped Curved Gable Roof & Mud Plinth)",
-            vec3(0.40f, 1.10f, 0.0f), 9.0f, 36.0f, 18.0f,
+            "Traditional Village House (4-Sloped Roof, Verandah & Mud Walls)",
+            vec3(0.0f, 1.10f, 0.20f), 8.8f, 36.0f, 18.0f,
             [](Shader& s) {
-                Texture::bind(TEX_BAMBOO, 0);
-                s.setInt("uTextureType", (int)TEX_BAMBOO);
-                House::draw(s, mat4::identity(), HOUSE_DOCHALA, false);
+                House::draw(s, mat4::identity(), HOUSE_CHOUCHALA);
             }
         },
         {
             "25_rice_straw_stack",
             "Traditional Rice Straw Stack (Khorer Paloi with Central Bamboo Pole)",
-            vec3(0.0f, 1.35f, 0.0f), 5.4f, 32.0f, 14.0f,
+            vec3(0.0f, 2.05f, 0.0f), 6.6f, 26.0f, 10.5f,
             [](Shader& s) {
                 House::drawStrawStack(s, mat4::identity(), vec3(0.0f), 1.0f);
             }
@@ -1011,36 +1256,37 @@ int main(int argc, char* argv[])
     std::cout << "CONTROLS & SHORTCUTS:\n";
     std::cout << "  Left-Drag Mouse : Orbit Camera Around Object\n";
     std::cout << "  Scroll Wheel    : Zoom In / Out\n";
-    std::cout << "  W / S / A / D   : Move Camera Freely\n";
+    std::cout << "  W / S / A / D   : Move Camera Freely (3D Fly Navigation)\n";
+    std::cout << "  Scroll Wheel    : Mouse-Wheel Dolly Zoom (Moves Camera Position In / Out)\n";
     std::cout << "  SPACE           : Toggle Cinematic Fly-Through Village Tour\n";
+    std::cout << "  Key 'L'         : Toggle Day / Night (0: Moonlit Night | 1: Radiant Day Sun | 2: Unlit | 3: Flat)\n";
+    std::cout << "  Key 'U'         : Toggle Hard Light / Soft Light (Sharp Terminator vs Smooth Falloff)\n";
+    std::cout << "  Key 'Z'         : Toggle Wireframe / Solid Rendering (glPolygonMode)\n";
+    std::cout << "  Key 'K'         : Pause / Resume Continuous Village Animations\n";
     std::cout << "  Key 'J'         : Toggle Directional Light (Moonlight/Sunlight ON/OFF)\n";
     std::cout << "  Key 'H'         : Cycle 6 Point Lights (Normal / Bright / Amber / OFF)\n";
     std::cout << "  Key 'P'         : Pump Tubewell (Interactive Water Flow into Kolshi)\n";
     std::cout << "  Key 'B'         : Toggle Summer Breeze (Tree Foliage Wind Sway)\n";
+    std::cout << "  Key 'R' / 'G'   : Bullock Cart (Gorur Gari) Chase / 180° Step Advance\n";
+    std::cout << "  Key 'N'         : Dingi Boat (Nouka) Steer / Rowing Step Advance\n";
     std::cout << "  Key '[' / ']'   : Decrease / Increase Animation Speed (0.25x - 3.0x)\n";
-    std::cout << "  Key 'K'         : Pause / Resume Continuous Village Animations\n";
-    std::cout << "  Key 'L'         : Toggle Lighting (0: Moonlit Night | 1: Radiant Day Sun & Light | 2: Unlit Facets | 3: Flat)\n";
     std::cout << "  Key 'X'         : Toggle Texture Mode (0: Solid | 1: Procedural Detailing | 2: GPU Texture Maps)\n";
+    std::cout << "  Key 'M'         : Toggle Shading Model (0: Phong Per-Fragment | 1: Gouraud Per-Vertex)\n";
+    std::cout << "  Key 'Y'         : Toggle Real-Time Whitted Ray Tracing Mode\n";
     std::cout << "  Key 'V'         : View V - Parametric Curved Bézier Vase (Terracotta Surahi)\n";
-    std::cout << "  Key 'F'         : View F - River Fisherman Hunting Fish (Cast Net, Leaping Silver Fish & Gear)\n";
-    std::cout << "  Key '1'         : View 1 - Courtyard Gathering (Charpai, Elders, Children Reading, Hens)\n";
-    std::cout << "  Key '2'         : View 2 - River Shore, Landing Ghat, Moored Boat & Rowing Boatman\n";
-    std::cout << "  Key '3'         : View 3 - Traditional Bangladeshi Village Mosque (Gramin Masjid)\n";
-    std::cout << "  Key '4'         : View 4 - North Homestead (Dochala, Cow Shed & Straw Stack)\n";
-    std::cout << "  Key '5'         : View 5 - South Homestead, Straw Stack & Terraced Paddy Fields\n";
-    std::cout << "  Key '6'         : View 6 - Rural Trees & Riverbank Reeds\n";
-    std::cout << "  Key '7'         : View 7 - Village Animals (Flocks of Hens & River Ducks)\n";
-    std::cout << "  Key '8'         : View 8 - Grand Full-Plane Panoramic Village View (33 Cottages, West & East River Villages)\n";
-    std::cout << "  Key '9'         : View 9 - Hand-Pump Tubewell & Clay Cooking Kitchen\n";
-    std::cout << "  Key '0'         : View 0 - Thatched Cow Shed & Resting Deshi Cow\n";
+    std::cout << "  Key 'F'         : View F - River Fisherman Hunting Fish (Cast Net & Gear)\n";
+    std::cout << "  Key '1' - '0'   : Camera Preset Views across Village Homesteads\n";
     std::cout << "  Key 'T'         : Toggle Terrain/Ground Visibility\n";
-    std::cout << "  Key 'C'         : Capture All 34 Objects to 'object_images/'\n";
+    std::cout << "  Key 'C'         : Capture All Objects to 'object_images/'\n";
     std::cout << "  ESC             : Exit\n";
     std::cout << "========================================================\n";
 
     // ── OpenGL State ────────────────────────────────────────────
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
+
+    // Precompute static village transforms and validate layout distances (Optimization)
+    validateAndPrecomputeVillageLayout(s_villageHouses);
 
     // ── Shader ──────────────────────────────────────────────────
     Shader shader;
@@ -1185,6 +1431,9 @@ int main(int argc, char* argv[])
     // ═════════════════════════════════════════════════════════════
     while (!glfwWindowShouldClose(window))
     {
+        // Poll events at top of loop for minimum input latency
+        glfwPollEvents();
+
         // ── Hardware Throttling: Minimized / Iconified State ────────
         // If window is minimized, sleep and wait for events so CPU/GPU drop to 0%
         if (glfwGetWindowAttrib(window, GLFW_ICONIFIED)) {
@@ -1193,29 +1442,19 @@ int main(int argc, char* argv[])
             continue;
         }
 
-        // ── Hardware Protection: High-Precision Frame Pacer (Solid 60 FPS Cap) ──
-        // Prevents runaway GPU rendering, high battery drain, and thermal fan noise
-        // even if VSync is disabled by GPU driver control panel
-        static auto s_lastFrameTimePoint = std::chrono::high_resolution_clock::now();
-        const double targetFrameTime = 1.0 / 60.0; // 60 FPS cap (16.666 ms)
-
-        auto frameStart = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> frameElapsed = frameStart - s_lastFrameTimePoint;
-        if (frameElapsed.count() < targetFrameTime) {
-            double sleepSeconds = targetFrameTime - frameElapsed.count();
-            if (sleepSeconds > 0.002) {
-                std::this_thread::sleep_for(std::chrono::microseconds(static_cast<long long>((sleepSeconds - 0.001) * 1e6)));
-            }
-            while (std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - s_lastFrameTimePoint).count() < targetFrameTime) {
-                std::this_thread::yield();
-            }
-        }
-        s_lastFrameTimePoint = std::chrono::high_resolution_clock::now();
+        // VSync (glfwSwapInterval(1)) already caps framerate at the monitor refresh rate.
+        // No software frame pacer needed — removing it eliminates spin-wait CPU waste
+        // and scheduling jitter that caused sluggish WASD responsiveness.
 
         float time = (float)glfwGetTime();
         float dt = time - lastFrameTime;
         lastFrameTime = time;
         if (dt > 0.1f) dt = 0.1f; // clamp delta time for stability
+
+        // ── Dynamic Motion Time & Interactive Physics ────────────
+        static float g_accumAnimTime = 0.0f;
+        g_accumAnimTime += dt * g_animSpeed;
+        float animTime = g_accumAnimTime;
 
         // ── Interactive Gorur Gari Driving Physics ───────────────────
         float cartThrottle = 0.0f;
@@ -1231,8 +1470,8 @@ int main(int argc, char* argv[])
                 cartSteerInput += 1.0f;
             if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
                 cartSteerInput -= 1.0f;
-        } else if (!g_driveBoatMode) {
-            // When not in boat mode, Arrow keys can also control cart
+        } else if (!g_driveBoatMode && !g_drivePlowMode) {
+            // When not in boat or plow mode, Arrow keys can also control cart
             if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)    cartThrottle += 1.0f;
             if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)  cartThrottle -= 1.0f;
             if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)  cartSteerInput += 1.0f;
@@ -1265,7 +1504,7 @@ int main(int argc, char* argv[])
 
         // 1. Process Key 'G' Step Advance (180° Wheel Rotation & Translation Ahead)
         if (g_cartStepDistRemaining > 0.0001f) {
-            const float stepRollSpeed = 5.2f; // m/s (~0.43s per 180° half-turn)
+            const float stepRollSpeed = 22.0f; // m/s (snappy responsive roll)
             float moveDist = stepRollSpeed * dt;
             if (moveDist > g_cartStepDistRemaining) {
                 moveDist = g_cartStepDistRemaining;
@@ -1284,7 +1523,7 @@ int main(int argc, char* argv[])
             g_cartZ += dirZ * moveDist;
 
             // Oxen walking stride animation phase
-            g_cartWalkPhase += moveDist * 4.4f;
+            g_cartWalkPhase += moveDist * 6.0f;
         }
 
         // 2. Process Continuous Throttle Movement (W / S)
@@ -1352,7 +1591,7 @@ int main(int argc, char* argv[])
 
         // 1. Process Key 'N' Step Advance (Nouka Rowing Stroke & Ahead Translation)
         if (g_boatStepDistRemaining > 0.0001f) {
-            const float boatStepSpeed = 3.8f; // m/s (~0.53s per 2-meter rowing glide)
+            const float boatStepSpeed = 22.0f; // m/s (snappy responsive 4-meter rowing glide)
             float moveDist = boatStepSpeed * dt;
             if (moveDist > g_boatStepDistRemaining) {
                 moveDist = g_boatStepDistRemaining;
@@ -1395,6 +1634,66 @@ int main(int argc, char* argv[])
         float curRiverCenterline = 1.8f * sinf(g_boatZ * 0.08f + 0.4f) + 0.6f * cosf(g_boatZ * 0.04f);
         float curRiverCenterX = 8.0f + curRiverCenterline;
 
+        // ── Comprehensive Boat-to-Boat & Shore Collision System for Jatri Bahi Nouka ──
+        // Compute real-time positions of other river craft
+        float boat1Z_cur = -9.5f + (animTime > 0.0f ? sinf(animTime * 0.5f) * 0.30f : 0.0f);
+        float riverCL1   = 1.8f * sinf(boat1Z_cur * 0.08f + 0.4f) + 0.6f * cosf(boat1Z_cur * 0.04f);
+        float boat1X_cur = 8.0f + riverCL1 - 0.5f;
+
+        float boat3Z_cur = 22.0f + (animTime > 0.0f ? cosf(animTime * 0.45f) * 0.30f : 0.0f);
+        float riverCL3   = 1.8f * sinf(boat3Z_cur * 0.08f + 0.4f) + 0.6f * cosf(boat3Z_cur * 0.04f);
+        float boat3X_cur = 8.0f + riverCL3 + 0.2f;
+
+        float fisherZ_cur = 8.5f;
+        float fisherX_cur = 8.0f + (1.8f * sinf(fisherZ_cur * 0.08f + 0.4f) + 0.6f * cosf(fisherZ_cur * 0.04f)) + 1.8f;
+
+        auto resolveBoatObstacle = [&](float obsX, float obsZ, float minDist) {
+            float diffX = g_boatX - obsX;
+            float diffZ = g_boatZ - obsZ;
+            float distSq = diffX * diffX + diffZ * diffZ;
+            if (distSq < minDist * minDist) {
+                float dist = sqrtf(distSq);
+                if (dist > 1e-4f) {
+                    float pushDist = minDist - dist;
+                    g_boatX += (diffX / dist) * pushDist;
+                    g_boatZ += (diffZ / dist) * pushDist;
+
+                    // Elastic deflection / momentum damping on impact
+                    float normX = diffX / dist;
+                    float normZ = diffZ / dist;
+                    float fwdX = sinf(g_boatYaw);
+                    float fwdZ = cosf(g_boatYaw);
+                    float dotImpact = fwdX * normX + fwdZ * normZ;
+                    if (dotImpact < 0.0f) {
+                        g_boatSpeed *= 0.20f;
+                        g_boatStepDistRemaining = 0.0f; // Halt ongoing step advance on collision
+                    }
+                } else {
+                    g_boatX -= 0.5f;
+                    g_boatZ += minDist;
+                }
+            }
+        };
+
+        // 1. Boat 1 (Red-Sail Boat upstream)
+        resolveBoatObstacle(boat1X_cur, boat1Z_cur, 3.6f);
+
+        // 2. Boat 3 (White Sailboat downstream)
+        resolveBoatObstacle(boat3X_cur, boat3Z_cur, 3.6f);
+
+        // 3. Fisherman Fishing Dingi & Cast Net (Eastern shallows)
+        resolveBoatObstacle(fisherX_cur, fisherZ_cur, 3.2f);
+
+        // 4. Bathing Villagers / Swimmers Shallows (gosol kora side: Z in [-5.5, 0.2], X < 6.8)
+        if (g_boatZ > -5.5f && g_boatZ < 0.2f && g_boatX < 6.8f) {
+            g_boatX = 6.8f;
+        }
+
+        // 5. Bamboo Landing Ghat Platform (Z in [0.0, 2.4], X < 7.3)
+        if (g_boatZ >= 0.0f && g_boatZ <= 2.4f && g_boatX < 7.3f) {
+            g_boatX = 7.3f;
+        }
+
         // River channel lateral confinement (keeps boat within navigable water)
         float latOffset = g_boatX - curRiverCenterX;
         const float MAX_BOAT_LAT = 3.6f;
@@ -1415,6 +1714,73 @@ int main(int argc, char* argv[])
             g_boatX = 8.0f + rCL;
         }
 
+        // ── Interactive Halchas (Ox Plowing) Driving Physics ─────────
+        float plowThrottle = 0.0f;
+        float plowSteerInput = 0.0f;
+
+        if (g_drivePlowMode) {
+            if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+                plowThrottle += 1.0f;
+            if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+                plowThrottle -= 1.0f;
+            if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+                plowSteerInput -= 1.0f; // Steer oxen team left (-heading)
+            if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+                plowSteerInput += 1.0f; // Steer oxen team right (+heading)
+        }
+
+        // Acceleration and deceleration
+        if (plowThrottle > 0.0f) {
+            g_plowSpeed += PLOW_ACCEL * dt;
+            if (g_plowSpeed > PLOW_MAX_SPEED) g_plowSpeed = PLOW_MAX_SPEED;
+        } else if (plowThrottle < 0.0f) {
+            g_plowSpeed -= PLOW_ACCEL * dt;
+            if (g_plowSpeed < -PLOW_MAX_SPEED * 0.40f) g_plowSpeed = -PLOW_MAX_SPEED * 0.40f;
+        } else {
+            if (g_plowSpeed > 0.0f) {
+                g_plowSpeed -= PLOW_DECEL * dt;
+                if (g_plowSpeed < 0.0f) g_plowSpeed = 0.0f;
+            } else if (g_plowSpeed < 0.0f) {
+                g_plowSpeed += PLOW_DECEL * dt;
+                if (g_plowSpeed > 0.0f) g_plowSpeed = 0.0f;
+            }
+        }
+
+        // Steering (A / Left = Steer Left, D / Right = Steer Right)
+        if (plowSteerInput != 0.0f) {
+            float turnSign = (g_plowSpeed < -0.01f) ? -1.0f : 1.0f;
+            g_plowHeading += plowSteerInput * PLOW_TURN_SPEED * dt * turnSign;
+            g_plowWalkPhase += fabsf(plowSteerInput) * PLOW_TURN_SPEED * dt * 0.025f;
+        }
+
+        // 1. Process Key 'H' Step Advance
+        if (g_plowStepDistRemaining > 0.0001f) {
+            const float stepSpeed = 18.0f; // m/s (snappy responsive plow advance)
+            float moveDist = stepSpeed * dt;
+            if (moveDist > g_plowStepDistRemaining) moveDist = g_plowStepDistRemaining;
+            g_plowStepDistRemaining -= moveDist;
+
+            float rad = radians(g_plowHeading);
+            g_plowX += sinf(rad) * moveDist;
+            g_plowZ += cosf(rad) * moveDist;
+            g_plowWalkPhase += moveDist * 5.2f;
+        }
+
+        // 2. Process Continuous Throttle Movement (W / S)
+        if (fabsf(g_plowSpeed) > 0.001f) {
+            float rad = radians(g_plowHeading);
+            float distMoved = g_plowSpeed * dt;
+            g_plowX += sinf(rad) * distMoved;
+            g_plowZ += cosf(rad) * distMoved;
+            g_plowWalkPhase += distMoved * 5.2f;
+        }
+
+        // Soft field boundary bounding
+        if (g_plowX < -30.0f) g_plowX = -30.0f;
+        if (g_plowX > -19.0f) g_plowX = -19.0f;
+        if (g_plowZ <  23.0f) g_plowZ =  23.0f;
+        if (g_plowZ >  31.0f) g_plowZ =  31.0f;
+
         // ── Camera Update: Drive Mode Chase Cam vs. Manual WASD Fly-Cam ──
         if (g_driveCartMode) {
             // Third-person smooth chase camera following the cart
@@ -1423,7 +1789,7 @@ int main(int argc, char* argv[])
             float diff = targetYaw - camera.yaw;
             while (diff > PI)  diff -= 2.0f * PI;
             while (diff < -PI) diff += 2.0f * PI;
-            camera.yaw += diff * 4.5f * dt;
+            camera.yaw += diff * 18.0f * dt; // Dynamic smooth camera tracking
             camera.distance = 9.2f;
             camera.pitch = radians(14.0f);
             camera.updatePosition();
@@ -1434,22 +1800,41 @@ int main(int argc, char* argv[])
             float diff = targetYaw - camera.yaw;
             while (diff > PI)  diff -= 2.0f * PI;
             while (diff < -PI) diff += 2.0f * PI;
-            camera.yaw += diff * 4.5f * dt;
+            camera.yaw += diff * 18.0f * dt; // Dynamic smooth camera tracking
             camera.distance = 7.5f;
             camera.pitch = radians(15.0f);
             camera.updatePosition();
+        } else if (g_drivePlowMode) {
+            // Third-person smooth chase camera following the Halchas plowing team
+            camera.target = vec3(g_plowX, 1.25f, g_plowZ);
+            float targetYaw = radians(-g_plowHeading + 180.0f);
+            float diff = targetYaw - camera.yaw;
+            while (diff > PI)  diff -= 2.0f * PI;
+            while (diff < -PI) diff += 2.0f * PI;
+            camera.yaw += diff * 18.0f * dt; // Dynamic smooth camera tracking
+            camera.distance = 7.8f;
+            camera.pitch = radians(18.0f);
+            camera.updatePosition();
         } else {
-            // Normal free-flying camera with WASD keys
+            // Free-flying camera with WASD / Arrow keys, Shift boost & E/Q elevation
             float camFwd = 0.0f;
             float camRgt = 0.0f;
-            if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camFwd += 1.0f;
-            if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camFwd -= 1.0f;
-            if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camRgt += 1.0f;
-            if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camRgt -= 1.0f;
+            float camUp  = 0.0f;
 
-            if (camFwd != 0.0f || camRgt != 0.0f) {
+            if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)    camFwd += 1.0f;
+            if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)  camFwd -= 1.0f;
+            if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) camRgt += 1.0f;
+            if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)  camRgt -= 1.0f;
+            if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) camUp += 1.0f;
+            if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)     camUp -= 1.0f;
+
+            // Holding Shift key boosts speed to 95.0m/s for turbo navigation across the 95m village!
+            bool shiftPressed = (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS);
+            float moveSpeed = shiftPressed ? 95.0f : 52.0f;
+
+            if (camFwd != 0.0f || camRgt != 0.0f || camUp != 0.0f) {
                 g_tourActive = false; // User movement takes over manual control
-                camera.processKeyboardMovement(camFwd, camRgt, dt);
+                camera.processKeyboardMovement(camFwd, camRgt, camUp, dt, moveSpeed);
             }
         }
 
@@ -1480,9 +1865,7 @@ int main(int argc, char* argv[])
         }
 
         // ── Dynamic Motion Time & Interactive Physics ────────────
-        static float g_accumAnimTime = 0.0f;
-        g_accumAnimTime += dt * g_animSpeed;
-        float animTime = g_accumAnimTime;
+        // (animTime computed above)
 
         // Interactive Tubewell Hand-Pumping Physics
         if (g_pumpTimer > 0.0f) {
@@ -1570,7 +1953,7 @@ int main(int argc, char* argv[])
             ambientStrength  = 0.38f;                                  // soft ambient night with clear visibility
             specularStrength = 0.55f;
             pointIntensity   = 1.0f;                                   // lanterns & fire fully glowing!
-            fogDens          = 0.005f;                                 // gentle distance night mist
+            fogDens          = 0.0f;                                   // zero fog - crisp atmospheric clarity
             noLightVal       = 0;                                      // full Blinn-Phong lighting
         }
         else if (lightingMode == 1) {
@@ -1612,6 +1995,17 @@ int main(int argc, char* argv[])
         glClearColor(clearColor.x, clearColor.y, clearColor.z, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // ── Real-Time Whitted Ray Tracing Mode (Key 'Y') ─────────
+        if (g_rayTracingMode) {
+            RayTracer::render(winWidth, winHeight, camera, animTime, lightingMode);
+            glfwSwapBuffers(window);
+            glfwPollEvents();
+            continue;
+        }
+
+        // Wireframe rasterization toggle via glPolygonMode (Lab requirement / inspection)
+        glPolygonMode(GL_FRONT_AND_BACK, g_wireframe ? GL_LINE : GL_FILL);
+
         // ── Uniforms (Scene-wide) ───────────────────────────────
         shader.use();
         shader.setMat4("view",       camera.getViewMatrix());
@@ -1626,12 +2020,25 @@ int main(int argc, char* argv[])
         shader.setInt("noLighting",         noLightVal);
         shader.setInt("dirLightEnabled",    g_dirLightEnabled ? 1 : 0);
         shader.setInt("pointLightsEnabled", (g_lanternMode != 3) ? 1 : 0);
+        shader.setInt("hardLightMode",      g_hardLight ? 1 : 0); // Hard light sharp terminator vs soft light wrap
+        shader.setInt("uShadingModel",      g_shadingModel);      // 0 = Phong Shading (Per-Fragment), 1 = Gouraud Shading (Per-Vertex)
+
+        // Hariken Lighting Logic:
+        // Hariken is ON when sun light is not present (Sondha / Bengali Night) and extinguished in daytime.
+        // When moonlight (chader alo) is less (e.g. dirLight disabled or dim), Hariken shines as the primary light.
+        bool sunPresent = (lightingMode == 1 || lightingMode == 2 || lightingMode == 3);
+        bool isHarikenLit = !sunPresent && (g_lanternMode != 3);
 
         // Interactive Hariken Lantern Flame Mode
         float lanternMultiplier = 1.0f;
-        if (g_lanternMode == 1) lanternMultiplier = 1.85f;      // Extra bright blazing flame
-        else if (g_lanternMode == 2) lanternMultiplier = 0.45f; // Soft amber glow
-        else if (g_lanternMode == 3) lanternMultiplier = 0.0f;  // Extinguished
+        if (!isHarikenLit) {
+            lanternMultiplier = 0.0f;
+            pointIntensity = 0.0f;
+        } else {
+            if (g_lanternMode == 1)      lanternMultiplier = 1.85f; // Extra bright blazing flame
+            else if (g_lanternMode == 2) lanternMultiplier = 0.45f; // Soft amber glow
+            else                         lanternMultiplier = (!g_dirLightEnabled ? 1.35f : 1.0f); // Enhanced when moonlight (chader alo) is less/absent
+        }
 
         // Point Light 1: Courtyard Hurricane Lantern (Hariken on stool)
         float flameFlicker = (pointIntensity > 0.0f && lanternMultiplier > 0.0f) ? (1.0f + 0.06f * sinf(animTime * 11.3f) * cosf(animTime * 17.7f)) : 1.0f;
@@ -1737,70 +2144,75 @@ int main(int argc, char* argv[])
         shader.setInt("uTextureType", (int)TEX_BAMBOO);
 
         // ═════════════════════════════════════════════════════════════
-        // BARI 1: MODDHO BARI (CENTRAL HOMESTEAD & GATHERING UTHAN)
+        // FULL BANGLADESHI VILLAGE (48 HOUSES ACROSS 10 BARI SETTLEMENTS)
         // ═════════════════════════════════════════════════════════════
-        // House 1: Central Chouchala Homestead (4-sloped hip roof, verandah & outdoor clay stove)
-        mat4 house1 = mat4::identity();
-        house1 = translate(house1, vec3(-8.5f, 0.0f, -3.5f));
-        house1 = rotate(house1, radians(4.0f), vec3(0.0f, 1.0f, 0.0f));
-        House::draw(shader, house1, HOUSE_CHOUCHALA, true, animTime);
+        // Precomputed, collision-free 48 Village Houses (Dochala & Chouchala variants with animated chimneys)
+        for (const auto& vh : s_villageHouses) {
+            House::draw(shader, vh.modelMatrix, vh.style, vh.variant, false, vh.withChimney, animTime);
+        }
 
-        // House 1B: Outdoor Thatched Kitchen Hut (Ranna Ghor behind House 1)
-        mat4 kitchenM = mat4::identity();
-        kitchenM = translate(kitchenM, vec3(-12.5f, 0.0f, -11.5f));
-        kitchenM = rotate(kitchenM, radians(-8.0f), vec3(0.0f, 1.0f, 0.0f));
-        kitchenM = scale(kitchenM, vec3(0.72f, 0.82f, 0.72f));
-        House::draw(shader, kitchenM, HOUSE_DOCHALA, false);
+        // ── Traditional Rural Corrugated Tin Washrooms (For Each Homestead & Mosque) ──
+        for (const auto& vw : s_villageWashrooms) {
+            House::drawWashroom(shader, vw.modelMatrix);
+        }
 
-        // House 1C: Moddho Bari Guest & Family Cottage (Boithokkhana)
-        mat4 house1C = mat4::identity();
-        house1C = translate(house1C, vec3(-17.5f, 0.0f, -3.5f));
-        house1C = rotate(house1C, radians(-28.0f), vec3(0.0f, 1.0f, 0.0f));
-        house1C = scale(house1C, vec3(0.85f, 0.88f, 0.85f));
-        House::draw(shader, house1C, HOUSE_DOCHALA, false);
+        // ── Authentic Bangladeshi Village Features (Required Additions) ──
+        // 1. Roadside Village Tea Stall (Cha-er Dokan / চায়ের দোকান)
+        mat4 teaStallM = mat4::identity();
+        teaStallM = translate(teaStallM, vec3(18.2f, 0.0f, -2.5f));
+        teaStallM = rotate(teaStallM, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
+        House::drawTeaStall(shader, teaStallM, animTime);
 
+        // 2. Ancient Banyan Tree Gathering Spot (Bot-tola / বটতলা) with circular earthen & brick seating bedi
+        mat4 botTolaM = mat4::identity();
+        botTolaM = translate(botTolaM, vec3(-16.0f, 0.0f, 8.5f));
+        House::drawBanyanTreeSpot(shader, botTolaM);
+
+
+        // 4. Courtyard Bamboo Clothesline (Alna / তারের আলনা) with fluttering Gamcha and Lungi
+        mat4 clotheslineM = mat4::identity();
+        clotheslineM = translate(clotheslineM, vec3(-6.5f, 0.0f, -1.8f));
+        clotheslineM = rotate(clotheslineM, radians(18.0f), vec3(0.0f, 1.0f, 0.0f));
+        House::drawClothesline(shader, clotheslineM, animTime);
+
+        // 5. River Landing Bamboo Mooring Jetty (Bansher Ghat / জেটি)
+        mat4 jettyM = mat4::identity();
+        jettyM = translate(jettyM, vec3(5.2f, 0.0f, 1.2f));
+        jettyM = rotate(jettyM, radians(-15.0f), vec3(0.0f, 1.0f, 0.0f));
+        House::drawBambooJetty(shader, jettyM);
+
+        // ── Authentic Rural Homestead Props ──
         // Granary 1: Traditional Elevated Paddy Granary (Dhaner Gola / ধানের গোলা)
         mat4 granary1 = mat4::identity();
         granary1 = translate(granary1, vec3(-12.8f, 0.0f, -1.8f));
         House::drawGranary(shader, granary1);
 
-        // Cast-Iron Tubewell (Chapa Kol) with concrete washing apron shifted to clear house verandah
+        // Cast-Iron Tubewell (Chapa Kol) shifted near the riverbank on firm dry ground
         mat4 tubewellM = mat4::identity();
-        tubewellM = translate(tubewellM, vec3(-3.85f, 0.0f, -1.65f));
-        tubewellM = rotate(tubewellM, radians(12.0f), vec3(0.0f, 1.0f, 0.0f));
+        tubewellM = translate(tubewellM, vec3(-4.2f, 0.0f, 5.8f));
+        tubewellM = rotate(tubewellM, radians(-70.0f), vec3(0.0f, 1.0f, 0.0f));
         House::drawTubewell(shader, tubewellM, pumpHandleAngle, isCurrentlyPumping);
 
-        // ═════════════════════════════════════════════════════════════
-        // BARI 2: UTTAR BARI (NORTH FARMSTEAD & CATTLE HOMESTEAD)
-        // ═════════════════════════════════════════════════════════════
-        // House 2: North Farmstead Main House (Dochala 2-sloped curved pitched roof & bamboo verandah)
-        mat4 house2 = mat4::identity();
-        house2 = translate(house2, vec3(-23.5f, 0.0f, -12.5f));
-        house2 = rotate(house2, radians(-18.0f), vec3(0.0f, 1.0f, 0.0f));
-        House::draw(shader, house2, HOUSE_DOCHALA, false);
+        // Outdoor Clay Cooking Stove (Matir Chula) with Seated Woman Cooking Food in Courtyard Kitchen
+        mat4 stoveM = mat4::identity();
+        stoveM = translate(stoveM, vec3(-3.27f, 0.0f, -4.19f));
+        stoveM = rotate(stoveM, radians(22.0f), vec3(0.0f, 1.0f, 0.0f));
+        House::drawStove(shader, stoveM, true, animTime);
 
-        // House 2B: Farm Worker / Extended Family Dochala Cottage
-        mat4 house2B = mat4::identity();
-        house2B = translate(house2B, vec3(-19.0f, 0.0f, -20.5f));
-        house2B = rotate(house2B, radians(32.0f), vec3(0.0f, 1.0f, 0.0f));
-        house2B = scale(house2B, vec3(0.82f, 0.85f, 0.82f));
-        House::draw(shader, house2B, HOUSE_DOCHALA, false);
-
-        // Thatched Cow Shed (Gowal Ghor in Uttar Bari farmstead - shifted west to clear House 2)
+        // Thatched Cow Shed (Gowal Ghor in Uttar Bari farmstead)
         mat4 cowShedM = mat4::identity();
         cowShedM = translate(cowShedM, vec3(-30.5f, 0.0f, -10.5f));
         cowShedM = rotate(cowShedM, radians(8.0f), vec3(0.0f, 1.0f, 0.0f));
         House::drawCowShed(shader, cowShedM);
 
-        // Standing Deshi Cow resting in the open Uttar Bari farmyard (shifted clear of house wall)
+        // Standing Deshi Cow resting in the open Uttar Bari farmyard
         mat4 cowStandingM = mat4::identity();
         cowStandingM = translate(cowStandingM, vec3(-28.2f, 0.0f, -8.0f));
         cowStandingM = rotate(cowStandingM, radians(65.0f), vec3(0.0f, 1.0f, 0.0f));
         House::drawCow(shader, cowStandingM, false);
 
-        // Rice Straw Stacks (Khorer Paloi / খড়ের পালা with center bamboo pole)
-        House::drawStrawStack(shader, mat4::identity(), vec3(-23.0f, 0.0f, -18.5f), 1.15f); // Uttar Bari main stack
-        House::drawStrawStack(shader, mat4::identity(), vec3(-25.8f, 0.0f, -18.5f), 0.95f); // Uttar Bari secondary stack
+        // Rice Straw Stack (Khorer Paloi / খড়ের পালা with center bamboo pole) - Uttar Bari farmstead
+        House::drawStrawStack(shader, mat4::identity(), vec3(-24.0f, 0.0f, -19.5f), 1.15f);
 
         // Chicken Coop on stilts (Murgir Khopa)
         mat4 coopM = mat4::identity();
@@ -1808,276 +2220,29 @@ int main(int argc, char* argv[])
         coopM = rotate(coopM, radians(32.0f), vec3(0.0f, 1.0f, 0.0f));
         House::drawChickenCoop(shader, coopM, isNight);
 
-        // ═════════════════════════════════════════════════════════════
-        // BARI 3: DOKKHIN BARI (SOUTH AGRICULTURAL HOMESTEAD & FIELDS)
-        // ═════════════════════════════════════════════════════════════
-        // House 3: Dokkhin Bari South Homestead (Chouchala House facing path & paddy fields)
-        mat4 house3 = mat4::identity();
-        house3 = translate(house3, vec3(-10.5f, 0.0f, 16.5f));
-        house3 = rotate(house3, radians(172.0f), vec3(0.0f, 1.0f, 0.0f));
-        House::draw(shader, house3, HOUSE_CHOUCHALA, false);
-
-        // House 3B: Farmer's Tool & Storage Dochala Outbuilding
-        mat4 house3B = mat4::identity();
-        house3B = translate(house3B, vec3(-18.5f, 0.0f, 16.5f));
-        house3B = rotate(house3B, radians(105.0f), vec3(0.0f, 1.0f, 0.0f));
-        house3B = scale(house3B, vec3(0.85f, 0.88f, 0.85f));
-        House::draw(shader, house3B, HOUSE_DOCHALA, false);
-
-        // House 3C: Southern Boundary Farmer's Cottage
-        mat4 house3C = mat4::identity();
-        house3C = translate(house3C, vec3(-8.5f, 0.0f, 33.5f));
-        house3C = rotate(house3C, radians(-165.0f), vec3(0.0f, 1.0f, 0.0f));
-        house3C = scale(house3C, vec3(0.80f, 0.85f, 0.80f));
-        House::draw(shader, house3C, HOUSE_DOCHALA, false);
-
         // Vegetable Trellis (Lau / Kumra Macha / সবজির মাচা with hanging gourds)
         mat4 trellis1 = mat4::identity();
         trellis1 = translate(trellis1, vec3(-14.5f, 0.0f, 18.0f));
         trellis1 = rotate(trellis1, radians(5.0f), vec3(0.0f, 1.0f, 0.0f));
         House::drawVegetableTrellis(shader, trellis1);
 
-        // Straw Stack in Dokkhin Bari
-        House::drawStrawStack(shader, mat4::identity(), vec3(-14.5f, 0.0f, 14.5f), 1.10f);
+        // Agricultural Field Preparation & Ox Plowing (হালচাষ ও জমি তৈরি - Farmer, Pair of Draft Oxen & Plow)
+        House::drawPlowingScene(shader, mat4::identity(), animTime, g_plowX, g_plowZ, g_plowHeading, g_plowWalkPhase, isNight);
 
-        // ═════════════════════════════════════════════════════════════
-        // BARI 4: POSHCHIM BARI (WEST MEADOW HOMESTEADS & GRANARY)
-        // ═════════════════════════════════════════════════════════════
-        // House 5: Paschim Bari West Homestead (Dochala style)
-        mat4 house5 = mat4::identity();
-        house5 = translate(house5, vec3(-25.5f, 0.0f, 5.0f));
-        house5 = rotate(house5, radians(42.0f), vec3(0.0f, 1.0f, 0.0f));
-        House::draw(shader, house5, HOUSE_DOCHALA, false);
-
-        // House 5B: Weaver / Village Artisan Homestead (Chouchala House)
-        mat4 house5B = mat4::identity();
-        house5B = translate(house5B, vec3(-31.5f, 0.0f, -3.5f));
-        house5B = rotate(house5B, radians(15.0f), vec3(0.0f, 1.0f, 0.0f));
-        house5B = scale(house5B, vec3(0.92f, 0.92f, 0.92f));
-        House::draw(shader, house5B, HOUSE_CHOUCHALA, false);
-
-        // House 5C: West Shaded Garden Cottage
-        mat4 house5C = mat4::identity();
-        house5C = translate(house5C, vec3(-26.5f, 0.0f, 13.0f));
-        house5C = rotate(house5C, radians(-45.0f), vec3(0.0f, 1.0f, 0.0f));
-        house5C = scale(house5C, vec3(0.85f, 0.88f, 0.85f));
-        House::draw(shader, house5C, HOUSE_DOCHALA, false);
-
-        // Granary 2: Second Elevated Paddy Granary (Dhaner Gola) in Western Homestead
-        mat4 granary2 = mat4::identity();
-        granary2 = translate(granary2, vec3(-28.0f, 0.0f, 9.0f));
-        House::drawGranary(shader, granary2);
-
-        // Straw Stack at Paschim Bari
-        House::drawStrawStack(shader, mat4::identity(), vec3(-21.5f, 0.0f, 1.5f), 1.05f);
-
-        // ═════════════════════════════════════════════════════════════
-        // BARI 5: NODI-PAR / PURBOPARA (RIVERSIDE FISHERMAN & BOATMEN)
-        // ═════════════════════════════════════════════════════════════
-        // House 4: Riverside Fisherman Cottage (Dochala situated on solid ground beside northern riverbank path)
-        mat4 house4 = mat4::identity();
-        house4 = translate(house4, vec3(-9.0f, 0.0f, -21.5f));
-        house4 = rotate(house4, radians(82.0f), vec3(0.0f, 1.0f, 0.0f));
-        House::draw(shader, house4, HOUSE_DOCHALA, false);
-
-        // House 4B: Riverside Storage & Net Hut (Footbridge landing on East Bank)
-        mat4 house4B = mat4::identity();
-        house4B = translate(house4B, vec3(12.5f, 0.0f, -21.5f));
-        house4B = rotate(house4B, radians(95.0f), vec3(0.0f, 1.0f, 0.0f));
-        house4B = scale(house4B, vec3(0.72f, 0.78f, 0.72f));
-        House::draw(shader, house4B, HOUSE_DOCHALA, false);
-
-        // House 7: South Riverside Boatman's Cottage
-        mat4 house7 = mat4::identity();
-        house7 = translate(house7, vec3(-8.5f, 0.0f, 7.0f));
-        house7 = rotate(house7, radians(65.0f), vec3(0.0f, 1.0f, 0.0f));
-        house7 = scale(house7, vec3(0.88f, 0.90f, 0.88f));
-        House::draw(shader, house7, HOUSE_DOCHALA, false);
-
-        // Fishing Net Drying Racks (Jal Macha / মাছের জাল শুকানোর মাচা)
+        // Fishing Net Drying Rack (Jal Macha / মাছের জাল শুকানোর মাচা)
         mat4 netRack1 = mat4::identity();
         netRack1 = translate(netRack1, vec3(-6.2f, 0.0f, -19.5f));
         netRack1 = rotate(netRack1, radians(-15.0f), vec3(0.0f, 1.0f, 0.0f));
         House::drawNetRack(shader, netRack1);
 
-        mat4 netRack2 = mat4::identity();
-        netRack2 = translate(netRack2, vec3(-6.2f, 0.0f, 6.0f));
-        netRack2 = rotate(netRack2, radians(18.0f), vec3(0.0f, 1.0f, 0.0f));
-        House::drawNetRack(shader, netRack2);
-
-        // Riverbank Duck House (Hash-er Ghor) on bamboo stilts
+        // Stilted Poultry / Duck House (Hash-er Ghor) shifted near the riverbank
         mat4 duckHouseM = mat4::identity();
-        duckHouseM = translate(duckHouseM, vec3(-5.2f, 0.0f, -1.5f));
-        duckHouseM = rotate(duckHouseM, radians(-22.0f), vec3(0.0f, 1.0f, 0.0f));
+        duckHouseM = translate(duckHouseM, vec3(-5.8f, 0.0f, -9.5f));
+        duckHouseM = rotate(duckHouseM, radians(-25.0f), vec3(0.0f, 1.0f, 0.0f));
         House::drawDuckHouse(shader, duckHouseM, isNight);
 
-        // ═════════════════════════════════════════════════════════════
-        // BARI 6: TANTI PARA (FAR WEST ARTISAN & WEAVER COLONY)
-        // ═════════════════════════════════════════════════════════════
-        // House 6A: Artisan Master Weaver Homestead (Dochala style)
-        mat4 house6A = mat4::identity();
-        house6A = translate(house6A, vec3(-36.5f, 0.0f, 6.5f));
-        house6A = rotate(house6A, radians(25.0f), vec3(0.0f, 1.0f, 0.0f));
-        House::draw(shader, house6A, HOUSE_DOCHALA, false);
-
-        // House 6B: Handloom & Storage Cottage
-        mat4 house6B = mat4::identity();
-        house6B = translate(house6B, vec3(-40.0f, 0.0f, 15.5f));
-        house6B = rotate(house6B, radians(-30.0f), vec3(0.0f, 1.0f, 0.0f));
-        house6B = scale(house6B, vec3(0.85f, 0.88f, 0.85f));
-        House::draw(shader, house6B, HOUSE_DOCHALA, false);
-
-        // House 6C: West Elder Homestead (Chouchala House)
-        mat4 house6C = mat4::identity();
-        house6C = translate(house6C, vec3(-39.5f, 0.0f, -4.5f));
-        house6C = rotate(house6C, radians(78.0f), vec3(0.0f, 1.0f, 0.0f));
-        house6C = scale(house6C, vec3(0.92f, 0.92f, 0.92f));
-        House::draw(shader, house6C, HOUSE_CHOUCHALA, false);
-
-        // House 6D: Village Pottery & Crafts Workshop
-        mat4 house6D = mat4::identity();
-        house6D = translate(house6D, vec3(-41.0f, 0.0f, -14.5f));
-        house6D = rotate(house6D, radians(45.0f), vec3(0.0f, 1.0f, 0.0f));
-        house6D = scale(house6D, vec3(0.80f, 0.85f, 0.80f));
-        House::draw(shader, house6D, HOUSE_DOCHALA, false);
-
-        // Straw Stack at Tanti Para
-        House::drawStrawStack(shader, mat4::identity(), vec3(-36.5f, 0.0f, 1.0f), 1.05f);
-
-        // ═════════════════════════════════════════════════════════════
-        // BARI 7: UTTAR-PASCHIM BARI (NORTH-WEST MEADOW FARMSTEAD)
-        // ═════════════════════════════════════════════════════════════
-        // House 7A: North-West Farmhouse (Dochala style)
-        mat4 house7A = mat4::identity();
-        house7A = translate(house7A, vec3(-28.0f, 0.0f, -28.0f));
-        house7A = rotate(house7A, radians(-15.0f), vec3(0.0f, 1.0f, 0.0f));
-        House::draw(shader, house7A, HOUSE_DOCHALA, false);
-
-        // House 7B: Family Dochala Cottage
-        mat4 house7B = mat4::identity();
-        house7B = translate(house7B, vec3(-19.5f, 0.0f, -35.5f));
-        house7B = rotate(house7B, radians(35.0f), vec3(0.0f, 1.0f, 0.0f));
-        house7B = scale(house7B, vec3(0.85f, 0.88f, 0.85f));
-        House::draw(shader, house7B, HOUSE_DOCHALA, false);
-
-        // House 7C: North Boundary Hay & Storehouse
-        mat4 house7C = mat4::identity();
-        house7C = translate(house7C, vec3(-31.5f, 0.0f, -20.5f));
-        house7C = rotate(house7C, radians(75.0f), vec3(0.0f, 1.0f, 0.0f));
-        house7C = scale(house7C, vec3(0.80f, 0.82f, 0.80f));
-        House::draw(shader, house7C, HOUSE_DOCHALA, false);
-
-        // Straw Stack at Uttar-Paschim Bari
-        House::drawStrawStack(shader, mat4::identity(), vec3(-24.5f, 0.0f, -23.5f), 1.10f);
-
-        // ═════════════════════════════════════════════════════════════
-        // BARI 8: DOKKHIN-PASCHIM BARI (SOUTH AGRICULTURAL SETTLEMENT)
-        // ═════════════════════════════════════════════════════════════
-        // House 8A: Southern Agricultural Chouchala Homestead
-        mat4 house8A = mat4::identity();
-        house8A = translate(house8A, vec3(-26.5f, 0.0f, 34.5f));
-        house8A = rotate(house8A, radians(165.0f), vec3(0.0f, 1.0f, 0.0f));
-        house8A = scale(house8A, vec3(0.95f, 0.95f, 0.95f));
-        House::draw(shader, house8A, HOUSE_CHOUCHALA, false);
-
-        // House 8B: Field Worker Dochala Cottage
-        mat4 house8B = mat4::identity();
-        house8B = translate(house8B, vec3(-36.5f, 0.0f, 32.5f));
-        house8B = rotate(house8B, radians(-40.0f), vec3(0.0f, 1.0f, 0.0f));
-        house8B = scale(house8B, vec3(0.85f, 0.88f, 0.85f));
-        House::draw(shader, house8B, HOUSE_DOCHALA, false);
-
-        // House 8C: Southern Field Watch Hut (Khet-er Ghor)
-        mat4 house8C = mat4::identity();
-        house8C = translate(house8C, vec3(-17.5f, 0.0f, 35.5f));
-        house8C = rotate(house8C, radians(12.0f), vec3(0.0f, 1.0f, 0.0f));
-        house8C = scale(house8C, vec3(0.78f, 0.82f, 0.78f));
-        House::draw(shader, house8C, HOUSE_DOCHALA, false);
-
-        // Straw Stack & Vegetable Trellis in Southern settlement
-        House::drawStrawStack(shader, mat4::identity(), vec3(-21.5f, 0.0f, 35.5f), 1.08f);
-        mat4 trellis2 = mat4::identity();
-        trellis2 = translate(trellis2, vec3(-31.5f, 0.0f, 33.5f));
-        trellis2 = rotate(trellis2, radians(-10.0f), vec3(0.0f, 1.0f, 0.0f));
-        House::drawVegetableTrellis(shader, trellis2);
-
-        // ═════════════════════════════════════════════════════════════
-        // BARI 9: UTTAR-NODI BARI (MOSQUE & NORTH RIVERSIDE COTTAGES)
-        // ═════════════════════════════════════════════════════════════
-        // House 9A: Imam & Mosque Caretaker Cottage
-        mat4 house9A = mat4::identity();
-        house9A = translate(house9A, vec3(-13.0f, 0.0f, -30.0f));
-        house9A = rotate(house9A, radians(12.0f), vec3(0.0f, 1.0f, 0.0f));
-        house9A = scale(house9A, vec3(0.88f, 0.90f, 0.88f));
-        House::draw(shader, house9A, HOUSE_DOCHALA, false);
-
-        // House 9B: North Riverside Fisherman Hut
-        mat4 house9B = mat4::identity();
-        house9B = translate(house9B, vec3(-10.5f, 0.0f, -38.5f));
-        house9B = rotate(house9B, radians(85.0f), vec3(0.0f, 1.0f, 0.0f));
-        house9B = scale(house9B, vec3(0.80f, 0.85f, 0.80f));
-        House::draw(shader, house9B, HOUSE_DOCHALA, false);
-
-        // ═════════════════════════════════════════════════════════════
-        // BARI 10: PURBOPARA (EAST VILLAGE - TRANSLATED FAR INTO EASTERN MEADOW)
-        // ═════════════════════════════════════════════════════════════
-        // House E1: Central Purbopara Homestead (Chouchala 4-sloped terracotta hip roof)
-        mat4 houseE1 = mat4::identity();
-        houseE1 = translate(houseE1, vec3(33.5f, 0.0f, -2.5f));
-        houseE1 = rotate(houseE1, radians(-85.0f), vec3(0.0f, 1.0f, 0.0f));
-        House::draw(shader, houseE1, HOUSE_CHOUCHALA, false);
-
-        // House E2: East Village Dochala Cottage
-        mat4 houseE2 = mat4::identity();
-        houseE2 = translate(houseE2, vec3(30.5f, 0.0f, 8.5f));
-        houseE2 = rotate(houseE2, radians(-95.0f), vec3(0.0f, 1.0f, 0.0f));
-        houseE2 = scale(houseE2, vec3(0.88f, 0.90f, 0.88f));
-        House::draw(shader, houseE2, HOUSE_DOCHALA, false);
-
-        // House E3: North Purbopara Homestead (Chouchala House)
-        mat4 houseE3 = mat4::identity();
-        houseE3 = translate(houseE3, vec3(32.5f, 0.0f, -19.5f));
-        houseE3 = rotate(houseE3, radians(-75.0f), vec3(0.0f, 1.0f, 0.0f));
-        House::draw(shader, houseE3, HOUSE_CHOUCHALA, false);
-
-        // House E4: North East Farmer Cottage (Dochala)
-        mat4 houseE4 = mat4::identity();
-        houseE4 = translate(houseE4, vec3(40.5f, 0.0f, -12.5f));
-        houseE4 = rotate(houseE4, radians(15.0f), vec3(0.0f, 1.0f, 0.0f));
-        houseE4 = scale(houseE4, vec3(0.85f, 0.88f, 0.85f));
-        House::draw(shader, houseE4, HOUSE_DOCHALA, false);
-
-        // House E5: South Purbopara Homestead (Dochala)
-        mat4 houseE5 = mat4::identity();
-        houseE5 = translate(houseE5, vec3(35.5f, 0.0f, 15.5f));
-        houseE5 = rotate(houseE5, radians(-110.0f), vec3(0.0f, 1.0f, 0.0f));
-        House::draw(shader, houseE5, HOUSE_DOCHALA, false);
-
-        // House E6: South East Orchard Cottage (Dochala) shifted onto solid courtyard ground
-        mat4 houseE6 = mat4::identity();
-        houseE6 = translate(houseE6, vec3(27.5f, 0.0f, 23.5f));
-        houseE6 = rotate(houseE6, radians(-85.0f), vec3(0.0f, 1.0f, 0.0f));
-        houseE6 = scale(houseE6, vec3(0.85f, 0.88f, 0.85f));
-        House::draw(shader, houseE6, HOUSE_DOCHALA, false);
-
-        // House E7: East Boundary Homestead (Chouchala)
-        mat4 houseE7 = mat4::identity();
-        houseE7 = translate(houseE7, vec3(42.5f, 0.0f, -3.5f));
-        houseE7 = rotate(houseE7, radians(15.0f), vec3(0.0f, 1.0f, 0.0f));
-        houseE7 = scale(houseE7, vec3(0.92f, 0.92f, 0.92f));
-        House::draw(shader, houseE7, HOUSE_CHOUCHALA, false);
-
-        // House E8: Far North Purbopara Cottage (Dochala)
-        mat4 houseE8 = mat4::identity();
-        houseE8 = translate(houseE8, vec3(34.5f, 0.0f, -31.5f));
-        houseE8 = rotate(houseE8, radians(-80.0f), vec3(0.0f, 1.0f, 0.0f));
-        houseE8 = scale(houseE8, vec3(0.85f, 0.88f, 0.85f));
-        House::draw(shader, houseE8, HOUSE_DOCHALA, false);
-
-        // Purbopara Rice Straw Stacks (Khorer Paloi moved far into the eastern village)
-        House::drawStrawStack(shader, mat4::identity(), vec3(37.5f, 0.0f, 3.5f), 1.15f);
-        House::drawStrawStack(shader, mat4::identity(), vec3(36.5f, 0.0f, -25.5f), 1.05f);
-        House::drawStrawStack(shader, mat4::identity(), vec3(39.5f, 0.0f, 12.0f), 1.10f);
+        // Purbopara Rice Straw Stack (Khorer Paloi) in Eastern Meadow
+        House::drawStrawStack(shader, mat4::identity(), vec3(38.0f, 0.0f, 3.5f), 1.15f);
 
         // Traditional Rural Bangladeshi Bullock Cart (Gorur Gari / গরুর গাড়ি) Driven on Grameen Rasta
         mat4 bullockCartM = mat4::identity();
@@ -2086,26 +2251,11 @@ int main(int argc, char* argv[])
         House::drawBullockCart(shader, bullockCartM, g_cartWheelRot, g_cartWalkPhase);
 
         // Terracotta Clay Water Pitchers (Matir Kolshi) distributed across homesteads
-        House::drawKolshi(shader, mat4::identity(), vec3(-3.35f, 0.0f, -1.35f), 0.95f);  // Tubewell apron
-        House::drawKolshi(shader, mat4::identity(), vec3(-17.5f, 0.0f, -12.5f), 0.90f); // Dochala House 2 entrance
+        House::drawKolshi(shader, mat4::identity(), vec3(-3.7f, 0.0f, 6.1f), 0.95f);   // Tubewell apron
+        House::drawKolshi(shader, mat4::identity(), vec3(-17.5f, 0.0f, -12.5f), 0.90f); // Farmhouse 2 entrance
         House::drawKolshi(shader, mat4::identity(), vec3(-7.0f, 0.0f, -9.6f), 0.88f);  // Kitchen Hut
         House::drawKolshi(shader, mat4::identity(), vec3(4.8f, 0.12f, 1.8f), 0.92f);   // River Landing Ghat
-        House::drawKolshi(shader, mat4::identity(), vec3(-7.8f, 0.0f, 16.5f), 0.85f);  // Dokkhin Bari House 3
-        House::drawKolshi(shader, mat4::identity(), vec3(-21.5f, 0.0f, 3.2f), 0.88f);  // Paschim Bari House 5
-        House::drawKolshi(shader, mat4::identity(), vec3(1.8f, 0.0f, 7.8f), 0.82f);    // Riverside House 7
-
-        // Parametric Cubic Bézier Terracotta Surahi Vases
-        mat4 vaseM1 = mat4::identity();
-        vaseM1 = translate(vaseM1, vec3(-20.2f, 0.08f, 5.2f)); // Paschim Bari
-        vaseM1 = scale(vaseM1, vec3(0.72f, 0.72f, 0.72f));
-        Texture::bind(TEX_BRICK, 0);
-        shader.setInt("uTextureType", (int)TEX_BRICK);
-        CurvedObject::drawBezierVase(shader, vaseM1, vec3(0.76f, 0.42f, 0.24f));
-
-        mat4 vaseM2 = mat4::identity();
-        vaseM2 = translate(vaseM2, vec3(-7.2f, 0.08f, 16.0f)); // Dokkhin Bari
-        vaseM2 = scale(vaseM2, vec3(0.62f, 0.62f, 0.62f));
-        CurvedObject::drawBezierVase(shader, vaseM2, vec3(0.72f, 0.38f, 0.20f));
+        House::drawKolshi(shader, mat4::identity(), vec3(-8.5f, 0.0f, 16.5f), 0.85f);  // Dokkhin Bari House 3
 
         // ─── 5. VEGETATION (RICH RURAL BENGALI TREE CANOPY) ──────
         Texture::bind(TEX_WOOD, 0);
@@ -2138,7 +2288,7 @@ int main(int argc, char* argv[])
         Tree::draw(shader, palm5, TREE_PALM);
 
         mat4 palm8 = mat4::identity();
-        palm8 = translate(palm8, vec3(-27.5f, 0.0f, 6.5f));
+        palm8 = translate(palm8, vec3(-26.0f, 0.0f, -2.0f));
         palm8 = rotate(palm8, radians(-25.0f), vec3(0.0f, 1.0f, 0.0f));
         palm8 = rotate(palm8, palmSway2, vec3(1.0f, 0.0f, 0.0f));
         Tree::draw(shader, palm8, TREE_PALM);
@@ -2147,7 +2297,7 @@ int main(int argc, char* argv[])
         struct TreePlacement { float x, z, rotDeg; int swayAxis; }; // swayAxis: 0=sway1 Z, 1=sway2 X
         static const TreePlacement fullPalms[] = {
             // East Bank Riverfront & Purbopara
-            { 16.5f, -12.0f, -15.0f, 0 },
+            { 16.5f,  -8.0f, -15.0f, 0 },
             { 17.2f,   2.0f,  20.0f, 1 },
             { 16.8f,  14.0f, -25.0f, 0 },
             { 17.5f, -28.0f,  30.0f, 1 },
@@ -2160,7 +2310,7 @@ int main(int argc, char* argv[])
             { 23.8f,  38.0f,  20.0f, 0 },
             { 36.5f, -10.5f,  45.0f, 1 },
             { 41.5f,   3.0f, -35.0f, 0 },
-            { 37.0f,  16.5f,  15.0f, 1 },
+            { 41.0f,  16.5f,  15.0f, 1 },
             { 41.0f, -22.0f, -20.0f, 0 },
             { 40.5f,  30.0f,  25.0f, 1 },
             // Far-West Artisan Colony (Tanti Para)
@@ -2170,11 +2320,11 @@ int main(int argc, char* argv[])
             // North-West Farmstead & Mosque Precinct
             { -38.5f, -38.0f,  15.0f, 1 },
             { -27.0f, -30.0f, -25.0f, 0 },
-            { -22.0f, -36.0f, -30.0f, 0 },
-            // South Agricultural Expanse (Shifted out of rice field onto solid southern ground)
-            { -26.0f,  32.5f,  40.0f, 1 },
+            {  -6.0f, -36.0f, -31.5f, 0 },
+            // South Riverside Homestead (Shifted out of rice field onto riverside ground)
+            {  -4.0f,  32.5f,  34.0f, 1 },
             { -16.0f,  38.0f, -15.0f, 0 },
-            { -30.0f,  39.0f,  20.0f, 1 }
+            { -18.5f,  42.0f,  20.0f, 1 }
         };
         for (const auto& tp : fullPalms) {
             mat4 m = mat4::identity();
@@ -2187,7 +2337,7 @@ int main(int argc, char* argv[])
 
         // Banana Trees (Kola Gach with paddle leaves, fruit bunch & purple heart)
         mat4 banana1 = mat4::identity();
-        banana1 = translate(banana1, vec3(-17.5f, 0.0f, -11.5f)); // Uttar Bari yard
+        banana1 = translate(banana1, vec3(-18.5f, 0.0f, -8.0f)); // Uttar Bari yard
         banana1 = rotate(banana1, bananaSway, vec3(0.0f, 0.0f, 1.0f));
         Tree::draw(shader, banana1, TREE_BANANA);
 
@@ -2198,31 +2348,31 @@ int main(int argc, char* argv[])
         Tree::draw(shader, banana2, TREE_BANANA);
 
         mat4 banana3 = mat4::identity();
-        banana3 = translate(banana3, vec3(-11.5f, 0.0f, -14.8f)); // Behind Kitchen Hut on solid ground
+        banana3 = translate(banana3, vec3(-11.5f, 0.0f, -16.5f)); // Behind Kitchen Hut on solid ground
         banana3 = rotate(banana3, radians(-25.0f), vec3(0.0f, 1.0f, 0.0f));
         banana3 = rotate(banana3, bananaSway, vec3(0.0f, 0.0f, 1.0f));
         Tree::draw(shader, banana3, TREE_BANANA);
 
         mat4 banana4 = mat4::identity();
-        banana4 = translate(banana4, vec3(-7.5f, 0.0f, 16.5f)); // Near South Homestead
+        banana4 = translate(banana4, vec3(-6.5f, 0.0f, 21.0f)); // Near South Homestead
         banana4 = rotate(banana4, radians(80.0f), vec3(0.0f, 1.0f, 0.0f));
         banana4 = rotate(banana4, -bananaSway, vec3(1.0f, 0.0f, 0.0f));
         Tree::draw(shader, banana4, TREE_BANANA);
 
         mat4 banana5 = mat4::identity();
-        banana5 = translate(banana5, vec3(-8.8f, 0.0f, -18.5f)); // Shading Riverside Cottage garden on solid west terrace
+        banana5 = translate(banana5, vec3(-5.5f, 0.0f, -18.0f)); // Shading Riverside Cottage garden on solid west terrace
         banana5 = rotate(banana5, radians(-60.0f), vec3(0.0f, 1.0f, 0.0f));
         banana5 = rotate(banana5, bananaSway, vec3(0.0f, 0.0f, 1.0f));
         Tree::draw(shader, banana5, TREE_BANANA);
 
         mat4 banana6 = mat4::identity();
-        banana6 = translate(banana6, vec3(-15.5f, 0.0f, -5.5f)); // Beside House 1C
+        banana6 = translate(banana6, vec3(-15.5f, 0.0f, -5.5f)); // Beside courtyard
         banana6 = rotate(banana6, radians(40.0f), vec3(0.0f, 1.0f, 0.0f));
         banana6 = rotate(banana6, -bananaSway, vec3(1.0f, 0.0f, 0.0f));
         Tree::draw(shader, banana6, TREE_BANANA);
 
         mat4 banana7 = mat4::identity();
-        banana7 = translate(banana7, vec3(-15.5f, 0.0f, 13.5f)); // Beside House 3B
+        banana7 = translate(banana7, vec3(-15.5f, 0.0f, 13.5f)); // Beside South Bari
         banana7 = rotate(banana7, radians(-35.0f), vec3(0.0f, 1.0f, 0.0f));
         banana7 = rotate(banana7, bananaSway, vec3(0.0f, 0.0f, 1.0f));
         Tree::draw(shader, banana7, TREE_BANANA);
@@ -2235,45 +2385,58 @@ int main(int argc, char* argv[])
         Tree::draw(shader, bananaFg, TREE_BANANA);
 
         // Full Plane Banana Trees
-        struct BananaPlacement { float x, z, rotDeg; bool invertSway; };
-        static const BananaPlacement fullBananas[] = {
-            // Far West Tanti Para
-            { -38.5f,   8.0f, -25.0f, false },
-            { -34.0f,  14.5f,  60.0f, true  },
-            { -31.0f,   1.5f, -40.0f, false },
-            // North-West Farmstead & Mosque Flank
-            { -26.0f, -36.0f,  35.0f, true  },
-            { -23.0f, -32.0f, -20.0f, false },
-            // South-West Farmstead
-            { -26.0f,  35.5f,  75.0f, true  },
-            { -20.0f,  32.0f, -30.0f, false },
-            // Mosque Hamlet
-            {  -8.0f, -31.5f,  45.0f, true  },
-            // Purbopara (East Village - Translated Far into Eastern Meadow)
-            {  36.5f,  -4.0f, -35.0f, false },
-            {  41.0f,  -1.0f,  50.0f, true  },
-            {  37.5f,  11.0f, -15.0f, false },
-            {  41.5f,   7.0f,  40.0f, true  },
-            {  37.0f, -26.5f, -45.0f, false },
-            {  41.0f,  19.5f,  30.0f, true  }
+        struct BananaPlacement {
+            float x, z, rotDeg;
+            bool invertSway;
+            mat4 baseM;
         };
+        static BananaPlacement fullBananas[] = {
+            // Far West Tanti Para
+            { -40.5f,   8.5f, -25.0f, false, mat4::identity() }, // Placed outside House 7 (Tanti Para Cottage) in the courtyard garden
+            { -34.0f,  14.5f,  60.0f, true,  mat4::identity() },
+            { -31.0f,   1.5f, -40.0f, false, mat4::identity() },
+            // North-West Farmstead & Mosque Flank
+            { -26.0f, -36.0f,  35.0f, true,  mat4::identity() },
+            { -11.0f, -33.5f,  35.0f, false, mat4::identity() },
+            // South Riverside Homestead
+            {  -8.8f,  35.5f,  75.0f, true,  mat4::identity() },
+            { -20.0f,  32.0f, -30.0f, false, mat4::identity() },
+            // Mosque Hamlet
+            {  -8.0f, -31.5f,  45.0f, true,  mat4::identity() },
+            // Purbopara (East Village - Translated Far into Eastern Meadow)
+            {  41.5f,  -8.0f, -35.0f, false, mat4::identity() },
+            {  41.0f,  -1.0f,  50.0f, true,  mat4::identity() },
+            {  37.5f,  11.0f, -15.0f, false, mat4::identity() },
+            {  41.5f,   7.0f,  40.0f, true,  mat4::identity() },
+            {  42.0f, -30.0f, -45.0f, false, mat4::identity() },
+            {  41.0f,  19.5f,  30.0f, true,  mat4::identity() }
+        };
+        static bool s_fullBananasInit = false;
+        if (!s_fullBananasInit) {
+            for (auto& bp : fullBananas) {
+                mat4 m = mat4::identity();
+                m = translate(m, vec3(bp.x, 0.0f, bp.z));
+                bp.baseM = rotate(m, radians(bp.rotDeg), vec3(0.0f, 1.0f, 0.0f));
+            }
+            s_fullBananasInit = true;
+        }
         for (const auto& bp : fullBananas) {
-            mat4 m = mat4::identity();
-            m = translate(m, vec3(bp.x, 0.0f, bp.z));
-            m = rotate(m, radians(bp.rotDeg), vec3(0.0f, 1.0f, 0.0f));
-            if (bp.invertSway) m = rotate(m, -bananaSway, vec3(1.0f, 0.0f, 0.0f));
-            else               m = rotate(m,  bananaSway, vec3(0.0f, 0.0f, 1.0f));
+            mat4 m = bp.baseM;
+            if (fabsf(bananaSway) > 1e-4f) {
+                if (bp.invertSway) m = rotate(m, -bananaSway, vec3(1.0f, 0.0f, 0.0f));
+                else               m = rotate(m,  bananaSway, vec3(0.0f, 0.0f, 1.0f));
+            }
             Tree::draw(shader, m, TREE_BANANA);
         }
 
         // Branching Banyan / Mango Trees (Bot / Aam Gach with spreading leafy canopy)
         mat4 mangoTree1 = mat4::identity();
-        mangoTree1 = translate(mangoTree1, vec3(-23.5f, 0.0f, -16.5f)); // Sheltering Uttar Bari
+        mangoTree1 = translate(mangoTree1, vec3(-18.5f, 0.0f, -18.0f)); // Sheltering Uttar Bari
         mangoTree1 = rotate(mangoTree1, treeSway, vec3(0.0f, 0.0f, 1.0f));
         Tree::draw(shader, mangoTree1, TREE_GENERAL);
 
         mat4 mangoTree2 = mat4::identity();
-        mangoTree2 = translate(mangoTree2, vec3(-24.5f, 0.0f, 1.5f)); // Shading Paschim Bari
+        mangoTree2 = translate(mangoTree2, vec3(-20.5f, 0.0f, -2.5f)); // Shading Paschim Bari
         mangoTree2 = rotate(mangoTree2, radians(35.0f), vec3(0.0f, 1.0f, 0.0f));
         mangoTree2 = rotate(mangoTree2, -treeSway, vec3(1.0f, 0.0f, 0.0f));
         Tree::draw(shader, mangoTree2, TREE_GENERAL);
@@ -2294,13 +2457,13 @@ int main(int argc, char* argv[])
         struct MangoPlacement { float x, z, rotDeg; bool invertSway; };
         static const MangoPlacement fullMangoes[] = {
             // Far West Tanti Para Gathering Tree
-            { -39.5f,   1.5f, -30.0f, false },
+            { -43.0f,   1.5f, -30.0f, false },
             // North-West Orchard Corner (Sheltering Bari 7)
             { -20.0f, -21.0f,  45.0f, true  },
             // Dokkhin-Paschim Field Grove (Shifted out of rice field onto solid western meadow bank ground)
-            { -33.5f,  25.5f, -50.0f, false },
-            // Far South-West Boundary
-            { -27.5f,  44.0f,  60.0f, true  },
+            { -45.0f,  27.5f, -50.0f, false },
+            // South Riverside Homestead Boundary
+            {  -5.5f,  42.0f,  60.0f, true  },
             // Mosque North Rear Shade Tree
             { -33.0f, -41.0f, -15.0f, false },
             // East Village Center Shade Tree
@@ -2353,9 +2516,9 @@ int main(int argc, char* argv[])
             // North-West Border Windbreak
             { -40.0f, -36.0f,  35.0f, false },
             { -34.0f, -42.0f, -15.0f, true  },
-            // South-West Border
-            { -32.0f,  34.0f,  45.0f, false },
-            { -25.0f,  42.0f, -30.0f, true  },
+            // South-West Border & South Riverside Windbreak
+            {  -8.5f,  42.0f,  45.0f, false },
+            { -45.0f,  44.5f, -30.0f, true  },
             // Far North Riverbank (on solid ground away from water)
             {  -9.5f, -38.0f,  20.0f, false },
             {  15.0f, -41.0f, -25.0f, true  },
@@ -2398,7 +2561,7 @@ int main(int argc, char* argv[])
         elder.fanSway     = (animTime > 0.0f) ? (sinf(animTime * 2.6f) * radians(10.0f)) : 0.0f;
 
         mat4 elderM = charpaiM;
-        elderM = translate(elderM, vec3(0.20f, 0.50f, 0.0f));
+        elderM = translate(elderM, vec3(0.36f, 0.47f, 0.0f));
         elderM = rotate(elderM, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
         Person::draw(shader, elderM, elder);
 
@@ -2410,7 +2573,7 @@ int main(int argc, char* argv[])
 
         mat4 lanternM = mat4::identity();
         lanternM = translate(lanternM, vec3(lanternPos.x, 0.24f, lanternPos.z));
-        Charpai::drawLantern(shader, lanternM);
+        Charpai::drawLantern(shader, lanternM, isHarikenLit);
 
         // Person 2: Neighbor seated on wooden bench beside Charpai chatting with Elder
         mat4 benchM = mat4::identity();
@@ -2459,11 +2622,7 @@ int main(int argc, char* argv[])
         mat4 rehalM = childM;
         rehalM = translate(rehalM, vec3(0.0f, 0.00f, 0.35f));
         Person::drawRehal(shader, rehalM);
-
-        mat4 bookM = rehalM;
-        bookM = translate(bookM, vec3(0.0f, 0.155f, 0.0f));
-        bookM = rotate(bookM, radians(20.0f), vec3(1.0f, 0.0f, 0.0f));
-        Person::drawBook(shader, bookM);
+        Person::drawBook(shader, rehalM);
 
         // Person 5: Sibling / Playmate sitting cross-legged listening attentively
         PersonParams sibling;
@@ -2568,6 +2727,337 @@ int main(int argc, char* argv[])
             Texture::bind(TEX_FABRIC, 0);
             shader.setInt("uTextureType", (int)TEX_FABRIC);
             Person::draw(shader, walkerM, walker);
+        }
+
+        // ─── 6B. HOMESTEAD & FIELD WORKERS, SOCIAL GATHERINGS & WALKING VILLAGERS ───
+        // Authentic rural villagers working in the paddy fields, tending cattle in homesteads,
+        // winnowing rice, engaging in evening adda conversations, and walking along village paths.
+        {
+            // Shared Optimized Color Palette
+            static const vec3 s_colSkinFarmer (0.50f, 0.33f, 0.19f); // sun-tanned Bengali farmer
+            static const vec3 s_colSkinWoman  (0.53f, 0.36f, 0.22f); // warm Bengali skin tone
+            static const vec3 s_colSkinWarm   (0.52f, 0.35f, 0.21f);
+            static const vec3 s_colBanyanVest (0.84f, 0.82f, 0.76f); // weathered cotton vest
+            static const vec3 s_colLungiGreen (0.20f, 0.35f, 0.18f); // hitched-up green lungi
+            static const vec3 s_colLungiBlue  (0.16f, 0.28f, 0.52f); // deep blue checked lungi
+            static const vec3 s_colLungiMaroon(0.54f, 0.15f, 0.10f); // maroon checked lungi
+            static const vec3 s_colLungiOlive (0.26f, 0.36f, 0.20f); // olive lungi
+            static const vec3 s_colKurtaWhite (0.94f, 0.94f, 0.92f); // clean white cotton kurta
+            static const vec3 s_colKurtaBlue  (0.72f, 0.80f, 0.88f); // light grey-blue kurta
+            static const vec3 s_colKurtaOchre (0.76f, 0.42f, 0.18f); // terracotta ochre kurta
+            static const vec3 s_colGamchaRed  (0.80f, 0.18f, 0.12f); // traditional red gamcha
+            static const vec3 s_colGamchaGold (0.84f, 0.65f, 0.15f); // golden yellow gamcha
+            static const vec3 s_colSareeGold  (0.92f, 0.74f, 0.16f); // golden yellow saree
+            static const vec3 s_colBambooGold (0.74f, 0.62f, 0.32f); // sun-cured woven bamboo
+            static const vec3 s_colBambooRim  (0.52f, 0.40f, 0.20f); // dark bamboo rim
+            static const vec3 s_colStrawGold  (0.86f, 0.72f, 0.32f); // ripe rice straw
+            static const vec3 s_colGrassGreen (0.24f, 0.48f, 0.16f); // fresh fodder grass
+            static const vec3 s_colJuteRope   (0.44f, 0.32f, 0.18f); // twisted jute cord
+            static const vec3 s_colMoraCane   (0.68f, 0.55f, 0.30f); // woven cane stool
+
+            // 1. Farmer in Primary Paddy Field (ধান ক্ষেতে পরিচর্যা ও নিড়ানিরত কৃষক)
+            // Located inside South Paddy Field 1 at (-15.2, 0, 25.2), bent over weeding and tending rice stalks
+            {
+                float weedCycle = (animTime > 0.0f) ? (animTime * 3.4f) : 0.0f;
+                float bendCycle = (animTime > 0.0f) ? (animTime * 2.2f) : 0.0f;
+                float bendAngle = radians(28.0f) + ((animTime > 0.0f) ? (sinf(bendCycle) * radians(5.0f)) : 0.0f);
+                float armWeed   = (animTime > 0.0f) ? (sinf(weedCycle) * radians(14.0f)) : 0.0f;
+
+                PersonParams farmer;
+                farmer.skinColor     = s_colSkinFarmer;
+                farmer.shirtColor    = s_colBanyanVest;
+                farmer.pantsColor    = s_colLungiGreen;
+                farmer.hasGamcha     = true;
+                farmer.gamchaColor   = s_colGamchaRed;
+                farmer.leftArmAngle  = radians(-46.0f) + armWeed;
+                farmer.rightArmAngle = radians(-56.0f) - armWeed;
+
+                mat4 farmerM = mat4::identity();
+                farmerM = translate(farmerM, vec3(-25.5f, 0.0f, 39.5f));
+                farmerM = rotate(farmerM, radians(-40.0f), vec3(0.0f, 1.0f, 0.0f));
+                farmerM = rotate(farmerM, bendAngle, vec3(1.0f, 0.0f, 0.0f)); // bent over rice crops
+                farmerM = scale(farmerM, vec3(0.96f));
+
+                Texture::bind(TEX_FABRIC, 0);
+                shader.setInt("uTextureType", (int)TEX_FABRIC);
+                Person::draw(shader, farmerM, farmer);
+
+                // Authentic Conical Bamboo Sunhat (Mathal / মাথাল) on farmer's head
+                mat4 mathalM = farmerM;
+                mathalM = translate(mathalM, vec3(0.0f, 1.08f, 0.04f));
+                mathalM = rotate(mathalM, radians(-14.0f), vec3(1.0f, 0.0f, 0.0f));
+                mathalM = scale(mathalM, vec3(0.48f, 0.16f, 0.48f));
+                Primitives::drawCone(shader, mathalM, s_colBambooGold);
+
+                // Mathal inner bamboo brim rim
+                mat4 brimM = farmerM;
+                brimM = translate(brimM, vec3(0.0f, 1.06f, 0.04f));
+                brimM = rotate(brimM, radians(-14.0f), vec3(1.0f, 0.0f, 0.0f));
+                brimM = scale(brimM, vec3(0.49f, 0.015f, 0.49f));
+                Primitives::drawCylinder(shader, brimM, s_colBambooRim);
+            }
+
+            // 2. Farmer Walking Along Field Ridge (আইল ধরে ধানের আঁটি বহনকারী কৃষক - Hatahati & Work)
+            // Walking along the ridge (Aal) between paddy fields at X = -33.8 carrying harvested rice sheaves
+            {
+                float aalCycle = (animTime > 0.0f) ? (animTime * 0.38f) : 0.0f;
+                float aalT     = fabsf(fmodf(aalCycle, 2.0f) - 1.0f); // 0.0 to 1.0 ping-pong
+                float aalZ     = 36.0f + aalT * 6.5f;
+                float aalYaw   = (fmodf(aalCycle, 2.0f) < 1.0f) ? radians(180.0f) : 0.0f;
+
+                float strideFreq  = 4.4f;
+                float aalStride   = (animTime > 0.0f) ? (sinf(animTime * strideFreq) * radians(24.0f)) : 0.0f;
+                float aalBob      = (animTime > 0.0f) ? (fabsf(sinf(animTime * strideFreq)) * 0.020f) : 0.0f;
+
+                PersonParams aalWalker;
+                aalWalker.skinColor     = s_colSkinFarmer;
+                aalWalker.shirtColor    = s_colKurtaWhite;
+                aalWalker.pantsColor    = s_colLungiMaroon;
+                aalWalker.hasGamcha     = true;
+                aalWalker.gamchaColor   = s_colGamchaGold;
+                aalWalker.leftLegAngle  = aalStride;
+                aalWalker.rightLegAngle = -aalStride;
+                aalWalker.leftArmAngle  = -aalStride * 0.65f;
+                aalWalker.rightArmAngle = radians(-95.0f); // right hand steadying the sheaves on shoulder
+
+                mat4 aalM = mat4::identity();
+                aalM = translate(aalM, vec3(-31.5f, aalBob, aalZ));
+                aalM = rotate(aalM, aalYaw, vec3(0.0f, 1.0f, 0.0f));
+                aalM = scale(aalM, vec3(0.98f));
+
+                Texture::bind(TEX_FABRIC, 0);
+                shader.setInt("uTextureType", (int)TEX_FABRIC);
+                Person::draw(shader, aalM, aalWalker);
+
+                // Bundle of Harvested Rice Sheaves (Dhaner Aati / ধানের আঁটি) resting on shoulder
+                mat4 sheafM = aalM;
+                sheafM = translate(sheafM, vec3(0.18f, 0.95f, -0.04f));
+                sheafM = rotate(sheafM, radians(12.0f), vec3(0.0f, 0.0f, 1.0f));
+                sheafM = rotate(sheafM, radians(8.0f),  vec3(1.0f, 0.0f, 0.0f));
+                sheafM = scale(sheafM, vec3(0.22f, 0.20f, 0.58f));
+                Primitives::drawCylinder(shader, sheafM, s_colStrawGold);
+
+                // Flared golden grain ear tips extending from sheaf bundle
+                mat4 earsM = sheafM;
+                earsM = translate(earsM, vec3(0.0f, 0.0f, 0.28f));
+                earsM = scale(earsM, vec3(1.22f, 1.20f, 0.35f));
+                Primitives::drawCone(shader, earsM, s_colStrawGold * 1.08f);
+
+                // Jute binding rope around sheaf bundle
+                mat4 tieM = sheafM;
+                tieM = scale(tieM, vec3(1.05f, 1.05f, 0.08f));
+                Primitives::drawCylinder(shader, tieM, s_colJuteRope);
+            }
+
+            // 3. Farmer in Uttar Bari Tending & Feeding Cow (উত্তর বাড়ির গোয়ালে গরু পরিচর্যা - Interaction)
+            // Standing near the cow shed and cow at (-27.0, 0, -8.3), facing the cow at (-28.2, 0, -8.0)
+            {
+                float feedCycle = (animTime > 0.0f) ? (animTime * 1.9f) : 0.0f;
+                float feedBow   = (animTime > 0.0f) ? (sinf(feedCycle) * radians(10.0f)) : 0.0f;
+                float armFeed   = (animTime > 0.0f) ? (sinf(feedCycle) * radians(8.0f)) : 0.0f;
+
+                PersonParams cattleman;
+                cattleman.skinColor     = s_colSkinWarm;
+                cattleman.shirtColor    = s_colBanyanVest;
+                cattleman.pantsColor    = s_colLungiBlue;
+                cattleman.hasGamcha     = true;
+                cattleman.gamchaColor   = s_colGamchaRed;
+                cattleman.leftArmAngle  = radians(-40.0f) + armFeed;
+                cattleman.rightArmAngle = radians(-48.0f) + armFeed;
+
+                mat4 feederM = mat4::identity();
+                feederM = translate(feederM, vec3(-27.0f, 0.0f, -8.3f));
+                feederM = rotate(feederM, radians(78.0f), vec3(0.0f, 1.0f, 0.0f)); // facing cow directly
+                feederM = rotate(feederM, feedBow, vec3(1.0f, 0.0f, 0.0f));         // attentive feeding bow
+                feederM = scale(feederM, vec3(0.98f));
+
+                Texture::bind(TEX_FABRIC, 0);
+                shader.setInt("uTextureType", (int)TEX_FABRIC);
+                Person::draw(shader, feederM, cattleman);
+
+                // Fresh Green Fodder & Straw Bundle in farmer's extended hands toward the cow
+                mat4 fodderM = feederM;
+                fodderM = translate(fodderM, vec3(0.0f, 0.52f, 0.32f));
+                fodderM = scale(fodderM, vec3(0.20f, 0.13f, 0.28f));
+                Primitives::drawSphere(shader, fodderM, s_colGrassGreen);
+
+                // Straw strands mixed with the green grass fodder
+                mat4 strawM = feederM;
+                strawM = translate(strawM, vec3(0.02f, 0.54f, 0.33f));
+                strawM = scale(strawM, vec3(0.16f, 0.10f, 0.24f));
+                Primitives::drawSphere(shader, strawM, s_colStrawGold);
+            }
+
+            // 4. Woman Winnowing Grain in Dokkhin Bari Courtyard (দক্ষিণ বাড়ির উঠানে কুলা দিয়ে ধান ঝাড়ারত বধূ)
+            // In the swept earthen courtyard at (-11.2, 0, 18.0) winnowing golden paddy with bamboo Kula tray
+            {
+                float tossCycle  = (animTime > 0.0f) ? (animTime * 3.2f) : 0.0f;
+                float winnowLift = (animTime > 0.0f) ? (sinf(tossCycle) * 0.032f) : 0.0f;
+                float winnowTilt = (animTime > 0.0f) ? (sinf(tossCycle) * radians(8.5f)) : 0.0f;
+                float armWinnow  = (animTime > 0.0f) ? (sinf(tossCycle) * radians(7.0f)) : 0.0f;
+
+                PersonParams winnower;
+                winnower.skinColor     = s_colSkinWoman;
+                winnower.shirtColor    = s_colSareeGold;
+                winnower.pantsColor    = s_colSareeGold;
+                winnower.gamchaColor   = s_colGamchaRed; // red saree border & ghomta paar
+                winnower.isWoman       = true;
+                winnower.leftArmAngle  = radians(-50.0f) + armWinnow;
+                winnower.rightArmAngle = radians(-50.0f) + armWinnow;
+
+                mat4 winnowM = mat4::identity();
+                winnowM = translate(winnowM, vec3(-11.2f, 0.0f, 18.0f));
+                winnowM = rotate(winnowM, radians(-65.0f), vec3(0.0f, 1.0f, 0.0f));
+                winnowM = scale(winnowM, vec3(0.94f));
+
+                Texture::bind(TEX_FABRIC, 0);
+                shader.setInt("uTextureType", (int)TEX_FABRIC);
+                Person::draw(shader, winnowM, winnower);
+
+                // Traditional Bamboo Winnowing Tray (Kula / কুলা) held firmly in both hands
+                mat4 kulaM = winnowM;
+                kulaM = translate(kulaM, vec3(0.0f, 0.54f + winnowLift, 0.32f));
+                kulaM = rotate(kulaM, radians(18.0f) + winnowTilt, vec3(1.0f, 0.0f, 0.0f));
+
+                // Kula flat woven bamboo floor
+                mat4 kulaBase = kulaM;
+                kulaBase = scale(kulaBase, vec3(0.32f, 0.012f, 0.38f));
+                Primitives::drawCube(shader, kulaBase, s_colBambooGold);
+
+                // Kula raised rear and side bamboo rims (U-shape)
+                mat4 kulaRimBack = kulaM;
+                kulaRimBack = translate(kulaRimBack, vec3(0.0f, 0.024f, -0.18f));
+                kulaRimBack = scale(kulaRimBack, vec3(0.33f, 0.038f, 0.018f));
+                Primitives::drawCube(shader, kulaRimBack, s_colBambooRim);
+
+                for (int s = -1; s <= 1; s += 2) {
+                    float fs = (float)s;
+                    mat4 kulaRimSide = kulaM;
+                    kulaRimSide = translate(kulaRimSide, vec3(fs * 0.16f, 0.018f, -0.02f));
+                    kulaRimSide = scale(kulaRimSide, vec3(0.018f, 0.030f, 0.34f));
+                    Primitives::drawCube(shader, kulaRimSide, s_colBambooRim);
+                }
+
+                // Golden paddy grains tossing gently inside the Kula tray
+                mat4 grainM = kulaM;
+                grainM = translate(grainM, vec3(0.0f, 0.016f + fabsf(winnowLift) * 0.4f, 0.02f));
+                grainM = scale(grainM, vec3(0.24f, 0.018f, 0.26f));
+                Primitives::drawSphere(shader, grainM, s_colStrawGold);
+            }
+
+            // 5. Two Neighbors in Lively Evening "Adda" on Paschim Bari Verandah (পশ্চিম বাড়ির জমজমাট আড্ডা - Social Interaction)
+            // Seated neighbor listening/nodding and standing neighbor gesturing animatedly
+            {
+                // Cane Stool (Mora / মোড়া) for seated neighbor
+                mat4 moraM = mat4::identity();
+                moraM = translate(moraM, vec3(-24.7f, 0.15f, 4.7f));
+                moraM = scale(moraM, vec3(0.34f, 0.28f, 0.34f));
+                Primitives::drawCylinder(shader, moraM, s_colMoraCane);
+
+                // Mora wicker top rim
+                mat4 moraRim = mat4::identity();
+                moraRim = translate(moraRim, vec3(-24.7f, 0.29f, 4.7f));
+                moraRim = scale(moraRim, vec3(0.36f, 0.022f, 0.36f));
+                Primitives::drawCylinder(shader, moraRim, s_colBambooRim);
+
+                // Neighbor A: Seated on Mora, listening and nodding in agreement
+                float nodAngle = (animTime > 0.0f) ? (sinf(animTime * 2.4f) * radians(5.5f)) : 0.0f;
+                PersonParams listener;
+                listener.skinColor     = s_colSkinWarm;
+                listener.shirtColor    = s_colKurtaBlue;
+                listener.pantsColor    = s_colLungiMaroon;
+                listener.seated        = true;
+
+                mat4 listenerM = mat4::identity();
+                listenerM = translate(listenerM, vec3(-24.7f, 0.16f, 4.7f));
+                listenerM = rotate(listenerM, radians(38.0f), vec3(0.0f, 1.0f, 0.0f)); // angled toward talker
+                listenerM = rotate(listenerM, nodAngle, vec3(1.0f, 0.0f, 0.0f));        // natural conversational nod
+                listenerM = translate(listenerM, vec3(0.0f, 0.14f, 0.0f));
+
+                Texture::bind(TEX_FABRIC, 0);
+                shader.setInt("uTextureType", (int)TEX_FABRIC);
+                Person::draw(shader, listenerM, listener);
+
+                // Neighbor B: Standing leaning against verandah post, gesturing as he talks
+                float talkGesture = (animTime > 0.0f) ? (sinf(animTime * 2.8f) * radians(16.0f)) : 0.0f;
+                float headTalk    = (animTime > 0.0f) ? (sinf(animTime * 1.4f) * radians(7.0f)) : 0.0f;
+
+                PersonParams speaker;
+                speaker.skinColor     = s_colSkinFarmer;
+                speaker.shirtColor    = s_colKurtaWhite;
+                speaker.pantsColor    = s_colLungiOlive;
+                speaker.hasGamcha     = true;
+                speaker.gamchaColor   = s_colGamchaGold;
+                speaker.rightArmAngle = radians(-58.0f) + talkGesture; // expressive storytelling hand gesture
+                speaker.leftArmAngle  = radians(-12.0f);
+
+                mat4 speakerM = mat4::identity();
+                speakerM = translate(speakerM, vec3(-24.0f, 0.0f, 5.5f));
+                speakerM = rotate(speakerM, radians(-135.0f), vec3(0.0f, 1.0f, 0.0f)); // facing seated neighbor
+                speakerM = rotate(speakerM, headTalk, vec3(0.0f, 1.0f, 0.0f));
+                speakerM = scale(speakerM, vec3(0.98f));
+
+                Person::draw(shader, speakerM, speaker);
+            }
+
+            // 6. Villager Walking Along Village Road Carrying Produce Basket ("Hatahati" / হাঁটাহাঁটি)
+            // Strolling along the pathway between Moddho Bari and Paschim Bari
+            {
+                float pathCycle = (animTime > 0.0f) ? (animTime * 0.26f) : 0.0f;
+                float pathPhase = fmodf(pathCycle, 2.0f);
+                if (pathPhase < 0.0f) pathPhase += 2.0f;
+                float pathT     = (pathPhase < 1.0f) ? (1.0f - pathPhase) : (pathPhase - 1.0f);
+                vec3  pA(-6.2f, 0.0f, 3.6f);
+                vec3  pB(-14.2f, 0.0f, 7.8f);
+                vec3  curPos    = pA + (pB - pA) * pathT;
+                vec3  delta     = (pathPhase < 1.0f) ? (pA - pB) : (pB - pA);
+                float roadYaw   = atan2f(delta.x, delta.z);
+
+                float strideFreq = 4.4f;
+                float roadStride = (animTime > 0.0f) ? (sinf(animTime * strideFreq) * radians(25.0f)) : 0.0f;
+                float roadBob    = (animTime > 0.0f) ? (fabsf(sinf(animTime * strideFreq)) * 0.022f) : 0.0f;
+                float roadTwist  = (animTime > 0.0f) ? (sinf(animTime * strideFreq) * radians(2.0f)) : 0.0f;
+
+                PersonParams roadWalker;
+                roadWalker.skinColor     = s_colSkinWarm;
+                roadWalker.shirtColor    = s_colKurtaOchre;
+                roadWalker.pantsColor    = s_colLungiBlue;
+                roadWalker.hasGamcha     = true;
+                roadWalker.gamchaColor   = s_colGamchaRed;
+                roadWalker.leftLegAngle  = roadStride;
+                roadWalker.rightLegAngle = -roadStride;
+                roadWalker.leftArmAngle  = radians(-28.0f); // holding basket under arm
+                roadWalker.rightArmAngle = -roadStride * 0.70f;
+
+                mat4 roadM = mat4::identity();
+                roadM = translate(roadM, vec3(curPos.x, roadBob, curPos.z));
+                roadM = rotate(roadM, roadYaw, vec3(0.0f, 1.0f, 0.0f));
+                roadM = rotate(roadM, roadTwist, vec3(0.0f, 1.0f, 0.0f));
+                roadM = scale(roadM, vec3(0.98f));
+
+                Texture::bind(TEX_FABRIC, 0);
+                shader.setInt("uTextureType", (int)TEX_FABRIC);
+                Person::draw(shader, roadM, roadWalker);
+
+                // Woven Bamboo Produce Basket (Jhaka / ঝাঁকা) carried under left arm
+                mat4 basketM = roadM;
+                basketM = translate(basketM, vec3(-0.25f, 0.52f, 0.02f));
+                basketM = rotate(basketM, radians(8.0f), vec3(0.0f, 0.0f, 1.0f));
+                basketM = scale(basketM, vec3(0.24f, 0.16f, 0.24f));
+                Primitives::drawCylinder(shader, basketM, s_colBambooGold);
+
+                // Basket bamboo rim
+                mat4 basketRim = basketM;
+                basketRim = translate(basketRim, vec3(0.0f, 0.50f, 0.0f));
+                basketRim = scale(basketRim, vec3(1.06f, 0.14f, 1.06f));
+                Primitives::drawCylinder(shader, basketRim, s_colBambooRim);
+
+                // Fresh garden vegetables inside basket (green squash / gourd)
+                mat4 vegM = basketM;
+                vegM = translate(vegM, vec3(0.0f, 0.35f, 0.0f));
+                vegM = scale(vegM, vec3(0.80f, 0.60f, 0.80f));
+                Primitives::drawSphere(shader, vegM, s_colGrassGreen);
+            }
         }
 
         // ─── 7. VILLAGE ANIMALS (HENS & DUCKS IN COURTYARD & RIVER) ─
@@ -2969,6 +3459,7 @@ int main(int argc, char* argv[])
     }
 
     // ── Cleanup ─────────────────────────────────────────────────
+    RayTracer::cleanup();
     CurvedObject::cleanup();
     Boat::cleanup();
     Texture::cleanup();

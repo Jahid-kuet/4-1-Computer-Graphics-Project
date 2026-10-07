@@ -12,7 +12,7 @@ namespace Charpai {
     void drawFan(Shader& shader, const math::mat4& model, float fanAngle = 0.0f);
 
     // Draws a traditional rural Hurricane Kerosene Lantern (Hariken) with glowing flame
-    void drawLantern(Shader& shader, const math::mat4& model);
+    void drawLantern(Shader& shader, const math::mat4& model, bool isLit = true);
 
     // Draws a traditional rural Bengali woven cane/bamboo stool (Mora / মোড়া)
     void drawMora(Shader& shader, const math::mat4& model);

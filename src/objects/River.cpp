@@ -277,10 +277,8 @@ void draw(Shader& shader, const mat4& model, float time)
         Primitives::drawPlane(shader, ripM, rippleCol);
     }
 
-    // ── 3. Swimmers / Bathing Villagers in River Shallows ────────
-    mat4 swimmerGroup = model;
-    swimmerGroup = translate(swimmerGroup, vec3(riverCenterline(-1.0f) - 0.5f, 0.0f, -1.0f));
-    drawSwimmers(shader, swimmerGroup, time);
+    // ── 3. Swimmers / Bathing Villagers at River Kinara & Landing Ghat Shallows ──
+    drawSwimmers(shader, model, time);
 
     // ── 4. River Mooring Stakes on Sandy Shore ──────────────────
     float stakeZ1 = 1.2f;
@@ -310,58 +308,276 @@ void draw(Shader& shader, const mat4& model, float time)
     }
 }
 
-// ── Swimmers / Bathing Villagers in River Shallows ───────────────
+// ── Swimmers / Bathing Villagers at Wooden Ghat Par (ঘাটের পাড়ে বিভিন্ন বয়সের স্নানরত গ্রামবাসী) ──
 void drawSwimmers(Shader& shader, const mat4& model, float animTime)
 {
     shader.setInt("uUseTexture", 0);
 
-    vec3 skinCol  (0.54f, 0.36f, 0.22f); // Warm sun-tanned skin
-    vec3 hairCol  (0.12f, 0.10f, 0.08f); // Dark hair
-    vec3 rippleCol(0.85f, 0.94f, 0.98f); // Water foam ripple ring
+    // Optimized static palette: avoid per-frame vector allocations
+    static const vec3 foamCol    (0.80f, 0.92f, 0.97f); // Translucent water ripple foam
+    static const vec3 splashDrop (0.92f, 0.97f, 1.00f); // Frothy water splash droplets
+    static const vec3 childSkin  (0.58f, 0.40f, 0.26f); // Warm youthful child skin
+    static const vec3 boyHair    (0.07f, 0.05f, 0.04f); // Jet black child cropped hair
+    static const vec3 youthSkin  (0.52f, 0.35f, 0.21f); // Energetic teenage skin
+    static const vec3 youthHair  (0.06f, 0.05f, 0.04f); // Thick dark wet youth hair
+    static const vec3 adultSkin  (0.46f, 0.28f, 0.16f); // Deep sun-baked mature farmer skin
+    static const vec3 adultHair  (0.05f, 0.04f, 0.04f); // Jet black mature hair & mustache
+    static const vec3 gamchaRed  (0.85f, 0.22f, 0.16f); // Traditional crimson cotton Gamcha
+    static const vec3 gamchaTrim (0.95f, 0.95f, 0.92f); // White woven Gamcha fringe
+    static const vec3 elderSkin  (0.50f, 0.32f, 0.20f); // Distinguished elder skin tone
+    static const vec3 whiteHair  (0.88f, 0.88f, 0.90f); // Silvery-white elder hair cap
+    static const vec3 whiteBeard (0.92f, 0.92f, 0.94f); // Flowing white elder beard & mustache
 
-    // 4 swimmers arranged in a friendly group in river shallows between boats
-    struct SwimmerData {
-        float x, z;
-        float phase;
-    };
-    const SwimmerData swimmers[4] = {
-        { -0.85f, -1.2f, 0.0f },
-        { -0.15f, -0.6f, 1.4f },
-        {  0.45f,  0.3f, 2.8f },
-        {  1.15f,  0.8f, 4.2f }
-    };
+    const bool hasAnim = (animTime > 0.0f);
 
-    for (int i = 0; i < 4; ++i) {
-        float bob = (animTime > 0.0f) ? (sinf(animTime * 2.4f + swimmers[i].phase) * 0.016f) : 0.0f;
-        float y = 0.035f + bob;
-
+    // ── 1. Young Child / Boy (ছোট ছেলে - ৬-৮ বছর) ───────────────────
+    // Splashing playfully in the shallowest water right by the sandy wooden ghat bank
+    {
+        float bob = hasAnim ? (sinf(animTime * 3.4f) * 0.012f) : 0.0f;
         mat4 sm = model;
-        sm = translate(sm, vec3(swimmers[i].x, y, swimmers[i].z));
+        sm = translate(sm, vec3(-3.65f, 0.032f + bob, -4.80f));
+        sm = rotate(sm, radians(20.0f), vec3(0.0f, 1.0f, 0.0f));
 
-        // Circular water ripple ring around swimmer's neck
-        float rippleScale = 1.0f + (animTime > 0.0f ? fmodf(animTime * 0.8f + (float)i * 0.5f, 1.0f) * 0.3f : 0.0f);
+        // Water ripple ring
+        float ripScale = 1.0f + (hasAnim ? fmodf(animTime * 1.1f, 1.0f) * 0.32f : 0.0f);
         mat4 rip = sm;
         rip = translate(rip, vec3(0.0f, -0.012f, 0.0f));
-        rip = scale(rip, vec3(0.38f * rippleScale, 0.005f, 0.38f * rippleScale));
-        Primitives::drawCylinder(shader, rip, rippleCol);
+        rip = scale(rip, vec3(0.24f * ripScale, 0.004f, 0.24f * ripScale));
+        Primitives::drawCylinder(shader, rip, foamCol);
 
-        // Head sphere
+        // Child head (smaller scale, warm glowing skin)
         mat4 head = sm;
-        head = translate(head, vec3(0.0f, 0.12f, 0.0f));
-        head = scale(head, vec3(0.18f, 0.19f, 0.18f));
-        Primitives::drawSphere(shader, head, skinCol);
+        head = translate(head, vec3(0.0f, 0.090f, 0.0f));
+        head = scale(head, vec3(0.115f, 0.120f, 0.115f));
+        Primitives::drawSphere(shader, head, childSkin);
 
-        // Dark hair cap
-        mat4 hair = sm;
-        hair = translate(hair, vec3(0.0f, 0.16f, -0.02f));
-        hair = scale(hair, vec3(0.185f, 0.12f, 0.185f));
-        Primitives::drawSphere(shader, hair, hairCol);
+        // Child Hair Cap (prominently sits on crown, rising higher than skull)
+        mat4 hairCap = sm;
+        hairCap = translate(hairCap, vec3(0.0f, 0.135f, -0.012f));
+        hairCap = scale(hairCap, vec3(0.122f, 0.090f, 0.122f));
+        Primitives::drawSphere(shader, hairCap, boyHair);
 
-        // Wet shoulder tops just breaking water surface
+        // Front child bangs (Kopal-er chul)
+        mat4 bangs = sm;
+        bangs = translate(bangs, vec3(0.0f, 0.125f, 0.070f));
+        bangs = scale(bangs, vec3(0.080f, 0.045f, 0.055f));
+        Primitives::drawSphere(shader, bangs, boyHair);
+
+        // Side/nape hair volume
+        mat4 nape = sm;
+        nape = translate(nape, vec3(0.0f, 0.095f, -0.045f));
+        nape = scale(nape, vec3(0.124f, 0.065f, 0.090f));
+        Primitives::drawSphere(shader, nape, boyHair);
+
+        // Slender child shoulders & chest
         mat4 shoulders = sm;
-        shoulders = translate(shoulders, vec3(0.0f, 0.01f, 0.0f));
-        shoulders = scale(shoulders, vec3(0.36f, 0.06f, 0.20f));
-        Primitives::drawCube(shader, shoulders, skinCol);
+        shoulders = translate(shoulders, vec3(0.0f, 0.012f, 0.0f));
+        shoulders = scale(shoulders, vec3(0.22f, 0.042f, 0.12f));
+        Primitives::drawCube(shader, shoulders, childSkin);
+
+        // Playful splashing arms
+        float splash1 = hasAnim ? sinf(animTime * 4.6f) * 0.035f : 0.0f;
+        mat4 armR = sm;
+        armR = translate(armR, vec3(0.10f, 0.04f + splash1, 0.06f));
+        armR = scale(armR, vec3(0.038f, 0.038f, 0.085f));
+        Primitives::drawSphere(shader, armR, childSkin);
+
+        mat4 armL = sm;
+        armL = translate(armL, vec3(-0.10f, 0.02f, 0.04f));
+        armL = scale(armL, vec3(0.035f, 0.035f, 0.075f));
+        Primitives::drawSphere(shader, armL, childSkin);
+
+        // Animated flying splash droplets
+        mat4 drop1 = sm;
+        drop1 = translate(drop1, vec3(0.13f, 0.09f + splash1 * 1.5f, 0.12f));
+        drop1 = scale(drop1, vec3(0.014f));
+        Primitives::drawSphere(shader, drop1, splashDrop);
+
+        mat4 drop2 = sm;
+        drop2 = translate(drop2, vec3(0.08f, 0.11f + splash1 * 1.2f, 0.15f));
+        drop2 = scale(drop2, vec3(0.011f));
+        Primitives::drawSphere(shader, drop2, splashDrop);
+    }
+
+    // ── 2. Teenager / Youth (কিশোর যুবক - ১৫-১৮ বছর) ──────────────────
+    // Swimming actively in the clear shallows along the wooden ghat bank
+    {
+        float bob = hasAnim ? (sinf(animTime * 2.5f + 1.2f) * 0.014f) : 0.0f;
+        mat4 sm = model;
+        sm = translate(sm, vec3(-3.35f, 0.035f + bob, -3.35f));
+        sm = rotate(sm, radians(25.0f), vec3(0.0f, 1.0f, 0.0f));
+
+        // Water ripple ring
+        float ripScale = 1.0f + (hasAnim ? fmodf(animTime * 0.95f + 0.4f, 1.0f) * 0.28f : 0.0f);
+        mat4 rip = sm;
+        rip = translate(rip, vec3(0.0f, -0.012f, 0.0f));
+        rip = scale(rip, vec3(0.31f * ripScale, 0.005f, 0.31f * ripScale));
+        Primitives::drawCylinder(shader, rip, foamCol);
+
+        // Youth head
+        mat4 head = sm;
+        head = translate(head, vec3(0.0f, 0.110f, 0.0f));
+        head = scale(head, vec3(0.145f, 0.155f, 0.145f));
+        Primitives::drawSphere(shader, head, youthSkin);
+
+        // Full head of thick dark wet hair (rising well above skull top)
+        mat4 hairCap = sm;
+        hairCap = translate(hairCap, vec3(0.0f, 0.170f, -0.015f));
+        hairCap = scale(hairCap, vec3(0.152f, 0.115f, 0.152f));
+        Primitives::drawSphere(shader, hairCap, youthHair);
+
+        // Side-parted front fringe
+        mat4 fringe = sm;
+        fringe = translate(fringe, vec3(0.02f, 0.160f, 0.085f));
+        fringe = scale(fringe, vec3(0.110f, 0.055f, 0.070f));
+        Primitives::drawSphere(shader, fringe, youthHair);
+
+        // Sideburns and nape volume
+        mat4 sides = sm;
+        sides = translate(sides, vec3(0.0f, 0.120f, -0.050f));
+        sides = scale(sides, vec3(0.155f, 0.075f, 0.110f));
+        Primitives::drawSphere(shader, sides, youthHair);
+
+        // Athletic shoulders & chest
+        mat4 shoulders = sm;
+        shoulders = translate(shoulders, vec3(0.0f, 0.012f, 0.0f));
+        shoulders = scale(shoulders, vec3(0.31f, 0.052f, 0.17f));
+        Primitives::drawCube(shader, shoulders, youthSkin);
+
+        // Washing motion: arm raised rubbing wet hair/neck
+        float washMove = hasAnim ? sinf(animTime * 3.0f) * 0.02f : 0.0f;
+        mat4 arm = sm;
+        arm = translate(arm, vec3(0.11f, 0.09f + washMove, 0.02f));
+        arm = rotate(arm, radians(-35.0f), vec3(0.0f, 0.0f, 1.0f));
+        arm = scale(arm, vec3(0.045f, 0.10f, 0.045f));
+        Primitives::drawSphere(shader, arm, youthSkin);
+    }
+
+    // ── 3. Adult Villager with Traditional Gamcha (প্রাপ্তবয়স্ক গেরস্থ কৃষক - ৩৫-৪৫ বছর) ─
+    // Dipping along the wooden ghat bank with mustache and traditional red Gamcha (লাল গামছা)
+    {
+        float bob = hasAnim ? (sinf(animTime * 1.9f + 2.5f) * 0.014f) : 0.0f;
+        mat4 sm = model;
+        sm = translate(sm, vec3(-3.10f, 0.038f + bob, -1.90f));
+        sm = rotate(sm, radians(18.0f), vec3(0.0f, 1.0f, 0.0f));
+
+        // Water ripple ring
+        float ripScale = 1.0f + (hasAnim ? fmodf(animTime * 0.78f + 0.8f, 1.0f) * 0.25f : 0.0f);
+        mat4 rip = sm;
+        rip = translate(rip, vec3(0.0f, -0.012f, 0.0f));
+        rip = scale(rip, vec3(0.36f * ripScale, 0.005f, 0.36f * ripScale));
+        Primitives::drawCylinder(shader, rip, foamCol);
+
+        // Adult head
+        mat4 head = sm;
+        head = translate(head, vec3(0.0f, 0.120f, 0.0f));
+        head = scale(head, vec3(0.165f, 0.175f, 0.165f));
+        Primitives::drawSphere(shader, head, adultSkin);
+
+        // Mature adult hair cap (crown sits above skull)
+        mat4 hairCap = sm;
+        hairCap = translate(hairCap, vec3(0.0f, 0.180f, -0.020f));
+        hairCap = scale(hairCap, vec3(0.172f, 0.130f, 0.172f));
+        Primitives::drawSphere(shader, hairCap, adultHair);
+
+        // Forehead hairline & crown part
+        mat4 hairFront = sm;
+        hairFront = translate(hairFront, vec3(-0.02f, 0.175f, 0.080f));
+        hairFront = scale(hairFront, vec3(0.120f, 0.060f, 0.075f));
+        Primitives::drawSphere(shader, hairFront, adultHair);
+
+        // Back/nape volume
+        mat4 hairBack = sm;
+        hairBack = translate(hairBack, vec3(0.0f, 0.125f, -0.055f));
+        hairBack = scale(hairBack, vec3(0.174f, 0.085f, 0.120f));
+        Primitives::drawSphere(shader, hairBack, adultHair);
+
+        // Distinct adult mustache (গোঁফ) on upper lip
+        mat4 mustache = sm;
+        mustache = translate(mustache, vec3(0.0f, 0.078f, 0.150f));
+        mustache = scale(mustache, vec3(0.078f, 0.022f, 0.035f));
+        Primitives::drawSphere(shader, mustache, adultHair);
+
+        // Broad muscular farmer shoulders
+        mat4 shoulders = sm;
+        shoulders = translate(shoulders, vec3(0.0f, 0.012f, 0.0f));
+        shoulders = scale(shoulders, vec3(0.38f, 0.062f, 0.20f));
+        Primitives::drawCube(shader, shoulders, adultSkin);
+
+        // Traditional Red Gamcha (লাল গামছা) draped over shoulder & chest
+        mat4 gamchaBody = sm;
+        gamchaBody = translate(gamchaBody, vec3(0.10f, 0.045f, 0.02f));
+        gamchaBody = scale(gamchaBody, vec3(0.13f, 0.050f, 0.22f));
+        Primitives::drawCube(shader, gamchaBody, gamchaRed);
+
+        // Woven white fringe on Gamcha
+        mat4 gamchaFringe = sm;
+        gamchaFringe = translate(gamchaFringe, vec3(0.10f, 0.050f, 0.125f));
+        gamchaFringe = scale(gamchaFringe, vec3(0.125f, 0.018f, 0.025f));
+        Primitives::drawCube(shader, gamchaFringe, gamchaTrim);
+    }
+
+    // ── 4. Village Elder with White Hair & Beard (বৃদ্ধ মুরুব্বি - ৬৫-৭৫ বছর) ───────
+    // Respectable elder bathing serenely in calm water right by the wooden ghat landing
+    {
+        float bob = hasAnim ? (sinf(animTime * 1.5f + 3.8f) * 0.010f) : 0.0f;
+        mat4 sm = model;
+        sm = translate(sm, vec3(-2.85f, 0.036f + bob, -0.45f));
+        sm = rotate(sm, radians(22.0f), vec3(0.0f, 1.0f, 0.0f));
+
+        // Water ripple ring
+        float ripScale = 1.0f + (hasAnim ? fmodf(animTime * 0.65f + 1.2f, 1.0f) * 0.22f : 0.0f);
+        mat4 rip = sm;
+        rip = translate(rip, vec3(0.0f, -0.012f, 0.0f));
+        rip = scale(rip, vec3(0.34f * ripScale, 0.005f, 0.34f * ripScale));
+        Primitives::drawCylinder(shader, rip, foamCol);
+
+        // Elder head
+        mat4 head = sm;
+        head = translate(head, vec3(0.0f, 0.115f, 0.0f));
+        head = scale(head, vec3(0.160f, 0.170f, 0.160f));
+        Primitives::drawSphere(shader, head, elderSkin);
+
+        // Silvery-white hair cap (paka chul - rising above skull)
+        mat4 hairCap = sm;
+        hairCap = translate(hairCap, vec3(0.0f, 0.175f, -0.022f));
+        hairCap = scale(hairCap, vec3(0.168f, 0.125f, 0.168f));
+        Primitives::drawSphere(shader, hairCap, whiteHair);
+
+        // Silvery-white temple & side/back fringes
+        mat4 hairSides = sm;
+        hairSides = translate(hairSides, vec3(0.0f, 0.120f, -0.055f));
+        hairSides = scale(hairSides, vec3(0.172f, 0.075f, 0.115f));
+        Primitives::drawSphere(shader, hairSides, whiteHair);
+
+        // White elder mustache
+        mat4 mustache = sm;
+        mustache = translate(mustache, vec3(0.0f, 0.078f, 0.145f));
+        mustache = scale(mustache, vec3(0.072f, 0.020f, 0.030f));
+        Primitives::drawSphere(shader, mustache, whiteHair);
+
+        // Long flowing white elder beard (paka dari)
+        mat4 beardUpper = sm;
+        beardUpper = translate(beardUpper, vec3(0.0f, 0.052f, 0.115f));
+        beardUpper = scale(beardUpper, vec3(0.072f, 0.055f, 0.065f));
+        Primitives::drawSphere(shader, beardUpper, whiteBeard);
+
+        mat4 beardTip = sm;
+        beardTip = translate(beardTip, vec3(0.0f, 0.018f, 0.095f));
+        beardTip = scale(beardTip, vec3(0.052f, 0.040f, 0.050f));
+        Primitives::drawSphere(shader, beardTip, whiteBeard);
+
+        // Elder shoulders
+        mat4 shoulders = sm;
+        shoulders = translate(shoulders, vec3(0.0f, 0.012f, 0.0f));
+        shoulders = scale(shoulders, vec3(0.34f, 0.058f, 0.19f));
+        Primitives::drawCube(shader, shoulders, elderSkin);
+
+        // Folded hands in holy dip prayer at water surface
+        mat4 hands = sm;
+        hands = translate(hands, vec3(0.0f, 0.035f, 0.15f));
+        hands = scale(hands, vec3(0.060f, 0.030f, 0.050f));
+        Primitives::drawSphere(shader, hands, elderSkin);
     }
 }
 

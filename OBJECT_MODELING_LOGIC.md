@@ -420,12 +420,18 @@ Designed strictly from pure fundamental geometric shapes for a backdated, rustic
    - **Pseudostem:** Succulent green Unit Cylinder ($\mathbf{S}(0.18, 2.4, 0.18)$).
    - **Broad Paddle Leaves:** 7 radiating paddle leaves, each composed of 3 sequential bending rectangular plates ($28^\circ \to 42^\circ \to 48^\circ$ droop).
    - **Blossom & Fruit Bunch:** Curved hanging stem cylinder + 5 miniature cylinder bananas + pointed purple Unit Sphere (*Mocha* / banana heart).
-3. **Banyan / Mango Tree (*Bot / Aam Gach*):**
-   - **Trunk & Buttress Roots:** Massive central Unit Cylinder ($r = 0.42\text{m}, h = 2.8\text{m}$) braced by 4 angled Unit Cube root buttresses with bark fissures.
-   - **Primary & Secondary Limbs:** 4 Unit Cylinders radiating outward and upward at $38^\circ$ with secondary branchlets extending into the upper canopy.
-   - **Tiered Volumetric Foliage Canopy:** Constructed from 27 organic volumetric Unit Spheres (`Primitives::drawSphere`) arranged across 4 distinct anatomical tiers (apex crown, upper bough cloud lobes, lower peripheral drooping skirts, and interior solid core volume spheres) with a botanical color gradient (sunlit golden-green tops, deep mango-leaf green mid-canopy, coppery-bronze fresh shoots *Aam-er Pollob*, and shadowed under-canopy).
-   - **Perimeter Leaflet Sprays:** 16 delicate drooping lanceolate leaf sprays (`drawLeaflet`) around the outer canopy rim, combining unit cube leaf blades with unit triangle pointed tips to provide natural leaf silhouette breakup.
-   - **Hanging Ripe Mangoes (*Paka Aam*):** 12 golden-amber ripe mango fruits (`Primitives::drawSphere`) suspended beneath the canopy on slender curved pedicels (`Primitives::drawCylinder`) with attached dark green lanceolate leaves.
+3. **Branching Mango Tree (*Aam Gach* / আম গাছ):**
+   - **Trunk & Buttress Roots:** Central gnarled Unit Cylinder ($r = 0.40\text{m}, h = 2.8\text{m}$) braced by 4 angled Unit Cube root buttresses with deep bark crevices.
+   - **Primary & Secondary Limbs:** 4 Unit Cylinders radiating outward and upward at $38^\circ$ with secondary branchlets and tertiary twigs reaching into each foliage quadrant.
+   - **100% Pure Botanical Foliage Canopy (Aam Pata / আম পাতা):** Built purely from 53 cascading rosettes of authentic lanceolate mango leaves with zero smooth balloon spheres. Each leaf features:
+     * Swollen pulvinus base and slender petiole stalk (`Primitives::drawCylinder`).
+     * V-keel dihedral blade profile (dual angled side laminae at $\pm 14^\circ$) creating specular creases.
+     * Raised central midrib vein in contrasting lighter yellow-green.
+     * Two-stage gravitational droop curvature ($52^\circ \sim 80^\circ$ downward weep).
+     * Acuminate tapering pointed tip (`Primitives::drawTriangle`).
+     * Two-tier spiraling rosettes (10 leaves per cluster) weeping downward in natural umbrella bouquets.
+     * Tender coppery-bronze young shoots (*নবকিশলয়*) at the apex crown.
+   - **Hanging Ripe Mangoes (*Paka Aam*):** 10 golden-amber ripe mango fruits with curved asymmetric kidney shapes dangling beneath the weeping foliage from slender pedicels with attached leaves.
 4. **Bamboo Grove (*Bansher Jhar*):**
    - Clump of 8 tall segmented culm cylinders ($h = 4.2\text{m} \sim 5.5\text{m}, r = 0.045\text{m}$) each with distinct lean angles. Dark node rings placed every $0.7\text{m}$ along the height, topped by angled leaflet cubes.
 5. **Rice Plants (*Dhan Gachh*) in Paddy Fields:**
@@ -801,7 +807,7 @@ A dedicated, elevated cinematic camera preset (Key 8 and default startup view) w
 | **Hens & Ducks** | Unit Spheres, Cones, Cubes | Non-uniform scale, axial rotations | Ellipsoidal bodies; cone beaks/tails; flattened duck bill vs. hen comb |
 | **Coconut Palm** | Unit Cylinders, Spheres, Cubes | 8-segment iterative stack with angle increment | Continuous trunk curvature; 3-segment cascading frond kinematic chains |
 | **Banana Tree** | Unit Cylinders, Spheres, Cubes | 3-stage paddle droop chains | Arching broad paddle blades; hanging bunch with purple flower heart (*Mocha*) |
-| **Mango Tree** | Unit Cylinders, Spheres, Cubes, Triangles | 4-way branch radiation, multi-tiered cloud spheres | Organic 27-sphere billowing volumetric canopy with perimeter lanceolate leaves and hanging ripe mangoes (*Paka Aam*) |
+| **Mango Tree** | Unit Cylinders, Cubes, Triangles, Spheres | 4-way branch radiation, cascading rosettes | 100% pure botanical foliage canopy with 53 cascading Aam Pata rosettes, V-keel dihedral blades, central midribs, coppery young flushes, and hanging ripe mangoes (*Paka Aam*) |
 | **Bamboo Grove** | Unit Cylinders, Cubes | Multi-stalk cluster with nodal rings | Clustered segmented stalks with annular culm joints every $0.7\text{m}$ |
 | **Paddy Field** | Unit Cylinders, Cones, Planes, Cubes | Grid array, perimeter boundary dikes | Terraced paddy plots enclosed by raised *Aal* dikes with golden grain panicles |
 

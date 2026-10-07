@@ -33,6 +33,6 @@ public:
     void processMouseDrag(float dx, float dy, float sensitivity = 0.005f);
     void processScroll(float yoffset);
 
-    // Keyboard movement (W/S for forward/back, A/D for left/right)
-    void processKeyboardMovement(float forward, float right, float dt, float speed = 14.0f);
+    // Keyboard movement (W/S for forward/back, A/D for left/right, E/Q for vertical elevation)
+    void processKeyboardMovement(float forward, float right, float upDown, float dt, float speed = 36.0f);
 };

@@ -190,6 +190,281 @@ void drawMajhi(Shader& shader, const mat4& model, bool hasOar, float oarAnim)
     }
 }
 
+// ── Authentic Bangladeshi Helmsman (মালবাহী নৌকার মাঝি) ────────────────
+void drawCargoBoatman(Shader& shader, const mat4& model, float animTime)
+{
+    shader.setInt("uUseTexture", 0);
+
+    // Optimized static palette: avoid per-frame allocations
+    static const vec3 skinTone   (0.64f, 0.44f, 0.28f); // Warm sun-tanned Bengali skin tone
+    static const vec3 lungiBlue  (0.18f, 0.32f, 0.52f); // Traditional indigo/blue checked lungi
+    static const vec3 kurtaBeige (0.92f, 0.88f, 0.80f); // Natural cotton sleeveless kurta/banyan
+    static const vec3 gamchaRed  (0.85f, 0.22f, 0.14f); // Crimson Bengali Gamcha
+    static const vec3 gamchaTrim (0.95f, 0.95f, 0.90f); // White woven fringe
+    static const vec3 strawYellow(0.92f, 0.78f, 0.42f); // Golden palm leaf straw (Mathal)
+    static const vec3 hatBand    (0.12f, 0.10f, 0.08f); // Dark rim / headband
+    static const vec3 oarWood    (0.42f, 0.26f, 0.12f); // Seasoned teak/timber rudder oar
+    static const vec3 hairDark   (0.10f, 0.08f, 0.06f); // Dark hair
+
+    const bool hasAnim = (animTime > 0.0f);
+    float sway = hasAnim ? (sinf(animTime * 1.6f) * radians(1.5f)) : 0.0f;
+
+    // Standing on the aft deck thwart at Z = -1.65m
+    mat4 m = model;
+    m = translate(m, vec3(-0.04f, 0.22f, -1.65f));
+    m = rotate(m, sway, vec3(0.0f, 0.0f, 1.0f));
+
+    // 1. Bare feet on the deck
+    for (int s = -1; s <= 1; s += 2) {
+        mat4 foot = m;
+        foot = translate(foot, vec3((float)s * 0.07f, 0.02f, 0.02f));
+        foot = scale(foot, vec3(0.06f, 0.035f, 0.11f));
+        Primitives::drawCube(shader, foot, skinTone);
+
+        // Lower bare calf
+        mat4 calf = m;
+        calf = translate(calf, vec3((float)s * 0.07f, 0.12f, 0.0f));
+        calf = scale(calf, vec3(0.065f, 0.18f, 0.065f));
+        Primitives::drawCylinder(shader, calf, skinTone);
+    }
+
+    // 2. Traditional Lungi (folded up to knees for easy boat work)
+    mat4 lungiSkirt = m;
+    lungiSkirt = translate(lungiSkirt, vec3(0.0f, 0.28f, 0.0f));
+    lungiSkirt = scale(lungiSkirt, vec3(0.24f, 0.22f, 0.20f));
+    Primitives::drawCylinder(shader, lungiSkirt, lungiBlue);
+
+    // Lungi pleated waist knot (Kosa)
+    mat4 lungiKnot = m;
+    lungiKnot = translate(lungiKnot, vec3(0.0f, 0.39f, 0.09f));
+    lungiKnot = scale(lungiKnot, vec3(0.09f, 0.05f, 0.05f));
+    Primitives::drawSphere(shader, lungiKnot, lungiBlue * 0.85f);
+
+    // 3. Torso in sleeveless cotton banyan
+    mat4 torso = m;
+    torso = translate(torso, vec3(0.0f, 0.53f, 0.0f));
+    torso = scale(torso, vec3(0.23f, 0.30f, 0.17f));
+    Primitives::drawCylinder(shader, torso, kurtaBeige);
+
+    // Draped Crimson Gamcha across right shoulder
+    mat4 gamcha = m;
+    gamcha = translate(gamcha, vec3(0.08f, 0.54f, 0.01f));
+    gamcha = scale(gamcha, vec3(0.08f, 0.32f, 0.19f));
+    Primitives::drawCube(shader, gamcha, gamchaRed);
+
+    mat4 gTrim = m;
+    gTrim = translate(gTrim, vec3(0.08f, 0.37f, 0.08f));
+    gTrim = scale(gTrim, vec3(0.075f, 0.018f, 0.025f));
+    Primitives::drawCube(shader, gTrim, gamchaTrim);
+
+    // 4. Neck and Head
+    mat4 neck = m;
+    neck = translate(neck, vec3(0.0f, 0.70f, 0.0f));
+    neck = scale(neck, vec3(0.08f, 0.08f, 0.08f));
+    Primitives::drawCylinder(shader, neck, skinTone);
+
+    mat4 head = m;
+    head = translate(head, vec3(0.0f, 0.79f, 0.0f));
+    head = scale(head, vec3(0.12f, 0.13f, 0.12f));
+    Primitives::drawSphere(shader, head, skinTone);
+
+    // Hair cap
+    mat4 hair = m;
+    hair = translate(hair, vec3(0.0f, 0.82f, -0.015f));
+    hair = scale(hair, vec3(0.125f, 0.07f, 0.125f));
+    Primitives::drawSphere(shader, hair, hairDark);
+
+    // 5. Conical Bamboo Sunhat (Mathal / মাথাল)
+    mat4 hat = m;
+    hat = translate(hat, vec3(0.0f, 0.86f, 0.0f));
+    hat = scale(hat, vec3(0.35f, 0.12f, 0.35f));
+    Primitives::drawCone(shader, hat, strawYellow);
+
+    mat4 rim = m;
+    rim = translate(rim, vec3(0.0f, 0.86f, 0.0f));
+    rim = scale(rim, vec3(0.36f, 0.018f, 0.36f));
+    Primitives::drawCylinder(shader, rim, hatBand);
+
+    // 6. Arms holding the steering rudder tiller
+    mat4 armL = m;
+    armL = translate(armL, vec3(-0.11f, 0.52f, 0.10f));
+    armL = rotate(armL, radians(38.0f), vec3(1.0f, 0.0f, 0.0f));
+    armL = scale(armL, vec3(0.045f, 0.24f, 0.045f));
+    Primitives::drawCylinder(shader, armL, skinTone);
+
+    mat4 armR = m;
+    armR = translate(armR, vec3(0.06f, 0.50f, 0.08f));
+    armR = rotate(armR, radians(32.0f), vec3(1.0f, 0.0f, 0.0f));
+    armR = scale(armR, vec3(0.045f, 0.22f, 0.045f));
+    Primitives::drawCylinder(shader, armR, skinTone);
+
+    // 7. Traditional Stern Steering Rudder & Tiller (হাল / Haal)
+    mat4 tiller = m;
+    tiller = translate(tiller, vec3(-0.02f, 0.42f, -0.15f));
+    tiller = scale(tiller, vec3(0.04f, 0.04f, 0.65f));
+    Primitives::drawCube(shader, tiller, oarWood);
+
+    mat4 rudderShaft = m;
+    rudderShaft = translate(rudderShaft, vec3(-0.02f, 0.18f, -0.65f));
+    rudderShaft = rotate(rudderShaft, radians(-32.0f), vec3(1.0f, 0.0f, 0.0f));
+    rudderShaft = scale(rudderShaft, vec3(0.045f, 1.35f, 0.045f));
+    Primitives::drawCylinder(shader, rudderShaft, oarWood);
+
+    mat4 rudderBlade = m;
+    rudderBlade = translate(rudderBlade, vec3(-0.02f, -0.32f, -1.05f));
+    rudderBlade = rotate(rudderBlade, radians(-12.0f), vec3(1.0f, 0.0f, 0.0f));
+    rudderBlade = scale(rudderBlade, vec3(0.025f, 0.52f, 0.24f));
+    Primitives::drawCube(shader, rudderBlade, oarWood * 0.90f);
+}
+
+// ── Authentic Bengali Cargo & Goods (নৌকায় বহন করা পণ্য ও মালামাল) ────
+void drawCargoGoods(Shader& shader, const mat4& model, float animTime)
+{
+    shader.setInt("uUseTexture", 0);
+
+    // Optimized static palette: avoid per-frame allocations
+    static const vec3 sackBuff    (0.72f, 0.58f, 0.38f); // Coarse burlap jute sack (Pater Chhala)
+    static const vec3 sackDark    (0.66f, 0.52f, 0.34f); // Slightly darker burlap sack
+    static const vec3 sackLight   (0.76f, 0.62f, 0.42f); // Lighter woven grain sack
+    static const vec3 ropeCord    (0.48f, 0.36f, 0.20f); // Coir / jute binding twine
+    static const vec3 clayPot1    (0.76f, 0.38f, 0.18f); // Terracotta clay pot (Matir Kolshi)
+    static const vec3 clayPot2    (0.68f, 0.32f, 0.15f); // Burnt earthen storage jar (Matka)
+    static const vec3 clayRim     (0.55f, 0.26f, 0.12f); // Pot rim trim
+    static const vec3 basketWood  (0.70f, 0.54f, 0.28f); // Woven bamboo basket (Jhaka)
+    static const vec3 basketDark  (0.45f, 0.32f, 0.16f); // Bamboo basket rim
+    static const vec3 produceGold (0.88f, 0.68f, 0.18f); // Golden pumpkins / gourds
+    static const vec3 leafGreen   (0.22f, 0.56f, 0.20f); // Fresh banana leaf liner
+    static const vec3 vegGreen    (0.32f, 0.62f, 0.24f); // Fresh vegetables / melons
+    static const vec3 bambooPole  (0.52f, 0.58f, 0.26f); // Greenish bamboo poles
+    static const vec3 ropeCoilCol (0.68f, 0.56f, 0.34f); // Thick coir mooring painter rope
+
+    // 1. Stacked Burlap Jute Grain Sacks (পাটের ধানের বস্তা)
+    struct SackData {
+        vec3 pos;
+        vec3 size;
+        float rotY;
+        const vec3& color;
+    };
+    const SackData sacks[5] = {
+        { vec3(-0.16f, 0.20f, 0.62f), vec3(0.28f, 0.18f, 0.42f),  -6.0f, sackBuff },
+        { vec3( 0.16f, 0.20f, 0.64f), vec3(0.28f, 0.18f, 0.42f),   8.0f, sackDark },
+        { vec3( 0.00f, 0.35f, 0.63f), vec3(0.27f, 0.17f, 0.40f),   2.0f, sackLight },
+        { vec3(-0.10f, 0.22f, 1.10f), vec3(0.26f, 0.18f, 0.38f),  12.0f, sackLight },
+        { vec3( 0.13f, 0.22f, 1.12f), vec3(0.25f, 0.17f, 0.37f), -10.0f, sackBuff }
+    };
+
+    for (int k = 0; k < 5; ++k) {
+        mat4 sm = model;
+        sm = translate(sm, sacks[k].pos);
+        sm = rotate(sm, radians(sacks[k].rotY), vec3(0.0f, 1.0f, 0.0f));
+
+        mat4 body = sm;
+        body = scale(body, sacks[k].size);
+        Primitives::drawCube(shader, body, sacks[k].color);
+
+        mat4 bulge = sm;
+        bulge = scale(bulge, sacks[k].size * 1.04f);
+        Primitives::drawSphere(shader, bulge, sacks[k].color);
+
+        mat4 ear = sm;
+        ear = translate(ear, vec3(0.0f, 0.04f, sacks[k].size.z * 0.48f));
+        ear = scale(ear, vec3(0.06f, 0.06f, 0.05f));
+        Primitives::drawSphere(shader, ear, ropeCord);
+    }
+
+    // 2. Earthen Clay Storage Jars & Pots (মাটির কলসি ও মটকা)
+    mat4 pot1 = model;
+    pot1 = translate(pot1, vec3(-0.16f, 0.24f, -0.55f));
+    mat4 pot1B = pot1;
+    pot1B = scale(pot1B, vec3(0.14f, 0.16f, 0.14f));
+    Primitives::drawSphere(shader, pot1B, clayPot1);
+
+    mat4 pot1R = pot1;
+    pot1R = translate(pot1R, vec3(0.0f, 0.15f, 0.0f));
+    pot1R = scale(pot1R, vec3(0.085f, 0.025f, 0.085f));
+    Primitives::drawCylinder(shader, pot1R, clayRim);
+
+    mat4 pot2 = model;
+    pot2 = translate(pot2, vec3(0.15f, 0.23f, -0.52f));
+    mat4 pot2B = pot2;
+    pot2B = scale(pot2B, vec3(0.13f, 0.13f, 0.13f));
+    Primitives::drawSphere(shader, pot2B, clayPot2);
+
+    mat4 pot2R = pot2;
+    pot2R = translate(pot2R, vec3(0.0f, 0.12f, 0.0f));
+    pot2R = scale(pot2R, vec3(0.075f, 0.022f, 0.075f));
+    Primitives::drawCylinder(shader, pot2R, clayRim);
+
+    mat4 pot3 = model;
+    pot3 = translate(pot3, vec3(-0.02f, 0.23f, -0.85f));
+    mat4 pot3B = pot3;
+    pot3B = scale(pot3B, vec3(0.12f, 0.14f, 0.12f));
+    Primitives::drawSphere(shader, pot3B, clayPot1);
+
+    mat4 pot3R = pot3;
+    pot3R = translate(pot3R, vec3(0.0f, 0.13f, 0.0f));
+    pot3R = scale(pot3R, vec3(0.070f, 0.020f, 0.070f));
+    Primitives::drawCylinder(shader, pot3R, clayRim);
+
+    // 3. Woven Bamboo Harvest Baskets (বাঁশের ঝাঁকা ও ডালি)
+    mat4 bsk1 = model;
+    bsk1 = translate(bsk1, vec3(0.16f, 0.25f, 1.55f));
+
+    mat4 bsk1Body = bsk1;
+    bsk1Body = scale(bsk1Body, vec3(0.20f, 0.15f, 0.20f));
+    Primitives::drawCylinder(shader, bsk1Body, basketWood);
+
+    mat4 bsk1Rim = bsk1;
+    bsk1Rim = translate(bsk1Rim, vec3(0.0f, 0.07f, 0.0f));
+    bsk1Rim = scale(bsk1Rim, vec3(0.22f, 0.022f, 0.22f));
+    Primitives::drawCylinder(shader, bsk1Rim, basketDark);
+
+    mat4 prod1 = bsk1;
+    prod1 = translate(prod1, vec3(0.0f, 0.07f, 0.0f));
+    prod1 = scale(prod1, vec3(0.15f, 0.08f, 0.15f));
+    Primitives::drawSphere(shader, prod1, produceGold);
+
+    mat4 bsk2 = model;
+    bsk2 = translate(bsk2, vec3(-0.14f, 0.26f, 1.62f));
+
+    mat4 bsk2Body = bsk2;
+    bsk2Body = scale(bsk2Body, vec3(0.18f, 0.08f, 0.18f));
+    Primitives::drawCylinder(shader, bsk2Body, basketWood);
+
+    mat4 leaf = bsk2;
+    leaf = translate(leaf, vec3(0.0f, 0.04f, 0.0f));
+    leaf = scale(leaf, vec3(0.15f, 0.015f, 0.15f));
+    Primitives::drawCylinder(shader, leaf, leafGreen);
+
+    mat4 veg = bsk2;
+    veg = translate(veg, vec3(0.0f, 0.05f, 0.0f));
+    veg = scale(veg, vec3(0.11f, 0.04f, 0.11f));
+    Primitives::drawSphere(shader, veg, vegGreen);
+
+    // 4. Bundle of Bamboo Poles (বাঁশের চালানি আঁটি)
+    for (int bp = 0; bp < 3; ++bp) {
+        float ox = (float)(bp % 2) * 0.035f;
+        float oy = (float)(bp / 2) * 0.035f;
+        mat4 pole = model;
+        pole = translate(pole, vec3(-0.29f + ox, 0.32f + oy, 0.0f));
+        pole = scale(pole, vec3(0.030f, 0.030f, 2.25f));
+        Primitives::drawCylinder(shader, pole, bambooPole);
+    }
+
+    for (float tz : { -0.70f, 0.0f, 0.70f }) {
+        mat4 tie = model;
+        tie = translate(tie, vec3(-0.27f, 0.33f, tz));
+        tie = scale(tie, vec3(0.075f, 0.075f, 0.030f));
+        Primitives::drawCylinder(shader, tie, ropeCord);
+    }
+
+    // 5. Coiled Mooring Rope Painter (পাটের কাছি)
+    mat4 ropeM = model;
+    ropeM = translate(ropeM, vec3(0.0f, 0.28f, 2.10f));
+    ropeM = scale(ropeM, vec3(0.16f, 0.035f, 0.16f));
+    Primitives::drawCylinder(shader, ropeM, ropeCoilCol);
+}
+
 } // anonymous namespace
 
 namespace Boat {
@@ -457,17 +732,23 @@ void draw(Shader& shader, const mat4& model, BoatStyle style, float animTime, fl
     bool showPassengers = (numPassengers > 0) || (numPassengers < 0 && style == BOAT_STYLE_ROUND_CHHOI);
     shader.setInt("uUseTexture", 0);
 
-    // ── Precise Color Palette Matching the User's Cropped Artwork ─
-    vec3 hullBody    (0.28f, 0.14f, 0.07f); // Deep dark chocolate / umber timber (#4A2612)
-    vec3 redStripe   (0.68f, 0.22f, 0.14f); // Signature terracotta / crimson red side stripe (#A53526)
-    vec3 gunwaleTrim (0.16f, 0.08f, 0.04f); // Dark black-brown gunwale rub-rail & horn tips
-    vec3 innerFloor  (0.36f, 0.18f, 0.09f); // Inner timber floorboards & thwarts
-    vec3 mastBrown   (0.28f, 0.14f, 0.07f); // Dark brown bamboo mast
-    vec3 sailWhite   (0.95f, 0.93f, 0.87f); // Warm ivory/cream cotton sail canvas (#F4EFE2)
-    vec3 sailRed     (0.68f, 0.22f, 0.14f); // Signature crimson red folk triangle patch
-    vec3 chhoiBox    (0.26f, 0.13f, 0.06f); // Dark brown timber canopy base plinth
-    vec3 chhoiLight  (0.74f, 0.52f, 0.27f); // Warm golden-caramel upper dome (#BD8545)
-    vec3 chhoiDark   (0.55f, 0.35f, 0.15f); // Darker caramel middle/lower crescent (#8C5926)
+    // Optimized static palette: avoid per-frame allocations
+    static const vec3 hullBody    (0.28f, 0.14f, 0.07f); // Deep dark chocolate / umber timber (#4A2612)
+    static const vec3 redStripe   (0.68f, 0.22f, 0.14f); // Signature terracotta / crimson red side stripe (#A53526)
+    static const vec3 gunwaleTrim (0.16f, 0.08f, 0.04f); // Dark black-brown gunwale rub-rail & horn tips
+    static const vec3 innerFloor  (0.36f, 0.18f, 0.09f); // Inner timber floorboards & thwarts
+    static const vec3 mastBrown   (0.28f, 0.14f, 0.07f); // Dark brown bamboo mast
+    static const vec3 sailWhite   (0.95f, 0.93f, 0.87f); // Warm ivory/cream cotton sail canvas (#F4EFE2)
+    static const vec3 sailRed     (0.68f, 0.22f, 0.14f); // Signature crimson red folk triangle patch
+    static const vec3 chhoiBox    (0.26f, 0.13f, 0.06f); // Dark brown timber canopy base plinth
+    static const vec3 chhoiLight  (0.74f, 0.52f, 0.27f); // Warm golden-caramel upper dome (#BD8545)
+    static const vec3 chhoiDark   (0.55f, 0.35f, 0.15f); // Darker caramel middle/lower crescent (#8C5926)
+
+    // Enlarge the traditional cargo sailboat (Maldar Kosha Nouka / মালবাহী বড় নৌকা)
+    mat4 hullModel = model;
+    if (style == BOAT_STYLE_WHITE_SAIL) {
+        hullModel = scale(model, vec3(1.36f, 1.25f, 1.45f));
+    }
 
     // ═════════════════════════════════════════════════════════════
     // 1. SMOOTH LOFTED WATERTIGHT HULL, CRIMSON STRIPE & FLOOR
@@ -529,46 +810,46 @@ void draw(Shader& shader, const mat4& model, BoatStyle style, float animTime, fl
         const HullStation& s1 = st[i + 1];
 
         // 1. Keel Bottom Plank (outside underbody)
-        draw3DQuad(shader, model, s0.ptKeelL, s0.ptKeelR, s1.ptKeelR, s1.ptKeelL, hullBody);
+        draw3DQuad(shader, hullModel, s0.ptKeelL, s0.ptKeelR, s1.ptKeelR, s1.ptKeelL, hullBody);
 
         // 2. Starboard Lower Flank (+X)
-        draw3DQuad(shader, model, s0.ptKeelR, s0.ptStripe0R, s1.ptStripe0R, s1.ptKeelR, hullBody);
+        draw3DQuad(shader, hullModel, s0.ptKeelR, s0.ptStripe0R, s1.ptStripe0R, s1.ptKeelR, hullBody);
 
         // 3. Port Lower Flank (-X)
-        draw3DQuad(shader, model, s0.ptKeelL, s1.ptKeelL, s1.ptStripe0L, s0.ptStripe0L, hullBody);
+        draw3DQuad(shader, hullModel, s0.ptKeelL, s1.ptKeelL, s1.ptStripe0L, s0.ptStripe0L, hullBody);
 
         // 4. Starboard Crimson Folk Accent Stripe (+X)
-        draw3DQuad(shader, model, s0.ptStripe0R, s0.ptStripe1R, s1.ptStripe1R, s1.ptStripe0R, redStripe);
+        draw3DQuad(shader, hullModel, s0.ptStripe0R, s0.ptStripe1R, s1.ptStripe1R, s1.ptStripe0R, redStripe);
 
         // 5. Port Crimson Folk Accent Stripe (-X)
-        draw3DQuad(shader, model, s0.ptStripe0L, s1.ptStripe0L, s1.ptStripe1L, s0.ptStripe1L, redStripe);
+        draw3DQuad(shader, hullModel, s0.ptStripe0L, s1.ptStripe0L, s1.ptStripe1L, s0.ptStripe1L, redStripe);
 
         // 6. Starboard Upper Flank (+X)
-        draw3DQuad(shader, model, s0.ptStripe1R, s0.ptGunwaleR, s1.ptGunwaleR, s1.ptStripe1R, hullBody);
+        draw3DQuad(shader, hullModel, s0.ptStripe1R, s0.ptGunwaleR, s1.ptGunwaleR, s1.ptStripe1R, hullBody);
 
         // 7. Port Upper Flank (-X)
-        draw3DQuad(shader, model, s0.ptStripe1L, s1.ptStripe1L, s1.ptGunwaleL, s0.ptGunwaleL, hullBody);
+        draw3DQuad(shader, hullModel, s0.ptStripe1L, s1.ptStripe1L, s1.ptGunwaleL, s0.ptGunwaleL, hullBody);
 
         // 8. Watertight Inner Timber Floor (seen from above)
-        draw3DQuad(shader, model, s0.ptFloorL, s1.ptFloorL, s1.ptFloorR, s0.ptFloorR, innerFloor);
+        draw3DQuad(shader, hullModel, s0.ptFloorL, s1.ptFloorL, s1.ptFloorR, s0.ptFloorR, innerFloor);
 
         // 9. Inner Side Strakes (connecting inner floor to gunwales)
-        draw3DQuad(shader, model, s0.ptFloorR, s1.ptFloorR, s1.ptGunwaleR, s0.ptGunwaleR, innerFloor * 0.88f);
-        draw3DQuad(shader, model, s0.ptFloorL, s0.ptGunwaleL, s1.ptGunwaleL, s1.ptFloorL, innerFloor * 0.88f);
+        draw3DQuad(shader, hullModel, s0.ptFloorR, s1.ptFloorR, s1.ptGunwaleR, s0.ptGunwaleR, innerFloor * 0.88f);
+        draw3DQuad(shader, hullModel, s0.ptFloorL, s0.ptGunwaleL, s1.ptGunwaleL, s1.ptFloorL, innerFloor * 0.88f);
 
         // 10. Gunwale Rub-Rail Capping
-        drawLineCylinder(shader, model, s0.ptGunwaleR, s1.ptGunwaleR, 0.022f, gunwaleTrim);
-        drawLineCylinder(shader, model, s0.ptGunwaleL, s1.ptGunwaleL, 0.022f, gunwaleTrim);
+        drawLineCylinder(shader, hullModel, s0.ptGunwaleR, s1.ptGunwaleR, 0.022f, gunwaleTrim);
+        drawLineCylinder(shader, hullModel, s0.ptGunwaleL, s1.ptGunwaleL, 0.022f, gunwaleTrim);
     }
 
     // Stem Caps at Bow and Stern Horn Apexes (গুলুই / Gului)
-    mat4 bowStem = model;
+    mat4 bowStem = hullModel;
     bowStem = translate(bowStem, vec3(0.0f, 0.50f, 2.15f));
     bowStem = rotate(bowStem, radians(24.0f), vec3(1.0f, 0.0f, 0.0f));
     bowStem = scale(bowStem, vec3(0.045f, 0.12f, 0.06f));
     Primitives::drawCube(shader, bowStem, gunwaleTrim);
 
-    mat4 sternStem = model;
+    mat4 sternStem = hullModel;
     sternStem = translate(sternStem, vec3(0.0f, 0.50f, -2.15f));
     sternStem = rotate(sternStem, radians(-24.0f), vec3(1.0f, 0.0f, 0.0f));
     sternStem = scale(sternStem, vec3(0.045f, 0.12f, 0.06f));
@@ -579,7 +860,7 @@ void draw(Shader& shader, const mat4& model, BoatStyle style, float animTime, fl
         float u = fabsf(tz) / 2.15f;
         float gw = 2.0f * (0.39f * (1.0f - u * u) + 0.024f) - 0.04f;
         float gy = 0.32f + 0.18f * (u * u) - 0.02f;
-        mat4 thwart = model;
+        mat4 thwart = hullModel;
         thwart = translate(thwart, vec3(0.0f, gy, tz));
         thwart = scale(thwart, vec3(gw, 0.035f, 0.08f));
         Primitives::drawCube(shader, thwart, innerFloor);
@@ -681,32 +962,38 @@ void draw(Shader& shader, const mat4& model, BoatStyle style, float animTime, fl
     }
     else {
         // =========================================================
-        // IMAGE 1: PURE WHITE RIGHT-ANGLED SAILBOAT
+        // IMAGE 1: PURE WHITE RIGHT-ANGLED SAILBOAT (CARGO VESSEL)
         // =========================================================
         const float mastZ = 0.05f;
         const float mastH = 2.55f;
 
         // Tall vertical dark brown bamboo mast
-        mat4 mast = model;
+        mat4 mast = hullModel;
         mast = translate(mast, vec3(0.0f, 0.10f + mastH * 0.5f, mastZ));
         mast = scale(mast, vec3(0.065f, mastH, 0.065f));
         Primitives::drawCylinder(shader, mast, mastBrown);
 
         // Mast cap knob
-        mat4 cap = model;
+        mat4 cap = hullModel;
         cap = translate(cap, vec3(0.0f, 0.10f + mastH, mastZ));
         cap = scale(cap, vec3(0.085f, 0.06f, 0.085f));
         Primitives::drawSphere(shader, cap, mastBrown);
 
         // Horizontal bottom boom spar supporting sail foot (rotated along Z!)
-        mat4 boom = model;
+        mat4 boom = hullModel;
         boom = translate(boom, vec3(0.0f, 0.45f, mastZ + 0.80f));
         boom = rotate(boom, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
         boom = scale(boom, vec3(0.045f, 1.60f, 0.045f));
         Primitives::drawCylinder(shader, boom, mastBrown);
 
         // Pure white right-angled triangular sail (exact match to Image 1!)
-        drawRightTriangleSail(shader, model, mastZ, 0.45f, 1.55f, 2.05f, sailWhite, 0.0f);
+        drawRightTriangleSail(shader, hullModel, mastZ, 0.45f, 1.55f, 2.05f, sailWhite, 0.0f);
+
+        // Traditional Helmsman Boatman steering at the stern (মাঝি)
+        drawCargoBoatman(shader, model, animTime);
+
+        // Cargo / Goods loaded in the boat (পাটের বস্তা, মাটির হাঁড়ি, বাঁশের ঝাঁকা ও মালামাল)
+        drawCargoGoods(shader, model, animTime);
 
         if (showPassengers) {
             drawPassengers(shader, model, animTime);

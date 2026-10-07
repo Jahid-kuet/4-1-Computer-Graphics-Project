@@ -314,6 +314,326 @@ static void drawStoveFire(Shader& shader, const mat4& cm, float animTime)
     shader.setFloat("emissive", 0.0f); // Reset emissive state
 }
 
+// ═════════════════════════════════════════════════════════════════════
+// RURAL BENGALI WOMAN COOKING FOOD (গ্রাম্য বধূ / রাঁধুনি)
+// Seated gracefully on a low wooden stool (Kather Piri) in front of the
+// outdoor clay cooking stove, draped in a traditional crimson handloom
+// Saree with golden border (Paar) and modest head veil (Ghomta).
+// Actively stirring the simmering curry pot with a wooden cooking spatula (Khunti).
+// ═════════════════════════════════════════════════════════════════════
+static void drawCookingWoman(Shader& shader, const mat4& stoveModel, float animTime)
+{
+    // Traditional Bengali Rural Color Palette
+    vec3 skinTone     (0.58f, 0.40f, 0.26f); // warm natural Bengali skin tone
+    vec3 sareeRed     (0.78f, 0.15f, 0.12f); // traditional crimson red handloom saree (Shari)
+    vec3 sareePaar    (0.94f, 0.78f, 0.20f); // golden-yellow woven border (Paar)
+    vec3 blouseYellow (0.84f, 0.62f, 0.16f); // golden turmeric cotton blouse
+    vec3 hairDark     (0.08f, 0.06f, 0.05f); // glossy dark hair bun
+    vec3 bindiRed     (0.88f, 0.10f, 0.08f); // vermilion bindi (Laal Tip)
+    vec3 sindoorRed   (0.85f, 0.12f, 0.10f); // parting vermilion (Sindoor)
+    vec3 glassRed     (0.86f, 0.12f, 0.10f); // red glass bangle (Reshmi Churi)
+    vec3 glassGold    (0.96f, 0.82f, 0.22f); // gold bangle
+    vec3 altaRed      (0.84f, 0.14f, 0.14f); // red decorative foot dye (Alta)
+    vec3 khuntiWood   (0.48f, 0.34f, 0.18f); // wooden spatula handle
+    vec3 khuntiSteel  (0.75f, 0.78f, 0.82f); // steel cooking spatula blade (Khunti)
+
+    // Attentive cooking breath and subtle spatula stirring animation
+    float breath   = (animTime > 0.0f) ? (sinf(animTime * 2.2f) * 0.003f) : 0.0f;
+    float stirAnim = (animTime > 0.0f) ? (sinf(animTime * 3.2f) * radians(6.0f)) : 0.0f;
+
+    // Woman base transform: seated on the Piri at (0.20, 0.0f, 0.44), angled facing the stove pot
+    mat4 wm = stoveModel;
+    wm = translate(wm, vec3(0.20f, 0.0f, 0.44f));
+    wm = rotate(wm, radians(-152.0f), vec3(0.0f, 1.0f, 0.0f));
+
+    // ── 1. Seated Lower Body & Saree Pleats Draped on Piri ──────────
+    float seatY = 0.055f;
+    mat4 lap = wm;
+    lap = translate(lap, vec3(0.0f, seatY + 0.040f, 0.02f));
+    lap = scale(lap, vec3(0.20f, 0.085f, 0.16f));
+    Primitives::drawSphere(shader, lap, sareeRed);
+
+    // Left folded thigh / knee
+    mat4 thighL = wm;
+    thighL = translate(thighL, vec3(-0.075f, seatY + 0.030f, 0.10f));
+    thighL = rotate(thighL, radians(-12.0f), vec3(0.0f, 1.0f, 0.0f));
+    thighL = rotate(thighL, radians(15.0f), vec3(1.0f, 0.0f, 0.0f));
+    thighL = scale(thighL, vec3(0.085f, 0.075f, 0.18f));
+    Primitives::drawSphere(shader, thighL, sareeRed);
+
+    // Right folded thigh / knee (angled toward the cooking pot)
+    mat4 thighR = wm;
+    thighR = translate(thighR, vec3(0.075f, seatY + 0.035f, 0.09f));
+    thighR = rotate(thighR, radians(10.0f), vec3(0.0f, 1.0f, 0.0f));
+    thighR = rotate(thighR, radians(14.0f), vec3(1.0f, 0.0f, 0.0f));
+    thighR = scale(thighR, vec3(0.085f, 0.075f, 0.18f));
+    Primitives::drawSphere(shader, thighR, sareeRed);
+
+    // Flowing saree cloth mass around legs and ground
+    mat4 skirtFold = wm;
+    skirtFold = translate(skirtFold, vec3(0.0f, seatY + 0.015f, 0.09f));
+    skirtFold = scale(skirtFold, vec3(0.22f, 0.070f, 0.18f));
+    Primitives::drawCube(shader, skirtFold, sareeRed);
+
+    // Golden border (Paar) along front hem of saree
+    mat4 sareeBorder = wm;
+    sareeBorder = translate(sareeBorder, vec3(0.0f, seatY + 0.010f, 0.185f));
+    sareeBorder = scale(sareeBorder, vec3(0.20f, 0.014f, 0.012f));
+    Primitives::drawCube(shader, sareeBorder, sareePaar);
+
+    // Bare feet peeking out near bottom of saree
+    for (int side = -1; side <= 1; side += 2) {
+        float fside = (float)side;
+        mat4 foot = wm;
+        foot = translate(foot, vec3(fside * 0.065f, 0.012f, 0.17f));
+        foot = scale(foot, vec3(0.036f, 0.020f, 0.055f));
+        Primitives::drawCube(shader, foot, skinTone);
+
+        // Traditional Alta dye rim around foot edge
+        mat4 alta = wm;
+        alta = translate(alta, vec3(fside * 0.065f, 0.005f, 0.17f));
+        alta = scale(alta, vec3(0.038f, 0.008f, 0.058f));
+        Primitives::drawCube(shader, alta, altaRed);
+    }
+
+    // ── 2. Torso with Blouse & Diagonal Saree Anchol (আঁচল) ─────────
+    float torsoH = 0.22f;
+    float torsoBaseY = seatY + 0.065f;
+    float torsoCenterY = torsoBaseY + torsoH * 0.5f + breath;
+
+    // Torso slightly tilted forward (attentive cooking lean)
+    mat4 torso = wm;
+    torso = translate(torso, vec3(0.0f, torsoCenterY, 0.03f));
+    torso = rotate(torso, radians(10.0f), vec3(1.0f, 0.0f, 0.0f));
+    mat4 torsoS = scale(torso, vec3(0.17f, torsoH, 0.11f));
+    Primitives::drawCube(shader, torsoS, blouseYellow);
+
+    // Diagonal Saree Anchol drape across chest (from right hip over left shoulder)
+    mat4 anchol = torso;
+    anchol = translate(anchol, vec3(-0.015f, 0.010f, 0.052f));
+    anchol = rotate(anchol, radians(-28.0f), vec3(0.0f, 0.0f, 1.0f));
+    mat4 ancholS = scale(anchol, vec3(0.12f, torsoH * 0.90f, 0.022f));
+    Primitives::drawCube(shader, ancholS, sareeRed);
+
+    // Golden border trim along the diagonal anchol drape
+    mat4 ancholTrim = anchol;
+    ancholTrim = translate(ancholTrim, vec3(0.055f, 0.0f, 0.004f));
+    mat4 ancholTrimS = scale(ancholTrim, vec3(0.016f, torsoH * 0.92f, 0.024f));
+    Primitives::drawCube(shader, ancholTrimS, sareePaar);
+
+    // ── 3. Neck & Head with Expressive Face & Vermilion Tip ──────────
+    float neckBaseY = torsoCenterY + torsoH * 0.48f;
+    mat4 neck = wm;
+    neck = translate(neck, vec3(0.0f, neckBaseY + 0.015f, 0.045f));
+    neck = scale(neck, vec3(0.032f, 0.035f, 0.032f));
+    Primitives::drawCylinder(shader, neck, skinTone);
+
+    float headR = 0.068f;
+    float headCenterY = neckBaseY + 0.032f + headR;
+    mat4 headBase = wm;
+    headBase = translate(headBase, vec3(0.0f, headCenterY, 0.055f));
+    headBase = rotate(headBase, radians(14.0f), vec3(1.0f, 0.0f, 0.0f)); // looking down at pot
+
+    mat4 head = headBase;
+    head = scale(head, vec3(headR * 0.92f, headR, headR * 0.94f));
+    Primitives::drawSphere(shader, head, skinTone);
+
+    // Glossy hair bun (Khnopa) at the nape/back of head
+    mat4 bun = headBase;
+    bun = translate(bun, vec3(0.0f, -0.010f, -headR * 0.88f));
+    bun = scale(bun, vec3(0.052f, 0.048f, 0.045f));
+    Primitives::drawSphere(shader, bun, hairDark);
+
+    // Front hair parting (Shithi)
+    mat4 hairFront = headBase;
+    hairFront = translate(hairFront, vec3(0.0f, headR * 0.65f, 0.010f));
+    hairFront = scale(hairFront, vec3(headR * 0.90f, 0.028f, headR * 0.85f));
+    Primitives::drawSphere(shader, hairFront, hairDark);
+
+    // Parting Sindoor (red vermilion in hair parting)
+    mat4 sindoor = headBase;
+    sindoor = translate(sindoor, vec3(0.0f, headR * 0.82f, headR * 0.40f));
+    sindoor = scale(sindoor, vec3(0.008f, 0.010f, 0.035f));
+    Primitives::drawCube(shader, sindoor, sindoorRed);
+
+    // Vermilion Bindi (Laal Tip) centered on forehead
+    mat4 tipM = headBase;
+    tipM = translate(tipM, vec3(0.0f, headR * 0.32f, headR * 0.86f));
+    tipM = scale(tipM, vec3(0.013f, 0.013f, 0.006f));
+    Primitives::drawSphere(shader, tipM, bindiRed);
+
+    // Delicate nose bridge and tip
+    mat4 noseM = headBase;
+    noseM = translate(noseM, vec3(0.0f, -0.004f, headR * 0.92f));
+    noseM = rotate(noseM, radians(18.0f), vec3(1.0f, 0.0f, 0.0f));
+    noseM = scale(noseM, vec3(0.013f, 0.026f, 0.022f));
+    Primitives::drawCone(shader, noseM, skinTone * 0.94f);
+
+    // Attentive downward-looking eyes & gentle eyebrows
+    vec3 eyeWhite(0.94f, 0.94f, 0.90f);
+    vec3 eyePupil(0.12f, 0.09f, 0.07f);
+    for (int side = -1; side <= 1; side += 2) {
+        float fside = (float)side;
+        // Eye white
+        mat4 eyeW = headBase;
+        eyeW = translate(eyeW, vec3(fside * 0.026f, headR * 0.16f, headR * 0.84f));
+        eyeW = scale(eyeW, vec3(0.012f, 0.009f, 0.010f));
+        Primitives::drawSphere(shader, eyeW, eyeWhite);
+
+        // Pupil directed down toward pot
+        mat4 pupil = headBase;
+        pupil = translate(pupil, vec3(fside * 0.026f, headR * 0.13f, headR * 0.88f));
+        pupil = scale(pupil, vec3(0.0065f, 0.0065f, 0.0065f));
+        Primitives::drawSphere(shader, pupil, eyePupil);
+
+        // Eyebrow
+        mat4 brow = headBase;
+        brow = translate(brow, vec3(fside * 0.026f, headR * 0.28f, headR * 0.82f));
+        brow = rotate(brow, radians(fside * -8.0f), vec3(0.0f, 0.0f, 1.0f));
+        brow = scale(brow, vec3(0.018f, 0.004f, 0.008f));
+        Primitives::drawCube(shader, brow, hairDark);
+
+        // Gold ear stud (Dul)
+        mat4 earStud = headBase;
+        earStud = translate(earStud, vec3(fside * (headR * 0.88f), 0.0f, 0.0f));
+        earStud = scale(earStud, vec3(0.008f, 0.008f, 0.008f));
+        Primitives::drawSphere(shader, earStud, glassGold);
+    }
+
+    // ── 4. Modest Draped Bengali Head Veil (Ghomta / ঘোমটা) ───────────
+    // Top arch of the veil curving over hair and crown
+    mat4 ghomtaTop = headBase;
+    ghomtaTop = translate(ghomtaTop, vec3(0.0f, headR * 0.35f, -0.010f));
+    ghomtaTop = scale(ghomtaTop, vec3(headR * 1.15f, headR * 0.95f, headR * 1.12f));
+    Primitives::drawSphere(shader, ghomtaTop, sareeRed);
+
+    // Golden border (Paar) along front rim of head veil framing the face
+    mat4 ghomtaRim = headBase;
+    ghomtaRim = translate(ghomtaRim, vec3(0.0f, headR * 0.55f, headR * 0.40f));
+    ghomtaRim = rotate(ghomtaRim, radians(38.0f), vec3(1.0f, 0.0f, 0.0f));
+    ghomtaRim = scale(ghomtaRim, vec3(headR * 1.05f, 0.015f, 0.018f));
+    Primitives::drawCube(shader, ghomtaRim, sareePaar);
+
+    // Left and right veil folds cascading down beside cheeks over shoulders
+    for (int side = -1; side <= 1; side += 2) {
+        float fside = (float)side;
+        mat4 ghomtaSide = headBase;
+        ghomtaSide = translate(ghomtaSide, vec3(fside * (headR * 0.95f), -headR * 0.40f, -0.015f));
+        ghomtaSide = rotate(ghomtaSide, radians(fside * 10.0f), vec3(0.0f, 0.0f, 1.0f));
+        ghomtaSide = scale(ghomtaSide, vec3(0.022f, headR * 0.90f, headR * 0.70f));
+        Primitives::drawCube(shader, ghomtaSide, sareeRed);
+    }
+
+    // Rear drape of veil falling down the upper back
+    mat4 ghomtaBack = headBase;
+    ghomtaBack = translate(ghomtaBack, vec3(0.0f, -headR * 0.50f, -headR * 0.85f));
+    ghomtaBack = scale(ghomtaBack, vec3(headR * 1.10f, headR * 0.95f, 0.025f));
+    Primitives::drawCube(shader, ghomtaBack, sareeRed);
+
+    // ── 5. Right Arm: Stirring Cooking Pot with Khunti (Spatula) ─────
+    mat4 shoulderR = wm;
+    shoulderR = translate(shoulderR, vec3(0.10f, torsoCenterY + torsoH * 0.35f, 0.04f));
+
+    // Upper arm: short blouse sleeve
+    mat4 upperArmR = shoulderR;
+    upperArmR = rotate(upperArmR, radians(-42.0f), vec3(1.0f, 0.0f, 0.0f)); // angled forward
+    upperArmR = rotate(upperArmR, radians(-14.0f), vec3(0.0f, 0.0f, 1.0f)); // angled slightly inward
+    mat4 upperSleeveR = upperArmR;
+    upperSleeveR = translate(upperSleeveR, vec3(0.0f, -0.055f, 0.0f));
+    upperSleeveR = scale(upperSleeveR, vec3(0.028f, 0.090f, 0.028f));
+    Primitives::drawCylinder(shader, upperSleeveR, blouseYellow);
+
+    // Blouse sleeve golden hem
+    mat4 sleeveHemR = upperArmR;
+    sleeveHemR = translate(sleeveHemR, vec3(0.0f, -0.10f, 0.0f));
+    sleeveHemR = scale(sleeveHemR, vec3(0.030f, 0.012f, 0.030f));
+    Primitives::drawCylinder(shader, sleeveHemR, sareePaar);
+
+    // Forearm extending toward the cooking pot
+    mat4 elbowR = upperArmR;
+    elbowR = translate(elbowR, vec3(0.0f, -0.11f, 0.0f));
+    elbowR = rotate(elbowR, radians(54.0f + stirAnim), vec3(1.0f, 0.0f, 0.0f)); // bend forward toward pot
+    elbowR = rotate(elbowR, radians(-16.0f), vec3(0.0f, 1.0f, 0.0f));          // aim toward stove center
+    mat4 foreArmR = elbowR;
+    foreArmR = translate(foreArmR, vec3(0.0f, -0.065f, 0.0f));
+    foreArmR = scale(foreArmR, vec3(0.022f, 0.120f, 0.022f));
+    Primitives::drawCylinder(shader, foreArmR, skinTone);
+
+    // Traditional red and gold glass bangles (Kacher Churi) on wrist
+    mat4 wristR = elbowR;
+    wristR = translate(wristR, vec3(0.0f, -0.115f, 0.0f));
+    for (int b = 0; b < 3; b++) {
+        mat4 bangle = wristR;
+        bangle = translate(bangle, vec3(0.0f, (float)b * 0.007f, 0.0f));
+        bangle = scale(bangle, vec3(0.026f, 0.005f, 0.026f));
+        Primitives::drawCylinder(shader, bangle, (b % 2 == 0) ? glassRed : glassGold);
+    }
+
+    // Right hand firmly grasping the cooking spatula
+    mat4 handR = elbowR;
+    handR = translate(handR, vec3(0.0f, -0.135f, 0.005f));
+    mat4 handRS = scale(handR, vec3(0.020f, 0.026f, 0.022f));
+    Primitives::drawSphere(shader, handRS, skinTone);
+
+    // Traditional Cooking Spatula / Ladle (Khunti / খুন্তি)
+    mat4 spatula = handR;
+    spatula = rotate(spatula, radians(42.0f), vec3(1.0f, 0.0f, 0.0f));
+    spatula = rotate(spatula, radians(10.0f), vec3(0.0f, 1.0f, 0.0f));
+    mat4 spHandle = spatula;
+    spHandle = translate(spHandle, vec3(0.0f, -0.080f, 0.0f));
+    spHandle = scale(spHandle, vec3(0.007f, 0.180f, 0.007f));
+    Primitives::drawCylinder(shader, spHandle, khuntiWood);
+
+    // Polished steel spatula blade dipping into pot
+    mat4 spBlade = spatula;
+    spBlade = translate(spBlade, vec3(0.0f, -0.170f, 0.0f));
+    spBlade = scale(spBlade, vec3(0.028f, 0.038f, 0.004f));
+    Primitives::drawCube(shader, spBlade, khuntiSteel);
+
+    // ── 6. Left Arm: Tending Stove Firewood / Resting on Knee ───────
+    mat4 shoulderL = wm;
+    shoulderL = translate(shoulderL, vec3(-0.10f, torsoCenterY + torsoH * 0.35f, 0.04f));
+
+    mat4 upperArmL = shoulderL;
+    upperArmL = rotate(upperArmL, radians(-28.0f), vec3(1.0f, 0.0f, 0.0f));
+    upperArmL = rotate(upperArmL, radians(18.0f), vec3(0.0f, 0.0f, 1.0f));
+    mat4 upperSleeveL = upperArmL;
+    upperSleeveL = translate(upperSleeveL, vec3(0.0f, -0.055f, 0.0f));
+    upperSleeveL = scale(upperSleeveL, vec3(0.028f, 0.090f, 0.028f));
+    Primitives::drawCylinder(shader, upperSleeveL, blouseYellow);
+
+    mat4 sleeveHemL = upperArmL;
+    sleeveHemL = translate(sleeveHemL, vec3(0.0f, -0.10f, 0.0f));
+    sleeveHemL = scale(sleeveHemL, vec3(0.030f, 0.012f, 0.030f));
+    Primitives::drawCylinder(shader, sleeveHemL, sareePaar);
+
+    // Forearm reaching forward-down toward firewood stick
+    mat4 elbowL = upperArmL;
+    elbowL = translate(elbowL, vec3(0.0f, -0.11f, 0.0f));
+    elbowL = rotate(elbowL, radians(38.0f), vec3(1.0f, 0.0f, 0.0f));
+    elbowL = rotate(elbowL, radians(15.0f), vec3(0.0f, 1.0f, 0.0f));
+    mat4 foreArmL = elbowL;
+    foreArmL = translate(foreArmL, vec3(0.0f, -0.060f, 0.0f));
+    foreArmL = scale(foreArmL, vec3(0.022f, 0.115f, 0.022f));
+    Primitives::drawCylinder(shader, foreArmL, skinTone);
+
+    // Glass bangles on left wrist
+    mat4 wristL = elbowL;
+    wristL = translate(wristL, vec3(0.0f, -0.110f, 0.0f));
+    for (int b = 0; b < 3; b++) {
+        mat4 bangle = wristL;
+        bangle = translate(bangle, vec3(0.0f, (float)b * 0.007f, 0.0f));
+        bangle = scale(bangle, vec3(0.026f, 0.005f, 0.026f));
+        Primitives::drawCylinder(shader, bangle, (b % 2 == 0) ? glassRed : glassGold);
+    }
+
+    // Left hand gently resting/guiding near firewood
+    mat4 handL = elbowL;
+    handL = translate(handL, vec3(0.0f, -0.130f, 0.005f));
+    handL = scale(handL, vec3(0.020f, 0.026f, 0.022f));
+    Primitives::drawSphere(shader, handL, skinTone);
+}
+
 void drawStove(Shader& shader, const mat4& model, bool withFence, float animTime)
 {
     // 3-Sided traditional rural bamboo windbreak fence
@@ -430,17 +750,25 @@ void drawStove(Shader& shader, const mat4& model, bool withFence, float animTime
     potRim = scale(potRim, vec3(0.140f, 0.020f, 0.140f));
     Primitives::drawCylinder(shader, potRim, potColor * 0.88f);
 
-    // Terracotta pot lid (Sharani / ঢাকনা)
+    // Terracotta pot lid (Sharani / ঢাকনা) propped tilted to the side so food is stirred
     mat4 potLid = cm;
-    potLid = translate(potLid, vec3(0.0f, 0.415f, 0.06f));
-    potLid = scale(potLid, vec3(0.135f, 0.025f, 0.135f));
-    Primitives::drawSphere(shader, potLid, pot2Color);
+    potLid = translate(potLid, vec3(-0.065f, 0.415f, 0.045f));
+    potLid = rotate(potLid, radians(24.0f), vec3(0.0f, 0.0f, 1.0f));
+    mat4 potLidS = scale(potLid, vec3(0.130f, 0.022f, 0.130f));
+    Primitives::drawSphere(shader, potLidS, pot2Color);
 
     // Lid handle knob
-    mat4 lidKnob = cm;
-    lidKnob = translate(lidKnob, vec3(0.0f, 0.435f, 0.06f));
+    mat4 lidKnob = potLid;
+    lidKnob = translate(lidKnob, vec3(0.0f, 0.022f, 0.0f));
     lidKnob = scale(lidKnob, vec3(0.022f, 0.022f, 0.022f));
     Primitives::drawSphere(shader, lidKnob, potColor);
+
+    // Delicious steaming curry / lentil dal inside the cooking pot
+    vec3 curryColor(0.88f, 0.64f, 0.14f); // turmeric spiced yellow curry
+    mat4 curry = cm;
+    curry = translate(curry, vec3(0.015f, 0.380f, 0.065f));
+    curry = scale(curry, vec3(0.115f, 0.010f, 0.115f));
+    Primitives::drawCylinder(shader, curry, curryColor);
 
     // ── 6. Secondary Simmer Pot on Rear Burner ────────────────────
     mat4 pot2 = cm;
@@ -499,479 +827,400 @@ void drawStove(Shader& shader, const mat4& model, bool withFence, float animTime
 
     // ── 8. Active Roaring Wood Fire & Licking Pot Flames (Chular Agun) ─
     drawStoveFire(shader, cm, animTime);
+
+    // ── 9. Rural Bengali Woman Sitting in Front of Stove Cooking Food ─
+    drawCookingWoman(shader, cm, animTime);
 }
 
-void draw(Shader& shader, const mat4& model, HouseStyle style, bool withStove, float animTime)
+void draw(Shader& shader, const mat4& model, HouseStyle style, int variant, bool withStove, bool withChimney, float animTime)
 {
     shader.setInt("uUseTexture", 0); // authentic sun-dried clay/mud plaster, golden rice thatch, and bamboo
 
     // ── Traditional Color Palette ───────────────────────────────
-    vec3 plinthColor (0.46f, 0.36f, 0.24f);  // dark packed clay earth (Matir Viti)
-    vec3 wallColor   (0.72f, 0.64f, 0.50f);  // authentic sun-baked mud / clay plaster
-    vec3 cornerPost  (0.42f, 0.30f, 0.16f);  // mature seasoned bamboo/timber post
-    vec3 roofStraw   (0.68f, 0.55f, 0.26f);  // golden dried rice straw thatch
-    vec3 roofRidge   (0.50f, 0.38f, 0.18f);  // thatch ridge cap / bamboo runner
-    vec3 doorWood    (0.32f, 0.20f, 0.10f);  // dark seasoned timber door
-    vec3 windowFrame (0.24f, 0.16f, 0.08f);  // timber window frame
-    vec3 shutterColor(0.38f, 0.24f, 0.12f);  // open timber window shutters
-    vec3 postColor   (0.54f, 0.46f, 0.24f);  // natural bamboo verandah pillars
-    vec3 rafterColor (0.40f, 0.28f, 0.14f);  // bamboo/timber rafters
+    vec3 plinthColor (0.40f, 0.30f, 0.18f);  // dark packed clay earth (Matir Viti)
+    vec3 wallColor   (0.65f, 0.56f, 0.44f);  // sun-dried mud / clay plaster
+    vec3 cornerPost  (0.32f, 0.22f, 0.12f);  // seasoned timber / dark bamboo
+    vec3 roofStraw   (0.66f, 0.52f, 0.22f);  // golden weathered thatch / straw
+    vec3 roofRidge   (0.48f, 0.36f, 0.16f);  // thatch ridge cap
+    vec3 doorWood    (0.28f, 0.16f, 0.08f);  // dark oiled timber
+    vec3 windowFrame (0.22f, 0.14f, 0.08f);  // dark frame
+    vec3 shutterColor(0.36f, 0.22f, 0.12f);  // timber shutters
+    vec3 postColor   (0.52f, 0.42f, 0.20f);  // bamboo verandah pillars
+    vec3 rafterColor (0.38f, 0.26f, 0.12f);  // wooden rafters
 
-    // Base house dimensions
-    float houseW = 3.6f;  // width along X
-    float houseH = 2.0f;  // wall height
-    float houseD = 2.8f;  // depth along Z
-    float plinthH = 0.25f; // raised earthen base
-    float roofBaseY = plinthH + houseH;
-
-    if (style == HOUSE_CHOUCHALA) {
-        // ── 1. Raised Earthen Plinth (Viti / Dawa) ────────────────────
-        mat4 plinth = model;
-        plinth = translate(plinth, vec3(0.0f, plinthH * 0.5f, 0.35f));
-        plinth = scale(plinth, vec3(houseW + 0.8f, plinthH, houseD + 1.4f));
-        Primitives::drawCube(shader, plinth, plinthColor);
-
-        // Front entrance step
-        mat4 step = model;
-        step = translate(step, vec3(0.0f, plinthH * 0.25f, (houseD + 1.4f) * 0.5f + 0.35f + 0.15f));
-        step = scale(step, vec3(1.2f, plinthH * 0.5f, 0.40f));
-        Primitives::drawCube(shader, step, plinthColor);
-
-        // ── 2. Main Walls (Mud / Sun-dried Clay) ──────────────────────
-        float wallCenterY = plinthH + houseH * 0.5f;
-        mat4 walls = model;
-        walls = translate(walls, vec3(0.0f, wallCenterY, 0.0f));
-        walls = scale(walls, vec3(houseW, houseH, houseD));
-        Primitives::drawCube(shader, walls, wallColor);
-
-        // Timber corner posts at 4 corners
-        float hx = houseW * 0.5f;
-        float hz = houseD * 0.5f;
-        float cornerOffsets[4][2] = { {-hx, -hz}, {hx, -hz}, {-hx, hz}, {hx, hz} };
-        for (int i = 0; i < 4; i++) {
-            mat4 cp = model;
-            cp = translate(cp, vec3(cornerOffsets[i][0], wallCenterY, cornerOffsets[i][1]));
-            cp = scale(cp, vec3(0.12f, houseH + 0.05f, 0.12f));
-            Primitives::drawCube(shader, cp, cornerPost);
-        }
-
-        // Horizontal bamboo tie-beam along top of front wall
-        mat4 beamFront = model;
-        beamFront = translate(beamFront, vec3(0.0f, plinthH + houseH, hz));
-        beamFront = scale(beamFront, vec3(houseW + 0.1f, 0.08f, 0.10f));
-        Primitives::drawCube(shader, beamFront, cornerPost);
-
-        // ── 3. Traditional 4-sloped pitched hip roof (Chouchala) ─────
-        float roofW = houseW + 1.2f;
-        float roofD = houseD + 1.2f;
-        float roofH = 1.6f;
-
-        mat4 roof = model;
-        roof = translate(roof, vec3(0.0f, roofBaseY, 0.0f));
-        roof = scale(roof, vec3(roofW, roofH, roofD));
-        Primitives::drawPyramid(shader, roof, roofStraw);
-
-        // Under-eave rafter trim (slight dark underside)
-        mat4 eaveTrim = model;
-        eaveTrim = translate(eaveTrim, vec3(0.0f, roofBaseY - 0.02f, 0.0f));
-        eaveTrim = scale(eaveTrim, vec3(roofW * 0.96f, 0.05f, roofD * 0.96f));
-        Primitives::drawCube(shader, eaveTrim, rafterColor);
-
-        // ── 4. Front Verandah (Baranda) ──────────────────────────────
-        float verandahDepth = 1.0f;
-        float verandahZ = hz + verandahDepth * 0.5f;
-        float postZ = hz + verandahDepth;
-
-        // 4 slender bamboo pillars supporting verandah roof
-        int numPosts = 4;
-        for (int i = 0; i < numPosts; i++) {
-            float t = (float)i / (numPosts - 1);
-            float px = -hx + t * houseW;
-            mat4 post = model;
-            post = translate(post, vec3(px, plinthH + (houseH * 0.85f) * 0.5f, postZ));
-            post = scale(post, vec3(0.07f, houseH * 0.85f, 0.07f));
-            Primitives::drawCylinder(shader, post, postColor);
-        }
-
-        // Sloping verandah lean-to roof extending out from main wall
-        mat4 vRoof = model;
-        vRoof = translate(vRoof, vec3(0.0f, plinthH + houseH * 0.88f, verandahZ));
-        vRoof = rotate(vRoof, radians(12.0f), vec3(1.0f, 0.0f, 0.0f)); // gentle forward slope
-        vRoof = scale(vRoof, vec3(houseW + 0.8f, 0.07f, verandahDepth + 0.35f));
-        Primitives::drawCube(shader, vRoof, roofStraw);
-
-        // Low wooden railing / bench on verandah side
-        mat4 vBench = model;
-        vBench = translate(vBench, vec3(-hx + 0.4f, plinthH + 0.25f, verandahZ));
-        vBench = scale(vBench, vec3(0.7f, 0.06f, verandahDepth * 0.7f));
-        Primitives::drawCube(shader, vBench, doorWood);
-
-        // ── 5. Wooden Door & Frame ───────────────────────────────────
-        float doorW = 0.70f;
-        float doorH = 1.40f;
-        float doorY = plinthH + doorH * 0.5f;
-
-        mat4 dFrame = model;
-        dFrame = translate(dFrame, vec3(0.0f, doorY, hz + 0.02f));
-        dFrame = scale(dFrame, vec3(doorW + 0.12f, doorH + 0.10f, 0.04f));
-        Primitives::drawCube(shader, dFrame, windowFrame);
-
-        mat4 dPanel = model;
-        dPanel = translate(dPanel, vec3(0.0f, doorY, hz + 0.03f));
-        dPanel = scale(dPanel, vec3(doorW, doorH, 0.03f));
-        Primitives::drawCube(shader, dPanel, doorWood);
-
-        // ── 6. Windows with Open Wooden Shutters ─────────────────────
-        float winSize = 0.55f;
-        float winY = plinthH + houseH * 0.55f;
-
-        // Left front window
-        float winLX = -hx * 0.60f;
-        mat4 wFrameL = model;
-        wFrameL = translate(wFrameL, vec3(winLX, winY, hz + 0.02f));
-        wFrameL = scale(wFrameL, vec3(winSize, winSize, 0.04f));
-        Primitives::drawCube(shader, wFrameL, windowFrame);
-
-        vec3 windowGlow(0.92f, 0.70f, 0.28f);
-        shader.setFloat("emissive", 0.70f);
-        mat4 wOpeningL = model;
-        wOpeningL = translate(wOpeningL, vec3(winLX, winY, hz + 0.03f));
-        wOpeningL = scale(wOpeningL, vec3(winSize * 0.85f, winSize * 0.85f, 0.03f));
-        Primitives::drawCube(shader, wOpeningL, windowGlow);
-        shader.setFloat("emissive", 0.0f);
-
-        mat4 wShutterL = model;
-        wShutterL = translate(wShutterL, vec3(winLX - winSize * 0.45f, winY, hz + 0.15f));
-        wShutterL = rotate(wShutterL, radians(-45.0f), vec3(0.0f, 1.0f, 0.0f));
-        wShutterL = scale(wShutterL, vec3(winSize * 0.45f, winSize * 0.85f, 0.025f));
-        Primitives::drawCube(shader, wShutterL, shutterColor);
-
-        // Right front window
-        float winRX = hx * 0.60f;
-        mat4 wFrameR = model;
-        wFrameR = translate(wFrameR, vec3(winRX, winY, hz + 0.02f));
-        wFrameR = scale(wFrameR, vec3(winSize, winSize, 0.04f));
-        Primitives::drawCube(shader, wFrameR, windowFrame);
-
-        shader.setFloat("emissive", 0.70f);
-        mat4 wOpeningR = model;
-        wOpeningR = translate(wOpeningR, vec3(winRX, winY, hz + 0.03f));
-        wOpeningR = scale(wOpeningR, vec3(winSize * 0.85f, winSize * 0.85f, 0.03f));
-        Primitives::drawCube(shader, wOpeningR, windowGlow);
-        shader.setFloat("emissive", 0.0f);
-
-        mat4 wShutterR = model;
-        wShutterR = translate(wShutterR, vec3(winRX + winSize * 0.45f, winY, hz + 0.15f));
-        wShutterR = rotate(wShutterR, radians(45.0f), vec3(0.0f, 1.0f, 0.0f));
-        wShutterR = scale(wShutterR, vec3(winSize * 0.45f, winSize * 0.85f, 0.025f));
-        Primitives::drawCube(shader, wShutterR, shutterColor);
-
-        // ── 7. Terracotta Water Pitchers on Verandah ─────────────────
-        drawKolshi(shader, model, vec3(hx * 0.70f, plinthH, postZ - 0.20f), 0.90f);
-        drawKolshi(shader, model, vec3(hx * 0.85f, plinthH, postZ - 0.35f), 0.75f);
-
-        // ── 8. Outdoor Clay Cooking Stove ────────────────────────────
-        if (withStove) {
-            mat4 cm = model;
-            cm = translate(cm, vec3(hx + 2.40f, 0.0f, 0.60f));
-            drawStove(shader, cm, true, animTime);
-        }
+    // Visual diversity scale multiplier across the village
+    float scaleMult = 1.0f;
+    if (variant == 1) {
+        scaleMult = 1.08f; // Large Elder / Master Bari
+    } else if (variant == 2) {
+        scaleMult = 0.90f; // Compact Farmer / Boatman Cottage
+    } else {
+        scaleMult = 1.00f; // Standard Family Homestead
     }
-    else {
-        // =============================================================
-        // AUTHENTIC BANGLADESHI DOCHALA HOUSE (দৌচালা ঘর)
-        // In vernacular Bengal architecture, the front entrance, door,
-        // windows, and bamboo verandah are on the LONG CHALA SIDE (+X, under
-        // the sloping eave), while the triangular gable ends form the side walls (+Z / -Z).
-        // =============================================================
-        float dHouseW = 2.8f; // gable width along X (depth from front to back)
-        float dHouseD = 3.6f; // long chala length along Z (frontage width)
-        float dHouseH = 2.0f; // wall height
 
-        float dhx = dHouseW * 0.5f; // 1.4f
-        float dhz = dHouseD * 0.5f; // 1.8f
-        float dWallCenterY = plinthH + dHouseH * 0.5f;
+    mat4 baseModel = scale(model, vec3(scaleMult));
 
-        // ── 1. Raised Earthen Plinth (Viti / Dawa) ────────────────────
-        // Extended towards +X to support the front verandah along the long chala side
-        mat4 plinth = model;
-        plinth = translate(plinth, vec3(0.35f, plinthH * 0.5f, 0.0f));
-        plinth = scale(plinth, vec3(dHouseW + 1.4f, plinthH, dHouseD + 0.8f));
-        Primitives::drawCube(shader, plinth, plinthColor);
+    // Base house dimensions: matching the authentic Chouchala house (01_house_chouchala)
+    float houseW = 3.6f;   // width along X
+    float houseH = 1.95f;  // wall height
+    float houseD = 2.8f;   // depth along Z
+    float plinthH = 0.25f; // raised earthen base
 
-        // Front entrance step along +X leading into the verandah
-        mat4 step = model;
-        step = translate(step, vec3((dHouseW + 1.4f) * 0.5f + 0.35f + 0.15f, plinthH * 0.25f, 0.0f));
-        step = scale(step, vec3(0.40f, plinthH * 0.5f, 1.20f));
-        Primitives::drawCube(shader, step, plinthColor);
+    // ── 1. Raised Earthen Plinth (Viti / Dawa) ────────────────────
+    mat4 plinth = baseModel;
+    plinth = translate(plinth, vec3(0.0f, plinthH * 0.5f, 0.35f));
+    plinth = scale(plinth, vec3(houseW + 0.8f, plinthH, houseD + 1.4f));
+    Primitives::drawCube(shader, plinth, plinthColor);
 
-        // ── 2. Main Mud Walls ────────────────────────────────────────
-        mat4 walls = model;
-        walls = translate(walls, vec3(0.0f, dWallCenterY, 0.0f));
-        walls = scale(walls, vec3(dHouseW, dHouseH, dHouseD));
-        Primitives::drawCube(shader, walls, wallColor);
+    // Front entrance step centered before the verandah
+    mat4 step = baseModel;
+    step = translate(step, vec3(0.0f, plinthH * 0.25f, (houseD + 1.4f) * 0.5f + 0.35f + 0.15f));
+    step = scale(step, vec3(1.2f, plinthH * 0.5f, 0.40f));
+    Primitives::drawCube(shader, step, plinthColor);
 
-        // Timber corner posts at 4 corners
-        float dCornerOffsets[4][2] = { {-dhx, -dhz}, {dhx, -dhz}, {-dhx, dhz}, {dhx, dhz} };
-        for (int i = 0; i < 4; i++) {
-            mat4 cp = model;
-            cp = translate(cp, vec3(dCornerOffsets[i][0], dWallCenterY, dCornerOffsets[i][1]));
-            cp = scale(cp, vec3(0.12f, dHouseH + 0.05f, 0.12f));
-            Primitives::drawCube(shader, cp, cornerPost);
-        }
+    // ── 2. Main Walls (Mud / Sun-dried Clay) ──────────────────────
+    float wallCenterY = plinthH + houseH * 0.5f;
+    mat4 walls = baseModel;
+    walls = translate(walls, vec3(0.0f, wallCenterY, 0.0f));
+    walls = scale(walls, vec3(houseW, houseH, houseD));
+    Primitives::drawCube(shader, walls, wallColor);
 
-        // Horizontal bamboo tie-beam along top of front wall (+X)
-        mat4 beamFront = model;
-        beamFront = translate(beamFront, vec3(dhx, plinthH + dHouseH, 0.0f));
-        beamFront = scale(beamFront, vec3(0.10f, 0.08f, dHouseD + 0.1f));
-        Primitives::drawCube(shader, beamFront, cornerPost);
+    // Timber corner posts at 4 corners
+    float hx = houseW * 0.5f;
+    float hz = houseD * 0.5f;
+    float cornerOffsets[4][2] = { {-hx, -hz}, {hx, -hz}, {-hx, hz}, {hx, hz} };
+    for (int i = 0; i < 4; i++) {
+        mat4 cp = baseModel;
+        cp = translate(cp, vec3(cornerOffsets[i][0], wallCenterY, cornerOffsets[i][1]));
+        cp = scale(cp, vec3(0.12f, houseH + 0.05f, 0.12f));
+        Primitives::drawCube(shader, cp, cornerPost);
+    }
 
-        // Horizontal tie-beam along gable wall (+Z)
-        mat4 beamGable = model;
-        beamGable = translate(beamGable, vec3(0.0f, plinthH + dHouseH, dhz));
-        beamGable = scale(beamGable, vec3(dHouseW + 0.1f, 0.08f, 0.10f));
-        Primitives::drawCube(shader, beamGable, cornerPost);
+    // Horizontal bamboo tie-beam along top of walls
+    mat4 beamFront = baseModel;
+    beamFront = translate(beamFront, vec3(0.0f, plinthH + houseH, hz));
+    beamFront = scale(beamFront, vec3(houseW + 0.1f, 0.08f, 0.10f));
+    Primitives::drawCube(shader, beamFront, cornerPost);
 
-        // ── 3. Traditional 2-sloped pitched gable roof (Dochala) ─────
-        // Ridge runs along Z; the two chalas slope down to +X (front) and -X (back)
-        float roofW = dHouseW + 1.2f; // 4.0m across slopes (0.6m eave overhang on front & back)
-        float roofD = dHouseD + 0.8f; // 4.4m along ridge (0.4m gable overhang)
-        float roofH = 1.5f;
+    // ── 3. Roof System: Traditional 4-Sloped Chouchala Roof ───────
+    float roofBaseY = plinthH + houseH;
+    float roofW = houseW + 1.2f;
+    float roofD = houseD + 1.2f;
+    float roofH = 1.6f;
 
-        mat4 roof = model;
-        roof = translate(roof, vec3(0.0f, roofBaseY, 0.0f));
-        roof = scale(roof, vec3(roofW, roofH, roofD));
-        Primitives::drawPrism(shader, roof, roofStraw);
+    mat4 roof = baseModel;
+    roof = translate(roof, vec3(0.0f, roofBaseY, 0.0f));
+    roof = scale(roof, vec3(roofW, roofH, roofD));
+    Primitives::drawPyramid(shader, roof, roofStraw);
 
-        // Ridge beam along peak
-        mat4 ridge = model;
-        ridge = translate(ridge, vec3(0.0f, roofBaseY + roofH, 0.0f));
-        ridge = scale(ridge, vec3(0.12f, 0.10f, roofD + 0.1f));
-        Primitives::drawCube(shader, ridge, roofRidge);
 
-        // ── 4. Front Verandah (Baranda) on Long Chala Side (+X) ──────
-        float verandahDepth = 1.0f;
-        float verandahX = dhx + verandahDepth * 0.5f; // 1.90f
-        float postX = dhx + verandahDepth;            // 2.40f
+    // Under-eave rafter trim (slight dark underside)
+    mat4 eaveTrim = baseModel;
+    eaveTrim = translate(eaveTrim, vec3(0.0f, roofBaseY - 0.02f, 0.0f));
+    eaveTrim = scale(eaveTrim, vec3(roofW * 0.96f, 0.05f, roofD * 0.96f));
+    Primitives::drawCube(shader, eaveTrim, rafterColor);
 
-        // 4 slender bamboo pillars supporting verandah roof along Z
-        int numPosts = 4;
-        for (int i = 0; i < numPosts; i++) {
-            float t = (float)i / (numPosts - 1);
-            float pz = -dhz + t * dHouseD;
-            mat4 post = model;
-            post = translate(post, vec3(postX, plinthH + (dHouseH * 0.85f) * 0.5f, pz));
-            post = scale(post, vec3(0.07f, dHouseH * 0.85f, 0.07f));
-            Primitives::drawCylinder(shader, post, postColor);
-        }
+    // ── 4. Front Verandah (Baranda) ──────────────────────────────
+    float verandahDepth = 1.0f;
+    float verandahZ = hz + verandahDepth * 0.5f;
+    float postZ = hz + verandahDepth;
 
-        // Sloping verandah lean-to roof extending out towards +X (matching main thatch slope)
-        mat4 vRoof = model;
-        vRoof = translate(vRoof, vec3(verandahX, plinthH + dHouseH * 0.88f, 0.0f));
-        vRoof = rotate(vRoof, radians(-12.0f), vec3(0.0f, 0.0f, 1.0f)); // slope forward down to +X
-        vRoof = scale(vRoof, vec3(verandahDepth + 0.35f, 0.07f, dHouseD + 0.8f));
-        Primitives::drawCube(shader, vRoof, roofStraw);
+    // 4 slender bamboo pillars supporting verandah roof
+    int numPosts = 4;
+    for (int i = 0; i < numPosts; i++) {
+        float t = (float)i / (numPosts - 1);
+        float px = -hx + t * houseW;
+        mat4 post = baseModel;
+        post = translate(post, vec3(px, plinthH + (houseH * 0.85f) * 0.5f, postZ));
+        post = scale(post, vec3(0.07f, houseH * 0.85f, 0.07f));
+        Primitives::drawCylinder(shader, post, postColor);
 
-        // Low wooden railing / bench on verandah side
-        mat4 vBench = model;
-        vBench = translate(vBench, vec3(verandahX, plinthH + 0.25f, -dhz + 0.4f));
-        vBench = scale(vBench, vec3(verandahDepth * 0.7f, 0.06f, 0.7f));
-        Primitives::drawCube(shader, vBench, doorWood);
+        // Circular post-top peg on the verandah roof
+        mat4 cap = baseModel;
+        float capY = plinthH + houseH * 0.88f - 0.02f;
+        cap = translate(cap, vec3(px, capY, postZ));
+        cap = scale(cap, vec3(0.09f, 0.025f, 0.09f));
+        Primitives::drawCylinder(shader, cap, postColor * 0.85f);
+    }
 
-        // ── 5. Wooden Front Door & Frame on Long Chala Wall (+X) ─────
-        float doorW = 0.70f;
-        float doorH = 1.40f;
-        float doorY = plinthH + doorH * 0.5f;
+    // Sloping verandah lean-to roof extending out from main wall
+    mat4 vRoof = baseModel;
+    vRoof = translate(vRoof, vec3(0.0f, plinthH + houseH * 0.88f, verandahZ));
+    vRoof = rotate(vRoof, radians(12.0f), vec3(1.0f, 0.0f, 0.0f)); // gentle forward slope
+    vRoof = scale(vRoof, vec3(houseW + 0.8f, 0.07f, verandahDepth + 0.35f));
+    Primitives::drawCube(shader, vRoof, roofStraw);
 
-        // Door frame
-        mat4 dFrame = model;
-        dFrame = translate(dFrame, vec3(dhx + 0.02f, doorY, 0.0f));
-        dFrame = scale(dFrame, vec3(0.04f, doorH + 0.10f, doorW + 0.12f));
-        Primitives::drawCube(shader, dFrame, windowFrame);
+    // Low wooden railing / bench on verandah side
+    mat4 vBench = baseModel;
+    vBench = translate(vBench, vec3(-hx + 0.4f, plinthH + 0.22f, verandahZ));
+    vBench = scale(vBench, vec3(0.7f, 0.06f, verandahDepth * 0.7f));
+    Primitives::drawCube(shader, vBench, doorWood);
 
-        // Door panel
-        mat4 dPanel = model;
-        dPanel = translate(dPanel, vec3(dhx + 0.03f, doorY, 0.0f));
-        dPanel = scale(dPanel, vec3(0.03f, doorH, doorW));
-        Primitives::drawCube(shader, dPanel, doorWood);
+    // ── 5. Wooden Door & Frame ───────────────────────────────────
+    float doorW = 0.70f;
+    float doorH = 1.40f;
+    float doorY = plinthH + doorH * 0.5f;
 
-        // ── 6. Windows with Open Wooden Shutters on Long Chala Wall (+X) ──
-        float winSize = 0.55f;
-        float winY = plinthH + dHouseH * 0.55f;
-        vec3 windowGlow(0.92f, 0.70f, 0.28f);
+    // Door frame
+    mat4 dFrame = baseModel;
+    dFrame = translate(dFrame, vec3(0.0f, doorY, hz + 0.02f));
+    dFrame = scale(dFrame, vec3(doorW + 0.12f, doorH + 0.10f, 0.04f));
+    Primitives::drawCube(shader, dFrame, windowFrame);
 
-        // Left front window (at -Z along the +X wall)
-        float winLZ = -dhz * 0.60f;
-        mat4 wFrameL = model;
-        wFrameL = translate(wFrameL, vec3(dhx + 0.02f, winY, winLZ));
-        wFrameL = scale(wFrameL, vec3(0.04f, winSize, winSize));
-        Primitives::drawCube(shader, wFrameL, windowFrame);
+    // Door panel (slightly recessed)
+    mat4 dPanel = baseModel;
+    dPanel = translate(dPanel, vec3(0.0f, doorY, hz + 0.03f));
+    dPanel = scale(dPanel, vec3(doorW, doorH, 0.03f));
+    Primitives::drawCube(shader, dPanel, doorWood);
 
-        shader.setFloat("emissive", 0.70f);
-        mat4 wOpeningL = model;
-        wOpeningL = translate(wOpeningL, vec3(dhx + 0.03f, winY, winLZ));
-        wOpeningL = scale(wOpeningL, vec3(0.03f, winSize * 0.85f, winSize * 0.85f));
-        Primitives::drawCube(shader, wOpeningL, windowGlow);
-        shader.setFloat("emissive", 0.0f);
+    // ── 6. Windows with Open Wooden Shutters ─────────────────────
+    float winSize = 0.55f;
+    float winY = plinthH + houseH * 0.55f;
 
-        mat4 wShutterL = model;
-        wShutterL = translate(wShutterL, vec3(dhx + 0.15f, winY, winLZ - winSize * 0.45f));
-        wShutterL = rotate(wShutterL, radians(-45.0f), vec3(0.0f, 1.0f, 0.0f));
-        wShutterL = scale(wShutterL, vec3(0.025f, winSize * 0.85f, winSize * 0.45f));
-        Primitives::drawCube(shader, wShutterL, shutterColor);
+    // Left front window
+    float winLX = -hx * 0.60f;
+    mat4 wFrameL = baseModel;
+    wFrameL = translate(wFrameL, vec3(winLX, winY, hz + 0.02f));
+    wFrameL = scale(wFrameL, vec3(winSize, winSize, 0.04f));
+    Primitives::drawCube(shader, wFrameL, windowFrame);
 
-        // Right front window (at +Z along the +X wall)
-        float winRZ = dhz * 0.60f;
-        mat4 wFrameR = model;
-        wFrameR = translate(wFrameR, vec3(dhx + 0.02f, winY, winRZ));
-        wFrameR = scale(wFrameR, vec3(0.04f, winSize, winSize));
-        Primitives::drawCube(shader, wFrameR, windowFrame);
+    // Warm interior lantern glow through window
+    vec3 windowGlow(0.96f, 0.75f, 0.30f);
+    shader.setFloat("emissive", 0.70f);
+    mat4 wOpeningL = baseModel;
+    wOpeningL = translate(wOpeningL, vec3(winLX, winY, hz + 0.03f));
+    wOpeningL = scale(wOpeningL, vec3(winSize * 0.85f, winSize * 0.85f, 0.03f));
+    Primitives::drawCube(shader, wOpeningL, windowGlow);
+    shader.setFloat("emissive", 0.0f);
 
-        shader.setFloat("emissive", 0.70f);
-        mat4 wOpeningR = model;
-        wOpeningR = translate(wOpeningR, vec3(dhx + 0.03f, winY, winRZ));
-        wOpeningR = scale(wOpeningR, vec3(0.03f, winSize * 0.85f, winSize * 0.85f));
-        Primitives::drawCube(shader, wOpeningR, windowGlow);
-        shader.setFloat("emissive", 0.0f);
+    // Wooden shutter swung open
+    mat4 wShutterL = baseModel;
+    wShutterL = translate(wShutterL, vec3(winLX - winSize * 0.45f, winY, hz + 0.15f));
+    wShutterL = rotate(wShutterL, radians(-45.0f), vec3(0.0f, 1.0f, 0.0f));
+    wShutterL = scale(wShutterL, vec3(winSize * 0.45f, winSize * 0.85f, 0.025f));
+    Primitives::drawCube(shader, wShutterL, shutterColor);
 
-        mat4 wShutterR = model;
-        wShutterR = translate(wShutterR, vec3(dhx + 0.15f, winY, winRZ + winSize * 0.45f));
-        wShutterR = rotate(wShutterR, radians(45.0f), vec3(0.0f, 1.0f, 0.0f));
-        wShutterR = scale(wShutterR, vec3(0.025f, winSize * 0.85f, winSize * 0.45f));
-        Primitives::drawCube(shader, wShutterR, shutterColor);
+    // Right front window
+    float winRX = hx * 0.60f;
+    mat4 wFrameR = baseModel;
+    wFrameR = translate(wFrameR, vec3(winRX, winY, hz + 0.02f));
+    wFrameR = scale(wFrameR, vec3(winSize, winSize, 0.04f));
+    Primitives::drawCube(shader, wFrameR, windowFrame);
 
-        // ── 7. Terracotta Water Pitchers (Matir Kolshi) on Verandah ───
-        drawKolshi(shader, model, vec3(postX - 0.20f, plinthH, dhz * 0.70f), 0.90f);
-        drawKolshi(shader, model, vec3(postX - 0.35f, plinthH, dhz * 0.85f), 0.75f);
+    shader.setFloat("emissive", 0.70f);
+    mat4 wOpeningR = baseModel;
+    wOpeningR = translate(wOpeningR, vec3(winRX, winY, hz + 0.03f));
+    wOpeningR = scale(wOpeningR, vec3(winSize * 0.85f, winSize * 0.85f, 0.03f));
+    Primitives::drawCube(shader, wOpeningR, windowGlow);
+    shader.setFloat("emissive", 0.0f);
 
-        // ── 8. Side Gable Window on +Z Wall ──────────────────────────
-        // Traditional mud house ventilation window beneath the triangular gable
-        mat4 wFrameG = model;
-        wFrameG = translate(wFrameG, vec3(0.0f, winY, dhz + 0.02f));
-        wFrameG = scale(wFrameG, vec3(winSize, winSize, 0.04f));
-        Primitives::drawCube(shader, wFrameG, windowFrame);
+    // Wooden shutter swung open
+    mat4 wShutterR = baseModel;
+    wShutterR = translate(wShutterR, vec3(winRX + winSize * 0.45f, winY, hz + 0.15f));
+    wShutterR = rotate(wShutterR, radians(45.0f), vec3(0.0f, 1.0f, 0.0f));
+    wShutterR = scale(wShutterR, vec3(winSize * 0.45f, winSize * 0.85f, 0.025f));
+    Primitives::drawCube(shader, wShutterR, shutterColor);
 
-        shader.setFloat("emissive", 0.70f);
-        mat4 wOpeningG = model;
-        wOpeningG = translate(wOpeningG, vec3(0.0f, winY, dhz + 0.03f));
-        wOpeningG = scale(wOpeningG, vec3(winSize * 0.85f, winSize * 0.85f, 0.03f));
-        Primitives::drawCube(shader, wOpeningG, windowGlow);
-        shader.setFloat("emissive", 0.0f);
+    // ── 7. Terracotta Water Pitchers (Matir Kolshi) on Verandah ───
+    drawKolshi(shader, baseModel, vec3(hx * 0.70f, plinthH, postZ - 0.20f), 0.90f);
+    drawKolshi(shader, baseModel, vec3(hx * 0.85f, plinthH, postZ - 0.35f), 0.75f);
 
-        mat4 wShutterG = model;
-        wShutterG = translate(wShutterG, vec3(winSize * 0.45f, winY, dhz + 0.15f));
-        wShutterG = rotate(wShutterG, radians(45.0f), vec3(0.0f, 1.0f, 0.0f));
-        wShutterG = scale(wShutterG, vec3(winSize * 0.45f, winSize * 0.85f, 0.025f));
-        Primitives::drawCube(shader, wShutterG, shutterColor);
-
-        // ── 9. Outdoor Clay Cooking Stove (Optional) ─────────────────
-        if (withStove) {
-            mat4 cm = model;
-            cm = translate(cm, vec3(0.0f, 0.0f, -dhz - 2.0f));
-            drawStove(shader, cm, true, animTime);
-        }
+    // ── 8. Outdoor Clay Cooking Stove (Matir Chula) beside the house ─
+    if (withStove) {
+        mat4 cm = baseModel;
+        cm = translate(cm, vec3(hx + 1.20f, 0.0f, 0.30f));
+        drawStove(shader, cm, true, animTime);
     }
 }
 
-// Traditional Rice Straw Stack (Khorer Paloi / খড়ের পালা)
+// Traditional Rice Straw Stack (Khorer Paloi / Khorer Gada / খড়ের পালই)
+// Faithfully modeled from authentic rural Bengali photographs:
+// 1. Splayed ground straw skirt resting on courtyard earth with loose radial straw fringe.
+// 2. Tall packed-bundle cylindrical lower body (H = 1.62m, R = 1.08m -> 1.02m) with vertical packed straw ribs, 40 protruding dry straw tufts, and 3 jute binding ropes.
+// ═════════════════════════════════════════════════════════════════════
+// 1. RICE STRAW STACK (খড়ের গাদা / Khorer Gada / পালুই)
+// ═════════════════════════════════════════════════════════════════════
+// Authentic rural Bangladeshi paddy straw stack (খড়ের পালুই / গাদা):
+// • Ground timber foundation cradle (কাঠে-বাঁশের মাচা) keeping fodder off damp soil
+// • Natural bell-conical bulging silhouette: flared base skirt, rounded belly, and steep thatch cone
+// • Multi-tiered overlapping thatch shingle tiers with downward-slanted straw fringes
+// • Authentic sun-dried golden-amber rice straw palette with organic fibrous texture
+// • Horizontal jute binding cords (খড়ের বাঁধন / দড়ি) compressing the stack waist
+// • Tall central upright seasoned bamboo pole (বাঁশের খুঁটি)
+// • Iconic inverted terracotta clay pitcher rain-cap (উল্টো মাটির কলসি / হাঁড়ি) on the apex
 void drawStrawStack(Shader& shader, const mat4& model, const vec3& pos, float scaleVal)
 {
-    shader.setInt("uUseTexture", 0); // smooth natural dried rice straw
-    vec3 strawDark  (0.66f, 0.52f, 0.20f); // weathered lower base straw
-    vec3 strawMid   (0.74f, 0.60f, 0.24f); // sun-dried golden rice straw belly
-    vec3 strawTop   (0.80f, 0.66f, 0.28f); // fresh bright straw cap
-    vec3 ropeCol    (0.52f, 0.38f, 0.15f); // twisted jute straw tie-bands (Khorer Badhon)
-    vec3 poleCol    (0.38f, 0.28f, 0.14f); // central bamboo stabilizer pole (Khuti)
-    vec3 nodeCol    (0.26f, 0.18f, 0.10f); // bamboo node rings
-    vec3 potCol     (0.72f, 0.36f, 0.18f); // inverted terracotta pot rain-cap (Ulto Kolshi)
-    vec3 potRimCol  (0.58f, 0.28f, 0.14f); // clay pot rim trim
-    vec3 logCol     (0.34f, 0.22f, 0.12f); // timber/bamboo foundation platform logs
+    shader.setInt("uUseTexture", 0);
+
+    // ── Authentic Sun-Cured Golden Rice Straw Palette ─────────────
+    const vec3 strawGold    (0.88f, 0.73f, 0.34f); // vibrant sun-cured golden straw
+    const vec3 strawWarm    (0.80f, 0.64f, 0.27f); // warm amber thatch body
+    const vec3 strawLight   (0.93f, 0.80f, 0.42f); // sunlit golden highlights & fringe tips
+    const vec3 strawDeep    (0.65f, 0.49f, 0.19f); // deep warm shadow under thatch tiers
+    const vec3 strawBaseCol (0.54f, 0.40f, 0.17f); // weathered, soil-level skirt straw
+    const vec3 potTerracotta(0.76f, 0.36f, 0.18f); // iconic inverted terracotta clay pot
+    const vec3 potDark      (0.55f, 0.24f, 0.11f); // terracotta pot mouth & rim
+    const vec3 ropeJute     (0.42f, 0.30f, 0.16f); // twisted jute binding cords (খড়ের বাঁধন)
+    const vec3 bambooCol    (0.70f, 0.64f, 0.40f); // seasoned upright bamboo pole (বাঁশের খুঁটি)
+    const vec3 nodeCol      (0.48f, 0.38f, 0.22f); // raised bamboo node rings
+    const vec3 logCol       (0.36f, 0.26f, 0.15f); // timber foundation runner logs (মাচা)
 
     mat4 m = model;
     m = translate(m, pos);
     m = scale(m, vec3(scaleVal));
 
-    // 1. Raised foundation log cradle (keeps winter straw off damp ground)
-    for (int l = 0; l < 4; l++) {
-        float la = (float)l * 45.0f;
-        mat4 logM = m;
-        logM = rotate(logM, radians(la), vec3(0.0f, 1.0f, 0.0f));
-        logM = translate(logM, vec3(0.0f, 0.045f, 0.0f));
-        logM = scale(logM, vec3(0.10f, 0.08f, 1.70f));
-        Primitives::drawCube(shader, logM, logCol);
+    // Helper: draw thin cylinder with exact radius R and height H centered at Y
+    auto drawCylR = [&](float yCenter, float r, float h, const vec3& col) {
+        float s = r / 0.924f;
+        mat4 cm = translate(m, vec3(0.0f, yCenter, 0.0f));
+        cm = scale(cm, vec3(s, h, s));
+        Primitives::drawCylinder(shader, cm, col);
+    };
+
+    // ── 1. Ground Timber Foundation Cradle (মাচা / Log Machang) ──────
+    // Villagers place timber logs on the soil to elevate winter fodder off damp ground
+    mat4 l1 = translate(m, vec3(-0.55f, 0.035f, 0.0f));
+    l1 = scale(l1, vec3(0.09f, 0.07f, 2.50f));
+    Primitives::drawCube(shader, l1, logCol);
+
+    mat4 l2 = translate(m, vec3(0.55f, 0.035f, 0.0f));
+    l2 = scale(l2, vec3(0.09f, 0.07f, 2.50f));
+    Primitives::drawCube(shader, l2, logCol);
+
+    mat4 l3 = translate(m, vec3(0.0f, 0.045f, -0.65f));
+    l3 = scale(l3, vec3(2.50f, 0.07f, 0.09f));
+    Primitives::drawCube(shader, l3, logCol * 0.92f);
+
+    mat4 l4 = translate(m, vec3(0.0f, 0.045f, 0.65f));
+    l4 = scale(l4, vec3(2.50f, 0.07f, 0.09f));
+    Primitives::drawCube(shader, l4, logCol * 0.92f);
+
+    // ── 2. Natural Volumetric Thatched Hayrick Body ───────────────────
+    // A) Central bulging core providing internal volume without hollows
+    mat4 coreSphere = translate(m, vec3(0.0f, 1.15f, 0.0f));
+    coreSphere = scale(coreSphere, vec3(1.15f, 1.10f, 1.15f));
+    Primitives::drawSphere(shader, coreSphere, strawWarm);
+
+    // B) Tier 1: Flared Ground Base Cone (Y = 0.05m -> 2.25m, Base R = 1.28m)
+    mat4 cone1 = translate(m, vec3(0.0f, 0.05f, 0.0f));
+    cone1 = scale(cone1, vec3(2.56f, 2.20f, 2.56f));
+    Primitives::drawCone(shader, cone1, strawBaseCol);
+
+    // C) Tier 2: Mid-Belly Overlapping Thatch Shingle (Y = 0.85m -> 2.60m, Base R = 1.16m)
+    mat4 cone2 = translate(m, vec3(0.0f, 0.85f, 0.0f));
+    cone2 = scale(cone2, vec3(2.32f, 1.75f, 2.32f));
+    Primitives::drawCone(shader, cone2, strawWarm);
+
+    // D) Tier 3: Upper Sloping Thatch Cone (Y = 1.65m -> 2.95m, Base R = 0.93m)
+    mat4 cone3 = translate(m, vec3(0.0f, 1.65f, 0.0f));
+    cone3 = scale(cone3, vec3(1.86f, 1.30f, 1.86f));
+    Primitives::drawCone(shader, cone3, strawGold);
+
+    // E) Tier 4: Peak Conical Thatch Cap (Y = 2.25m -> 3.12m, Base R = 0.63m)
+    mat4 cone4 = translate(m, vec3(0.0f, 2.25f, 0.0f));
+    cone4 = scale(cone4, vec3(1.26f, 0.87f, 1.26f));
+    Primitives::drawCone(shader, cone4, strawLight);
+
+    // ── 3. Downward Thatch Fringe & Organic Straw Wisps ───────────────
+    // A) Ground splay: 16 loose straw bundles splaying onto the courtyard earth
+    for (int i = 0; i < 16; i++) {
+        float angle = (float)i * 22.5f + (float)(i % 3) * 2.5f;
+        float wlen  = 0.22f + (float)(i % 5) * 0.024f;
+        mat4 w = rotate(m, radians(angle), vec3(0.0f, 1.0f, 0.0f));
+        w = translate(w, vec3(1.18f, 0.035f, 0.0f));
+        w = rotate(w, radians(15.0f + (float)(i % 4) * 3.0f), vec3(0.0f, 0.0f, 1.0f));
+        w = scale(w, vec3(wlen, 0.032f, 0.080f));
+        vec3 col = (i % 3 == 0) ? strawBaseCol : ((i % 3 == 1) ? strawWarm : strawGold);
+        Primitives::drawCube(shader, w, col);
     }
 
-    // 2. Central bamboo stabilizer pole (Khuti) extending from base up to the top
-    mat4 pole = m;
-    pole = translate(pole, vec3(0.0f, 1.60f, 0.0f));
-    pole = scale(pole, vec3(0.040f, 3.20f, 0.040f));
-    Primitives::drawCylinder(shader, pole, poleCol);
-
-    // Bamboo node rings along the upper exposed pole
-    for (int nr = 0; nr < 3; nr++) {
-        mat4 nRing = m;
-        nRing = translate(nRing, vec3(0.0f, 2.72f + (float)nr * 0.18f, 0.0f));
-        nRing = scale(nRing, vec3(0.048f, 0.018f, 0.048f));
-        Primitives::drawCylinder(shader, nRing, nodeCol);
+    // B) Tier 1/2 Downward Thatch Shingle Fringe (Y = 0.85m, R = 1.18m)
+    for (int i = 0; i < 16; i++) {
+        float angle = (float)i * 22.5f + 5.5f;
+        float flen  = 0.20f + (float)(i % 4) * 0.025f;
+        mat4 f = rotate(m, radians(angle), vec3(0.0f, 1.0f, 0.0f));
+        f = translate(f, vec3(1.17f, 0.84f - flen * 0.40f, 0.0f));
+        f = rotate(f, radians(-32.0f + (float)(i % 3) * 3.0f), vec3(0.0f, 0.0f, 1.0f));
+        f = scale(f, vec3(0.032f, flen, 0.075f));
+        vec3 col = (i % 2 == 0) ? strawDeep : strawWarm;
+        Primitives::drawCube(shader, f, col);
     }
 
-    // 3. Smooth bulging straw stack body (traditional rural silhouette)
-    // Tier 1: Weathered lower base cylinder
-    mat4 t1 = m;
-    t1 = translate(t1, vec3(0.0f, 0.40f, 0.0f));
-    t1 = scale(t1, vec3(0.92f, 0.70f, 0.92f));
-    Primitives::drawCylinder(shader, t1, strawDark);
+    // C) Tier 2/3 Downward Thatch Shingle Fringe (Y = 1.65m, R = 0.94m)
+    for (int i = 0; i < 14; i++) {
+        float angle = (float)i * (360.0f / 14.0f) + 3.0f;
+        float flen  = 0.18f + (float)(i % 3) * 0.022f;
+        mat4 f = rotate(m, radians(angle), vec3(0.0f, 1.0f, 0.0f));
+        f = translate(f, vec3(0.93f, 1.64f - flen * 0.38f, 0.0f));
+        f = rotate(f, radians(-38.0f + (float)(i % 3) * 2.5f), vec3(0.0f, 0.0f, 1.0f));
+        f = scale(f, vec3(0.028f, flen, 0.065f));
+        vec3 col = (i % 2 == 0) ? strawWarm : strawGold;
+        Primitives::drawCube(shader, f, col);
+    }
 
-    // Tier 2: Wide rounded bulging belly
-    mat4 t2 = m;
-    t2 = translate(t2, vec3(0.0f, 0.92f, 0.0f));
-    t2 = scale(t2, vec3(1.08f, 0.75f, 1.08f));
-    Primitives::drawSphere(shader, t2, strawMid);
+    // D) Tier 3/4 Downward Thatch Shingle Fringe (Y = 2.25m, R = 0.64m)
+    for (int i = 0; i < 12; i++) {
+        float angle = (float)i * 30.0f + 7.5f;
+        float flen  = 0.16f + (float)(i % 3) * 0.020f;
+        mat4 f = rotate(m, radians(angle), vec3(0.0f, 1.0f, 0.0f));
+        f = translate(f, vec3(0.63f, 2.24f - flen * 0.35f, 0.0f));
+        f = rotate(f, radians(-44.0f + (float)(i % 3) * 2.0f), vec3(0.0f, 0.0f, 1.0f));
+        f = scale(f, vec3(0.024f, flen, 0.055f));
+        vec3 col = (i % 2 == 0) ? strawGold : strawLight;
+        Primitives::drawCube(shader, f, col);
+    }
 
-    // Tier 3: Single continuous steep conical rain-shedding thatch (Y: 1.05 -> 2.70)
-    mat4 t3 = m;
-    t3 = translate(t3, vec3(0.0f, 1.05f, 0.0f));
-    t3 = scale(t3, vec3(1.02f, 1.65f, 1.02f));
-    Primitives::drawCone(shader, t3, strawTop);
+    // E) 20 Organic Downward Slanted Straw Strands (following the natural cone slope)
+    for (int t = 0; t < 20; t++) {
+        float angle = (float)t * 18.0f + 4.0f;
+        float yPos  = 0.40f + (float)t * 0.12f;
+        float rPos  = 1.25f - (yPos / 3.0f) * 0.72f;
+        mat4 st = rotate(m, radians(angle), vec3(0.0f, 1.0f, 0.0f));
+        st = translate(st, vec3(rPos, yPos, 0.0f));
+        st = rotate(st, radians(-42.0f + (float)(t % 5) * 3.0f), vec3(0.0f, 0.0f, 1.0f));
+        st = scale(st, vec3(0.024f, 0.28f, 0.048f));
+        vec3 col = (t % 3 == 0) ? strawLight : ((t % 3 == 1) ? strawGold : strawWarm);
+        Primitives::drawCube(shader, st, col);
+    }
 
-    // 4. Horizontal straw binding ropes (Khorer Badhon / বাঁধন) wrapping the stack
-    // Band 1: Lower waist
-    mat4 b1 = m;
-    b1 = translate(b1, vec3(0.0f, 0.55f, 0.0f));
-    b1 = scale(b1, vec3(0.94f, 0.024f, 0.94f));
-    Primitives::drawCylinder(shader, b1, ropeCol);
+    // ── 4. Horizontal Jute Binding Cords (খড়ের বাঁধন / দড়ি) ────────────
+    // Three horizontal twisted jute rope rings compressing the packed stack body
+    drawCylR(0.68f, 1.18f, 0.024f, ropeJute);
+    drawCylR(1.48f, 1.00f, 0.024f, ropeJute);
+    drawCylR(2.12f, 0.72f, 0.022f, ropeJute);
 
-    // Band 2: Mid belly
-    mat4 b2 = m;
-    b2 = translate(b2, vec3(0.0f, 0.92f, 0.0f));
-    b2 = scale(b2, vec3(1.09f, 0.024f, 1.09f));
-    Primitives::drawCylinder(shader, b2, ropeCol);
+    // ── 5. Central Bamboo Stabilizer Pole (বাঁশের খুঁটি) ───────────────
+    // Slender seasoned upright bamboo pole extending through the stack up into the sky
+    drawCylR(2.05f, 0.030f, 4.10f, bambooCol);
 
-    // Band 3: Upper cone
-    mat4 b3 = m;
-    b3 = translate(b3, vec3(0.0f, 1.60f, 0.0f));
-    b3 = scale(b3, vec3(0.69f, 0.022f, 0.69f));
-    Primitives::drawCylinder(shader, b3, ropeCol);
+    // Raised bamboo node rings on the exposed upper section
+    drawCylR(3.45f, 0.038f, 0.016f, nodeCol);
+    drawCylR(3.70f, 0.037f, 0.016f, nodeCol);
+    drawCylR(3.95f, 0.036f, 0.016f, nodeCol);
 
-    // 5. Inverted Terracotta Clay Pitcher (Ulto Matir Kolshi) capping the pole apex!
-    // Iconic rural practice: placing a clay pot upside down over the bamboo pole prevents rainwater ingress
-    float potCenterY = 2.78f;
-    mat4 potBody = m;
-    potBody = translate(potBody, vec3(0.0f, potCenterY, 0.0f));
-    potBody = scale(potBody, vec3(0.165f, 0.175f, 0.165f));
-    Primitives::drawSphere(shader, potBody, potCol);
+    // ── 6. Iconic Inverted Terracotta Pitcher (উল্টো মাটির কলসি / হাঁড়ি) ─
+    // Placed upside-down over the bamboo pole apex to shed monsoon rain
+    // A) Wrapped straw collar / neck sheaf (Thuli) beneath the pot mouth
+    mat4 thuli = translate(m, vec3(0.0f, 2.82f, 0.0f));
+    thuli = scale(thuli, vec3(0.40f, 0.32f, 0.40f));
+    Primitives::drawCone(shader, thuli, strawWarm);
 
-    // Inverted neck extending downward
-    mat4 potNeck = m;
-    potNeck = translate(potNeck, vec3(0.0f, potCenterY - 0.095f, 0.0f));
-    potNeck = scale(potNeck, vec3(0.085f, 0.050f, 0.085f));
-    Primitives::drawCylinder(shader, potNeck, potCol * 0.92f);
+    // Jute cord tying the neck sheaf tightly around the bamboo pole
+    drawCylR(2.96f, 0.16f, 0.022f, ropeJute);
 
-    // Inverted flared rim
-    mat4 potRim = m;
-    potRim = translate(potRim, vec3(0.0f, potCenterY - 0.120f, 0.0f));
-    potRim = scale(potRim, vec3(0.115f, 0.022f, 0.115f));
-    Primitives::drawCylinder(shader, potRim, potRimCol);
+    // B) Inverted Terracotta Pot Mouth & Rim
+    drawCylR(3.07f, 0.155f, 0.035f, potDark);
+
+    // C) Inverted Pot Neck
+    drawCylR(3.13f, 0.115f, 0.060f, potDark);
+
+    // D) Inverted Pot Bulbous Clay Body (rounded belly of the earthen pitcher)
+    mat4 potBody = translate(m, vec3(0.0f, 3.25f, 0.0f));
+    potBody = scale(potBody, vec3(0.22f, 0.20f, 0.22f));
+    Primitives::drawSphere(shader, potBody, potTerracotta);
+
+    // E) Inverted Pot Base (flat round bottom of the clay pot facing the sky)
+    drawCylR(3.36f, 0.10f, 0.025f, potTerracotta * 0.90f);
 }
 
 // Traditional Thatched Cow Shed (Gowal Ghor / গোয়াল ঘর)
@@ -1102,60 +1351,101 @@ void drawCowShed(Shader& shader, const mat4& model)
 }
 
 // ─── 6. Procedural Deshi Cow (দেশি গরু) with Shoulder Hump & Horns ───
-void drawCow(Shader& shader, const mat4& model, bool lyingDown, const vec3* customHideCol, float walkPhase)
+void drawCow(Shader& shader, const mat4& model, bool lyingDown, const vec3* customHideCol, float walkPhase, bool hasHarness)
 {
     shader.setInt("uUseTexture", 0); // smooth natural hide, horns, and muzzle
 
     vec3 hideCol   = customHideCol ? *customHideCol : vec3(0.64f, 0.44f, 0.26f); // warm fawn-brown coat (or custom)
-    vec3 bellyCol  (0.78f, 0.68f, 0.54f); // lighter cream underbelly & muzzle trim
-    vec3 humpCol   = hideCol * 0.90f;     // distinctive muscular Zebu shoulder hump (Kud)
-    vec3 hornCol   (0.88f, 0.85f, 0.78f); // smooth ivory horn
-    vec3 hornTip   (0.24f, 0.18f, 0.12f); // dark horn tip
-    vec3 muzzleCol (0.22f, 0.16f, 0.14f); // dark moist muzzle
-    vec3 hoofCol   (0.18f, 0.14f, 0.10f); // dark cloven hooves
-    vec3 eyeCol    (0.08f, 0.08f, 0.08f); // gentle dark eyes
-    vec3 eyeWhite  (0.92f, 0.90f, 0.86f); // eye sclera highlight
-    vec3 halterCol (0.65f, 0.52f, 0.32f); // braided jute neck halter rope (Pagha)
+    vec3 bellyCol;
+    if (customHideCol && customHideCol->x > 0.75f) {
+        bellyCol = vec3(hideCol.x * 0.95f, hideCol.y * 0.95f, hideCol.z * 0.94f); // light cream-white underbelly
+    } else {
+        bellyCol = vec3(0.78f, 0.68f, 0.54f); // lighter cream underbelly
+    }
+    vec3 humpCol   = hideCol * 0.93f;     // distinctive muscular Zebu shoulder hump (Kud / কুঁজ)
+    vec3 hornCol   = (customHideCol && customHideCol->x > 0.75f) ? vec3(0.32f, 0.30f, 0.30f) : vec3(0.84f, 0.82f, 0.78f);
+    vec3 hornTip   (0.12f, 0.10f, 0.10f); // dark slate/charcoal horn tip
+    vec3 muzzleCol (0.18f, 0.16f, 0.15f); // dark moist muzzle
+    vec3 hoofCol   (0.14f, 0.12f, 0.10f); // dark cloven hooves
+    vec3 eyeCol    (0.06f, 0.06f, 0.06f); // gentle dark eyes
+    vec3 eyeWhite  (0.94f, 0.94f, 0.92f); // eye sclera highlight
+    vec3 halterCol (0.12f, 0.11f, 0.10f); // dark leather harness straps (মোরলী ও লাগাম)
 
     mat4 m = model;
 
-    // 1. Torso / Barrel Body (centered at origin, extending along Z)
-    mat4 body = m;
-    body = translate(body, vec3(0.0f, lyingDown ? 0.30f : 0.85f, 0.0f));
-    body = scale(body, vec3(0.38f, 0.32f, 0.64f));
-    Primitives::drawSphere(shader, body, hideCol);
+    // 1. Torso / Barrel Body
+    if (!lyingDown) {
+        // Anatomical standing Deshi draft ox: muscular chest, long ribcage barrel, and rounded rump
+        mat4 chest = m;
+        chest = translate(chest, vec3(0.0f, 0.88f, 0.32f));
+        chest = scale(chest, vec3(0.35f, 0.34f, 0.46f));
+        Primitives::drawSphere(shader, chest, hideCol);
 
-    // Lighter underbelly patch
-    mat4 belly = m;
-    belly = translate(belly, vec3(0.0f, lyingDown ? 0.22f : 0.74f, 0.0f));
-    belly = scale(belly, vec3(0.34f, 0.22f, 0.54f));
-    Primitives::drawSphere(shader, belly, bellyCol);
+        mat4 barrel = m;
+        barrel = translate(barrel, vec3(0.0f, 0.86f, -0.05f));
+        barrel = scale(barrel, vec3(0.33f, 0.33f, 0.55f));
+        Primitives::drawSphere(shader, barrel, hideCol);
 
-    // 2. Iconic Zebu Shoulder Hump (Kud / কুঁদ) — placed above front shoulders (+Z)
+        mat4 rump = m;
+        rump = translate(rump, vec3(0.0f, 0.88f, -0.42f));
+        rump = scale(rump, vec3(0.34f, 0.34f, 0.46f));
+        Primitives::drawSphere(shader, rump, hideCol);
+
+        // Smooth top backline spine bridge
+        mat4 spine = m;
+        spine = translate(spine, vec3(0.0f, 0.96f, -0.05f));
+        spine = scale(spine, vec3(0.22f, 0.12f, 0.95f));
+        Primitives::drawCube(shader, spine, hideCol);
+
+        // Lighter underbelly patch
+        mat4 belly = m;
+        belly = translate(belly, vec3(0.0f, 0.76f, -0.05f));
+        belly = scale(belly, vec3(0.28f, 0.19f, 0.80f));
+        Primitives::drawSphere(shader, belly, bellyCol);
+    } else {
+        mat4 body = m;
+        body = translate(body, vec3(0.0f, 0.30f, 0.0f));
+        body = scale(body, vec3(0.38f, 0.32f, 0.64f));
+        Primitives::drawSphere(shader, body, hideCol);
+
+        mat4 belly = m;
+        belly = translate(belly, vec3(0.0f, 0.22f, 0.0f));
+        belly = scale(belly, vec3(0.34f, 0.22f, 0.54f));
+        Primitives::drawSphere(shader, belly, bellyCol);
+    }
+
+    // 2. Iconic Zebu Shoulder Hump (Kud / কুঁজ) — placed right above shoulders
     mat4 hump = m;
-    hump = translate(hump, vec3(0.0f, lyingDown ? 0.50f : 1.22f, 0.15f));
-    hump = rotate(hump, radians(12.0f), vec3(1.0f, 0.0f, 0.0f));
-    hump = scale(hump, vec3(0.20f, 0.24f, 0.24f));
+    hump = translate(hump, vec3(0.0f, lyingDown ? 0.50f : 1.20f, lyingDown ? 0.14f : 0.30f));
+    hump = rotate(hump, radians(lyingDown ? 10.0f : 14.0f), vec3(1.0f, 0.0f, 0.0f));
+    hump = scale(hump, vec3(0.22f, 0.28f, 0.26f));
     Primitives::drawSphere(shader, hump, humpCol);
 
     // 3. Strong Neck rising upward and forward (+Z)
     mat4 neck = m;
-    neck = translate(neck, vec3(0.0f, lyingDown ? 0.38f : 1.02f, 0.36f));
-    neck = rotate(neck, radians(lyingDown ? -32.0f : -38.0f), vec3(1.0f, 0.0f, 0.0f));
-    mat4 neckS = scale(neck, vec3(0.17f, 0.28f, 0.20f));
+    neck = translate(neck, vec3(0.0f, lyingDown ? 0.38f : 1.00f, lyingDown ? 0.36f : 0.50f));
+    neck = rotate(neck, radians(lyingDown ? -32.0f : -34.0f), vec3(1.0f, 0.0f, 0.0f));
+    mat4 neckS = scale(neck, vec3(0.18f, 0.30f, 0.22f));
     Primitives::drawCylinder(shader, neckS, hideCol);
 
-    // Braided jute rope halter (Pagha) around neck
+    // Neck halter collar (Pagha)
     mat4 halter = neck;
     halter = translate(halter, vec3(0.0f, 0.02f, 0.0f));
-    halter = scale(halter, vec3(0.18f, 0.035f, 0.21f));
-    Primitives::drawCylinder(shader, halter, halterCol);
+    halter = scale(halter, vec3(0.19f, 0.035f, 0.23f));
+    Primitives::drawCylinder(shader, halter, hasHarness ? halterCol : vec3(0.65f, 0.52f, 0.32f));
 
-    // Deep Throat Dewlap (Golakomblo / গলকম্বল — pendulous skin folds under throat)
+    // Throat Dewlap (Golakomblo / গলকম্বল — natural skin folds under throat and brisket)
     mat4 dewlap = neck;
-    dewlap = translate(dewlap, vec3(0.0f, -0.12f, 0.08f));
-    dewlap = scale(dewlap, vec3(0.045f, 0.24f, 0.18f));
+    dewlap = translate(dewlap, vec3(0.0f, -0.12f, 0.04f));
+    dewlap = rotate(dewlap, radians(18.0f), vec3(1.0f, 0.0f, 0.0f));
+    dewlap = scale(dewlap, vec3(0.024f, 0.20f, 0.22f));
     Primitives::drawCube(shader, dewlap, bellyCol);
+
+    // Brisket dewlap fold connecting into chest
+    mat4 brisket = m;
+    brisket = translate(brisket, vec3(0.0f, lyingDown ? 0.24f : 0.78f, lyingDown ? 0.24f : 0.44f));
+    brisket = scale(brisket, vec3(0.022f, 0.16f, 0.18f));
+    Primitives::drawCube(shader, brisket, bellyCol);
 
     // 4. Bovine Head & Muzzle (facing forward +Z)
     mat4 head = neck;
@@ -1204,26 +1494,64 @@ void drawCow(Shader& shader, const mat4& model, bool lyingDown, const vec3* cust
     for (int s = -1; s <= 1; s += 2) {
         mat4 ear = head;
         ear = translate(ear, vec3(s * 0.15f, 0.06f, -0.02f));
-        ear = rotate(ear, radians(s * 42.0f), vec3(0.0f, 0.0f, 1.0f));
-        ear = rotate(ear, radians(22.0f), vec3(1.0f, 0.0f, 0.0f));
+        ear = rotate(ear, radians(s * 45.0f), vec3(0.0f, 0.0f, 1.0f));
+        ear = rotate(ear, radians(-15.0f), vec3(1.0f, 0.0f, 0.0f));
         ear = scale(ear, vec3(0.14f, 0.045f, 0.075f));
         Primitives::drawSphere(shader, ear, hideCol);
     }
 
-    // Pair of curved horns arching upward and inward
+    // Pair of curved horns arching upward and forward (matching reference cartoon oxen!)
     for (int s = -1; s <= 1; s += 2) {
         mat4 horn = head;
-        horn = translate(horn, vec3(s * 0.095f, 0.13f, -0.02f));
-        horn = rotate(horn, radians(s * -22.0f), vec3(0.0f, 0.0f, 1.0f));
-        horn = rotate(horn, radians(-26.0f), vec3(1.0f, 0.0f, 0.0f));
-        mat4 hornS = scale(horn, vec3(0.032f, 0.18f, 0.032f));
-        Primitives::drawCone(shader, hornS, hornCol);
+        horn = translate(horn, vec3(s * 0.09f, 0.14f, -0.02f));
+        horn = rotate(horn, radians(s * -14.0f), vec3(0.0f, 0.0f, 1.0f));
+        horn = rotate(horn, radians(18.0f), vec3(1.0f, 0.0f, 0.0f));
+        mat4 hornBase = scale(horn, vec3(0.034f, 0.20f, 0.034f));
+        Primitives::drawCone(shader, hornBase, hornCol);
 
-        // Dark horn tip
-        mat4 hTip = horn;
-        hTip = translate(hTip, vec3(0.0f, 0.16f, 0.0f));
-        hTip = scale(hTip, vec3(0.018f, 0.045f, 0.018f));
-        Primitives::drawCone(shader, hTip, hornTip);
+        // Curved upper horn with dark tip arching forward and inward
+        mat4 hTop = horn;
+        hTop = translate(hTop, vec3(0.0f, 0.18f, 0.0f));
+        hTop = rotate(hTop, radians(s * 14.0f), vec3(0.0f, 0.0f, 1.0f));
+        hTop = rotate(hTop, radians(10.0f), vec3(1.0f, 0.0f, 0.0f));
+        mat4 hTopS = scale(hTop, vec3(0.024f, 0.18f, 0.024f));
+        Primitives::drawCone(shader, hTopS, hornTip);
+    }
+
+    // Authentic Domestic Draft Halter Harness (মোরলী ও লাগাম)
+    if (hasHarness) {
+        // Noseband wrapping around snout
+        mat4 nBand = muzzle;
+        nBand = translate(nBand, vec3(0.0f, 0.0f, 0.04f));
+        nBand = scale(nBand, vec3(0.130f, 0.120f, 0.028f));
+        Primitives::drawCube(shader, nBand, halterCol);
+
+        // Crown / poll strap behind horns across cranium
+        mat4 cStrap = head;
+        cStrap = translate(cStrap, vec3(0.0f, 0.11f, 0.02f));
+        cStrap = scale(cStrap, vec3(0.170f, 0.032f, 0.028f));
+        Primitives::drawCube(shader, cStrap, halterCol);
+
+        // Cheek straps connecting noseband to crown strap
+        for (int s = -1; s <= 1; s += 2) {
+            mat4 chStrap = head;
+            chStrap = translate(chStrap, vec3(s * 0.082f, 0.04f, 0.08f));
+            chStrap = rotate(chStrap, radians(38.0f), vec3(1.0f, 0.0f, 0.0f));
+            chStrap = scale(chStrap, vec3(0.018f, 0.15f, 0.020f));
+            Primitives::drawCube(shader, chStrap, halterCol);
+
+            // Brass/iron ring toggle on cheek
+            mat4 bitRing = head;
+            bitRing = translate(bitRing, vec3(s * 0.088f, -0.02f, 0.12f));
+            bitRing = scale(bitRing, vec3(0.024f, 0.024f, 0.024f));
+            Primitives::drawSphere(shader, bitRing, vec3(0.30f, 0.28f, 0.24f));
+        }
+
+        // Throat latch strap under jaw
+        mat4 tLatch = head;
+        tLatch = translate(tLatch, vec3(0.0f, -0.07f, 0.03f));
+        tLatch = scale(tLatch, vec3(0.14f, 0.020f, 0.024f));
+        Primitives::drawCube(shader, tLatch, halterCol);
     }
 
     // 5. Legs
@@ -1255,8 +1583,9 @@ void drawCow(Shader& shader, const mat4& model, bool lyingDown, const vec3* cust
             Primitives::drawCube(shader, hHoof, hoofCol);
         }
     } else {
-        float legX[4] = { -0.26f, 0.26f, -0.28f, 0.28f };
-        float legZ[4] = { 0.42f, 0.42f, -0.45f, -0.45f };
+        // Naturally proportioned standing legs with thigh, knee, shank, and cloven hooves
+        float legX[4] = { -0.19f, 0.19f, -0.19f, 0.19f };
+        float legZ[4] = {  0.32f, 0.32f, -0.42f, -0.42f };
         float swingAngles[4] = {
             sinf(walkPhase) * radians(18.0f),
            -sinf(walkPhase) * radians(18.0f),
@@ -1269,27 +1598,43 @@ void drawCow(Shader& shader, const mat4& model, bool lyingDown, const vec3* cust
             if (walkPhase != 0.0f) {
                 leg = rotate(leg, swingAngles[l], vec3(1.0f, 0.0f, 0.0f));
             }
-            leg = translate(leg, vec3(0.0f, -0.35f, 0.0f));
-            mat4 legCyl = scale(leg, vec3(0.09f, 0.80f, 0.09f));
-            Primitives::drawCylinder(shader, legCyl, hideCol);
 
+            // Upper muscular thigh / shoulder
+            mat4 upLeg = leg;
+            upLeg = translate(upLeg, vec3(0.0f, -0.16f, 0.0f));
+            mat4 upS = scale(upLeg, vec3(0.048f, 0.32f, 0.050f));
+            Primitives::drawCylinder(shader, upS, hideCol);
+
+            // Knee / hock joint
+            mat4 knee = leg;
+            knee = translate(knee, vec3(0.0f, -0.34f, 0.005f));
+            mat4 knS = scale(knee, vec3(0.052f, 0.052f, 0.054f));
+            Primitives::drawSphere(shader, knS, hideCol);
+
+            // Lower slender shank / cannon bone
+            mat4 loLeg = leg;
+            loLeg = translate(loLeg, vec3(0.0f, -0.54f, 0.0f));
+            mat4 loS = scale(loLeg, vec3(0.038f, 0.34f, 0.040f));
+            Primitives::drawCylinder(shader, loS, hideCol);
+
+            // Cloven hoof resting flush on ground
             mat4 hoof = leg;
-            hoof = translate(hoof, vec3(0.0f, -0.38f, 0.0f));
-            hoof = scale(hoof, vec3(0.10f, 0.08f, 0.12f));
-            Primitives::drawCube(shader, hoof, hoofCol);
+            hoof = translate(hoof, vec3(0.0f, -0.73f, 0.012f));
+            mat4 hS = scale(hoof, vec3(0.060f, 0.055f, 0.076f));
+            Primitives::drawCube(shader, hS, hoofCol);
         }
     }
 
     // 6. Tail draped over rear flank (-Z)
     mat4 tail = m;
-    tail = translate(tail, vec3(0.0f, lyingDown ? 0.26f : 0.80f, -0.34f));
-    tail = rotate(tail, radians(-28.0f), vec3(1.0f, 0.0f, 0.0f));
-    mat4 tailStem = scale(tail, vec3(0.022f, 0.38f, 0.022f));
+    tail = translate(tail, vec3(0.0f, lyingDown ? 0.26f : 0.88f, lyingDown ? -0.34f : -0.62f));
+    tail = rotate(tail, radians(-20.0f), vec3(1.0f, 0.0f, 0.0f));
+    mat4 tailStem = scale(tail, vec3(0.016f, 0.48f, 0.016f));
     Primitives::drawCylinder(shader, tailStem, hideCol);
 
     mat4 tailTuft = tail;
-    tailTuft = translate(tailTuft, vec3(0.0f, -0.20f, 0.0f));
-    tailTuft = scale(tailTuft, vec3(0.045f, 0.11f, 0.045f));
+    tailTuft = translate(tailTuft, vec3(0.0f, -0.26f, 0.0f));
+    tailTuft = scale(tailTuft, vec3(0.038f, 0.14f, 0.038f));
     Primitives::drawSphere(shader, tailTuft, muzzleCol);
 }
 
@@ -1351,13 +1696,13 @@ void drawTubewell(Shader& shader, const mat4& model, float pumpAngle, bool isPum
 
     // 5. Water Spout (Mukhi) pointing forward over platform
     mat4 spout = m;
-    spout = translate(spout, vec3(0.0f, 0.48f, 0.18f));
+    spout = translate(spout, vec3(0.0f, 0.60f, 0.18f));
     spout = rotate(spout, radians(90.0f), vec3(1.0f, 0.0f, 0.0f));
     mat4 spoutCyl = scale(spout, vec3(0.045f, 0.28f, 0.045f));
     Primitives::drawCylinder(shader, spoutCyl, ironGreen);
 
     mat4 spoutLip = m;
-    spoutLip = translate(spoutLip, vec3(0.0f, 0.44f, 0.31f));
+    spoutLip = translate(spoutLip, vec3(0.0f, 0.56f, 0.32f));
     spoutLip = scale(spoutLip, vec3(0.055f, 0.06f, 0.055f));
     Primitives::drawCylinder(shader, spoutLip, darkIron);
 
@@ -1397,19 +1742,25 @@ void drawTubewell(Shader& shader, const mat4& model, float pumpAngle, bool isPum
 
     // 9. Interactive Flowing Water Stream & Splash
     if (isPumping) {
+        shader.setFloat("emissive", 0.45f); // glistening fresh water under moonlight/sunlight
+
+        // Vertical cascading water stream from spout mouth directly into Kolshi
         mat4 stream = m;
-        stream = translate(stream, vec3(0.0f, 0.28f, 0.32f));
-        stream = scale(stream, vec3(0.038f, 0.26f, 0.038f));
+        stream = translate(stream, vec3(0.0f, 0.48f, 0.32f));
+        stream = scale(stream, vec3(0.040f, 0.16f, 0.040f));
         Primitives::drawCylinder(shader, stream, waterStream);
 
+        // Splashing water froth at the mouth of the Kolshi
         mat4 splash = m;
-        splash = translate(splash, vec3(0.0f, 0.40f, 0.32f));
-        splash = scale(splash, vec3(0.14f, 0.015f, 0.14f));
-        Primitives::drawCylinder(shader, splash, vec3(0.85f, 0.92f, 0.98f));
+        splash = translate(splash, vec3(0.0f, 0.41f, 0.32f));
+        splash = scale(splash, vec3(0.13f, 0.025f, 0.13f));
+        Primitives::drawCylinder(shader, splash, vec3(0.88f, 0.95f, 1.0f));
+
+        shader.setFloat("emissive", 0.0f);
     }
 
-    // 10. Traditional Clay Water Pitcher (Kolshi) placed under spout
-    drawKolshi(shader, m, vec3(0.0f, 0.12f, 0.32f), 0.85f);
+    // 10. Traditional Clay Water Pitcher (Kolshi) placed squarely under spout
+    drawKolshi(shader, m, vec3(0.0f, 0.12f, 0.32f), 0.66f);
 }
 
 // Traditional Rural Chicken Coop (Murgir Khopa / মোরগের খোঁপা)
@@ -1676,84 +2027,166 @@ void drawDuckHouse(Shader& shader, const mat4& model, bool isNight)
 }
 
 // Traditional Rural Bangladeshi Paddy Granary (Dhaner Gola / ধানের গোলা)
-// Elevated cylindrical bamboo-weave storehouse with steep conical thatched roof
+// Elevated traditional rural Bengali paddy granary / storehouse (Dhaner Gola / ধানের গোলা)
+// Authentic bulging clay-and-cowdung plastered woven bamboo silo (Dhol) on timber stilts (Macha)
+// with an overhanging steep rice straw conical thatched roof (Khorer Mathal), wooden grain hatch, and bamboo ladder.
 void drawGranary(Shader& shader, const mat4& model)
 {
     shader.setInt("uUseTexture", 0);
-    vec3 stiltCol  (0.38f, 0.26f, 0.14f); // timber / stone pillar supports
-    vec3 floorCol  (0.48f, 0.36f, 0.20f); // bamboo floor deck
-    vec3 bodyCol   (0.66f, 0.54f, 0.30f); // clay-plastered bamboo weave
-    vec3 hoopCol   (0.36f, 0.24f, 0.12f); // bamboo binding rings
-    vec3 roofStraw (0.70f, 0.58f, 0.26f); // golden rice straw conical thatch
-    vec3 ladderCol (0.45f, 0.32f, 0.18f); // bamboo ladder
 
-    float floorY = 0.55f;
-    float bodyR = 0.88f;
-    float bodyH = 1.35f;
+    // ── Authentic Rural Materials Palette ────────────────────────
+    static const vec3 stiltCol    (0.32f, 0.20f, 0.12f); // seasoned sal-timber / bamboo stilt poles
+    static const vec3 footingCol  (0.48f, 0.38f, 0.28f); // burnt clay / stone anti-moisture footing plinths
+    static const vec3 beamCol     (0.36f, 0.24f, 0.14f); // timber bearer cross-beams
+    static const vec3 floorCol    (0.46f, 0.36f, 0.22f); // aged bamboo slatted platform deck
+    static const vec3 bodyClay    (0.66f, 0.54f, 0.34f); // sun-dried clay & cow-dung mud plaster (Matir o gobar lepa)
+    static const vec3 bodyShadow  (0.60f, 0.48f, 0.28f); // shaded clay contour
+    static const vec3 hoopCol     (0.38f, 0.24f, 0.12f); // dark weathered split-bamboo binding rings (Batar Ber)
+    static const vec3 roofStraw   (0.74f, 0.60f, 0.26f); // golden sunlit rice straw thatch cone
+    static const vec3 roofEave    (0.60f, 0.46f, 0.20f); // weathered drooping thatch eave skirt fringe
+    static const vec3 kalsiCol    (0.62f, 0.30f, 0.16f); // inverted terracotta pot finial cap (Ulto Kalsi)
+    static const vec3 hatchFrame  (0.26f, 0.15f, 0.08f); // dark timber grain hatch frame
+    static const vec3 hatchDoor   (0.48f, 0.36f, 0.20f); // woven bamboo hatch shutter panel
+    static const vec3 latchCol    (0.36f, 0.22f, 0.10f); // bamboo sliding latch bar (Khil)
+    static const vec3 ladderCol   (0.50f, 0.38f, 0.20f); // weathered bamboo ladder poles and rungs
 
-    // 4 sturdy timber stilt posts elevating granary above moisture & rats
-    float postOffsets[4][2] = { {-0.55f, -0.55f}, {0.55f, -0.55f}, {-0.55f, 0.55f}, {0.55f, 0.55f} };
+    const float floorY = 0.55f; // elevated stilt height above ground
+    const float bodyH  = 1.40f; // height of the woven cylindrical basket
+
+    // Helper: draw smooth 16-faceted circular cylinder using 8 rotated unit cubes
+    auto drawSmoothCyl = [&](const mat4& parent, float r, float h, const vec3& col) {
+        const float chord = r * 0.40f;
+        for (int k = 0; k < 8; ++k) {
+            mat4 c = rotate(parent, radians((float)k * 22.5f), vec3(0.0f, 1.0f, 0.0f));
+            c = scale(c, vec3(r * 2.0f, h, chord));
+            Primitives::drawCube(shader, c, col);
+        }
+    };
+
+    // ── 1. Elevated Timber & Bamboo Stilt Foundation (Macha / মাচা) ───
+    // 4 sturdy timber stilt posts elevating granary above ground moisture and rodents
+    const float postOffsets[4][2] = { {-0.55f, -0.55f}, {0.55f, -0.55f}, {-0.55f, 0.55f}, {0.55f, 0.55f} };
     for (int i = 0; i < 4; ++i) {
-        mat4 stilt = model;
-        stilt = translate(stilt, vec3(postOffsets[i][0], floorY * 0.5f, postOffsets[i][1]));
-        stilt = scale(stilt, vec3(0.09f, floorY, 0.09f));
+        // Anti-moisture burnt stone/clay footings at ground level
+        mat4 foot = translate(model, vec3(postOffsets[i][0], 0.04f, postOffsets[i][1]));
+        foot = scale(foot, vec3(0.18f, 0.08f, 0.18f));
+        Primitives::drawCube(shader, foot, footingCol);
+
+        // Sturdy upright timber stilt post
+        mat4 stilt = translate(model, vec3(postOffsets[i][0], floorY * 0.5f, postOffsets[i][1]));
+        stilt = scale(stilt, vec3(0.095f, floorY, 0.095f));
         Primitives::drawCube(shader, stilt, stiltCol);
     }
 
-    // Circular base platform
-    mat4 platform = model;
-    platform = translate(platform, vec3(0.0f, floorY, 0.0f));
-    platform = scale(platform, vec3(bodyR * 2.15f, 0.07f, bodyR * 2.15f));
-    Primitives::drawCylinder(shader, platform, floorCol);
-
-    // Cylindrical woven bamboo granary body (Dhaner Gola)
-    mat4 body = model;
-    body = translate(body, vec3(0.0f, floorY + bodyH * 0.5f, 0.0f));
-    body = scale(body, vec3(bodyR * 2.0f, bodyH, bodyR * 2.0f));
-    Primitives::drawCylinder(shader, body, bodyCol);
-
-    // 3 Bamboo strengthening hoop rings around cylinder
-    float hoopY[3] = { floorY + 0.25f, floorY + bodyH * 0.5f, floorY + bodyH - 0.15f };
-    for (int h = 0; h < 3; ++h) {
-        mat4 hoop = model;
-        hoop = translate(hoop, vec3(0.0f, hoopY[h], 0.0f));
-        hoop = scale(hoop, vec3(bodyR * 2.04f, 0.045f, bodyR * 2.04f));
-        Primitives::drawCylinder(shader, hoop, hoopCol);
+    // Heavy cross bearer timber beams underneath the floor (Arah & Ruya)
+    for (float bz : {-0.55f, 0.55f}) {
+        mat4 beamX = translate(model, vec3(0.0f, floorY - 0.045f, bz));
+        beamX = scale(beamX, vec3(1.35f, 0.08f, 0.10f));
+        Primitives::drawCube(shader, beamX, beamCol);
+    }
+    for (float bx : {-0.55f, 0.0f, 0.55f}) {
+        mat4 beamZ = translate(model, vec3(bx, floorY - 0.015f, 0.0f));
+        beamZ = scale(beamZ, vec3(0.08f, 0.06f, 1.35f));
+        Primitives::drawCube(shader, beamZ, beamCol * 1.05f);
     }
 
-    // Steep conical thatched roof (Chhoner Mathal)
-    float roofH = 1.25f;
-    float roofR = bodyR * 1.35f;
-    mat4 roof = model;
-    roof = translate(roof, vec3(0.0f, floorY + bodyH, 0.0f));
+    // Circular elevated bamboo platform deck (Macha)
+    mat4 platform = translate(model, vec3(0.0f, floorY, 0.0f));
+    drawSmoothCyl(platform, 0.90f, 0.05f, floorCol);
+
+    // ── 2. Authentic Rounded & Bulging Granary Basket (Dhaner Dhol / গোলা) ─
+    // Organic barrel curvature: narrower at base and neck, gracefully bulging in the belly
+    // Lower tier (base to lower belly)
+    mat4 bodyLow = translate(model, vec3(0.0f, floorY + 0.22f, 0.0f));
+    drawSmoothCyl(bodyLow, 0.86f, 0.44f, bodyShadow);
+
+    // Middle bulging belly (where stored paddy exerts maximum outward pressure)
+    mat4 bodyMid = translate(model, vec3(0.0f, floorY + 0.70f, 0.0f));
+    drawSmoothCyl(bodyMid, 0.92f, 0.60f, bodyClay);
+
+    // Upper tier (upper belly tapering toward roof neck)
+    mat4 bodyHigh = translate(model, vec3(0.0f, floorY + 1.15f, 0.0f));
+    drawSmoothCyl(bodyHigh, 0.86f, 0.40f, bodyClay * 1.03f);
+
+    // ── 3. Woven Bamboo Reinforcing Hoops (Batar Ber / বাঁশের বাতা) ───────
+    // 4 slender binding rings wrapped horizontally to prevent basket bursting
+    const float hoopY[4] = { floorY + 0.12f, floorY + 0.52f, floorY + 0.92f, floorY + 1.35f };
+    const float hoopR[4] = { 0.88f,          0.94f,          0.94f,          0.88f          };
+    for (int h = 0; h < 4; ++h) {
+        mat4 hoop = translate(model, vec3(0.0f, hoopY[h], 0.0f));
+        drawSmoothCyl(hoop, hoopR[h], 0.040f, hoopCol);
+    }
+
+    // ── 4. Traditional Conical Thatched Roof (Khorer Mathal / খড়ের চাল) ──
+    // Generously overhanging the body on all sides (protects mud walls from monsoon rain)
+    const float roofR = 1.25f; // overhanging eave radius: 0.39m wider than granary body!
+    const float roofH = 1.45f; // steep conical pitch
+    const float roofBaseY = floorY + bodyH - 0.08f; // starts below top of walls (covers rim completely!)
+
+    // Drooping lower thatch eave skirt fringe (Chaler Chhanch / Karish)
+    mat4 eaveSkirt = translate(model, vec3(0.0f, roofBaseY - 0.08f, 0.0f));
+    eaveSkirt = scale(eaveSkirt, vec3(1.32f * 2.0f, 0.24f, 1.32f * 2.0f));
+    Primitives::drawCone(shader, eaveSkirt, roofEave);
+
+    // Main steep golden rice straw conical roof
+    mat4 roof = translate(model, vec3(0.0f, roofBaseY, 0.0f));
     roof = scale(roof, vec3(roofR * 2.0f, roofH, roofR * 2.0f));
     Primitives::drawCone(shader, roof, roofStraw);
 
-    // Top bamboo apex finial cap
-    mat4 cap = model;
-    cap = translate(cap, vec3(0.0f, floorY + bodyH + roofH + 0.12f, 0.0f));
-    cap = scale(cap, vec3(0.08f, 0.25f, 0.08f));
-    Primitives::drawCone(shader, cap, hoopCol);
+    // Inverted terracotta clay pitcher finial cap (Ulto Matir Kalsi / Mathal) at apex
+    mat4 kalsi = translate(model, vec3(0.0f, roofBaseY + roofH + 0.02f, 0.0f));
+    kalsi = scale(kalsi, vec3(0.18f, 0.15f, 0.18f));
+    Primitives::drawSphere(shader, kalsi, kalsiCol);
 
-    // Leaning bamboo ladder leading up to platform
-    mat4 ladder = model;
-    ladder = translate(ladder, vec3(0.0f, floorY * 0.5f, bodyR + 0.25f));
-    ladder = rotate(ladder, radians(-25.0f), vec3(1.0f, 0.0f, 0.0f));
-    // Rails
-    for (float lx : {-0.18f, 0.18f}) {
-        mat4 rail = ladder;
-        rail = translate(rail, vec3(lx, 0.0f, 0.0f));
-        rail = scale(rail, vec3(0.035f, floorY * 1.3f, 0.035f));
+    // Weathered vertical bamboo finial pin rising through the apex cap
+    mat4 apexPin = translate(model, vec3(0.0f, roofBaseY + roofH + 0.10f, 0.0f));
+    apexPin = scale(apexPin, vec3(0.035f, 0.28f, 0.035f));
+    Primitives::drawCube(shader, apexPin, hoopCol);
+
+    // ── 5. Wooden Grain Access Hatch (Dhaner Khirki / ধানের খিরকি) ───────
+    // Traditional small square hatch on the front face where paddy is loaded/unloaded
+    const float hatchY = floorY + 0.58f;
+    const float hatchZ = 0.93f; // front belly perimeter
+
+    // Dark timber hatch outer frame
+    mat4 hFrame = translate(model, vec3(0.0f, hatchY, hatchZ));
+    hFrame = scale(hFrame, vec3(0.44f, 0.52f, 0.05f));
+    Primitives::drawCube(shader, hFrame, hatchFrame);
+
+    // Woven bamboo hatch door panel (slightly recessed)
+    mat4 hDoor = translate(model, vec3(0.0f, hatchY, hatchZ + 0.015f));
+    hDoor = scale(hDoor, vec3(0.34f, 0.42f, 0.03f));
+    Primitives::drawCube(shader, hDoor, hatchDoor);
+
+    // Horizontal bamboo sliding latch bar (Khil)
+    mat4 hLatch = translate(model, vec3(0.0f, hatchY, hatchZ + 0.035f));
+    hLatch = scale(hLatch, vec3(0.42f, 0.035f, 0.035f));
+    Primitives::drawCube(shader, hLatch, latchCol);
+
+    // ── 6. Rustic Leaning Bamboo Ladder (Bansher Moi / বাঁশের মই) ─────────
+    // Slender rustic ladder resting against platform edge for climbing up to hatch
+    mat4 ladder = translate(model, vec3(0.28f, floorY * 0.5f, 0.98f));
+    ladder = rotate(ladder, radians(-18.0f), vec3(1.0f, 0.0f, 0.0f));
+    ladder = rotate(ladder, radians(8.0f),   vec3(0.0f, 1.0f, 0.0f));
+
+    // Two bamboo side poles
+    for (float lx : {-0.14f, 0.14f}) {
+        mat4 rail = translate(ladder, vec3(lx, 0.0f, 0.0f));
+        rail = scale(rail, vec3(0.032f, floorY * 1.25f, 0.032f));
         Primitives::drawCylinder(shader, rail, ladderCol);
     }
-    // Rungs
-    for (float ry = -floorY * 0.4f; ry <= floorY * 0.45f; ry += 0.22f) {
-        mat4 rung = ladder;
-        rung = translate(rung, vec3(0.0f, ry, 0.0f));
+    // Bamboo rungs
+    for (float ry = -floorY * 0.35f; ry <= floorY * 0.40f; ry += 0.20f) {
+        mat4 rung = translate(ladder, vec3(0.0f, ry, 0.0f));
         rung = rotate(rung, radians(90.0f), vec3(0.0f, 0.0f, 1.0f));
-        rung = scale(rung, vec3(0.025f, 0.36f, 0.025f));
-        Primitives::drawCylinder(shader, rung, ladderCol);
+        rung = scale(rung, vec3(0.024f, 0.28f, 0.024f));
+        Primitives::drawCylinder(shader, rung, ladderCol * 0.92f);
     }
+
+    // ── 7. Terracotta Measuring Pitcher on Platform Edge ───────────────────
+    mat4 kolshiM = translate(model, vec3(-0.48f, floorY + 0.12f, 0.65f));
+    kolshiM = scale(kolshiM, vec3(0.55f));
+    drawKolshi(shader, kolshiM);
 }
 
 // Traditional Rural Vegetable Trellis (Lau / Kumra Macha / সবজির মাচা)
@@ -1896,15 +2329,20 @@ void drawBullockCart(Shader& shader, const mat4& model, float wheelRotation, flo
 {
     shader.setInt("uUseTexture", 0);
 
-    const vec3 woodDark   (0.40f, 0.26f, 0.13f); // weathered sal timber axle & frame
-    const vec3 woodLight  (0.56f, 0.42f, 0.24f); // spokes, floor planks, draft tongue
-    const vec3 ironCol    (0.22f, 0.20f, 0.18f); // iron wheel tyre & hub banding
-    const vec3 chhoiCol   (0.74f, 0.60f, 0.34f); // woven bamboo canopy hood (Chhoi / চাটাই)
-    const vec3 hoopCol    (0.48f, 0.36f, 0.18f); // arched bamboo structural hoops
-    const vec3 strawCol   (0.86f, 0.74f, 0.30f); // golden rice straw cargo
-    const vec3 sackCol    (0.60f, 0.48f, 0.30f); // jute burlap cargo sacks (পাটের বস্তা)
-    const vec3 ropeCol    (0.66f, 0.54f, 0.34f); // jute coir hitch ropes
-    const vec3 whiteOxCol (0.82f, 0.78f, 0.72f); // light grey/cream coat for right ox
+    const vec3 woodDark    (0.42f, 0.27f, 0.14f); // weathered sal timber axle & frame
+    const vec3 woodWarm    (0.58f, 0.38f, 0.18f); // rich warm timber for tongue, spokes, posts
+    const vec3 woodDeck    (0.66f, 0.48f, 0.26f); // floor planks
+    const vec3 ironCol     (0.20f, 0.19f, 0.18f); // iron rim tyre, linchpins, hub rings
+    const vec3 chhoiCol    (0.77f, 0.64f, 0.42f); // woven bamboo mat canopy (চাটাইয়ের ছই)
+    const vec3 chhoiAlt    (0.73f, 0.60f, 0.38f); // subtle alternating bamboo weave tone
+    const vec3 hoopCol     (0.48f, 0.35f, 0.18f); // bent structural bamboo hoop ribs
+    const vec3 battenCol   (0.54f, 0.40f, 0.20f); // longitudinal bamboo battens
+    const vec3 tieCol      (0.24f, 0.17f, 0.10f); // dark rattan/coir binding ties
+    const vec3 strawCol    (0.86f, 0.74f, 0.32f); // golden rice straw
+    const vec3 sackCol     (0.60f, 0.48f, 0.30f); // jute burlap cargo sacks
+    const vec3 ropeCol     (0.66f, 0.54f, 0.34f); // jute coir hitch ropes & reins
+    const vec3 oxWhite1    (0.93f, 0.93f, 0.92f); // Left Deshi bullock: pure white/light grey
+    const vec3 oxWhite2    (0.90f, 0.90f, 0.91f); // Right Deshi bullock: pure white/light grey
 
     const float wheelR = 0.72f; // Large wooden cart wheel radius
     const float axleY  = 0.72f; // Axle height matches wheel radius
@@ -1949,10 +2387,9 @@ void drawBullockCart(Shader& shader, const mat4& model, float wheelRotation, flo
             spoke = rotate(spoke, ang, vec3(1.0f, 0.0f, 0.0f));
             spoke = translate(spoke, vec3(0.0f, wheelR * 0.50f, 0.0f));
             spoke = scale(spoke, vec3(0.038f, wheelR * 0.82f, 0.038f));
-            Primitives::drawCylinder(shader, spoke, woodLight);
+            Primitives::drawCylinder(shader, spoke, woodWarm);
 
             // Auspicious folk cloth ribbon marker tied to spoke 0 (লাল শালু কাপড় / ফিতা)
-            // Visually indicates exact 180° rotation on Key 'G' (flips between top and bottom!)
             if (sp == 0) {
                 mat4 ribbon = wm;
                 ribbon = rotate(ribbon, ang, vec3(1.0f, 0.0f, 0.0f));
@@ -1986,8 +2423,8 @@ void drawBullockCart(Shader& shader, const mat4& model, float wheelRotation, flo
     }
 
     // ── 3. Cart Bed & Floor Platform (মাচা / পাটাতন) ─────────────
-    const float bedW = 1.20f;
-    const float bedL = 2.40f;
+    const float bedW = 1.22f;
+    const float bedL = 2.45f;
     const float bedY = axleY + 0.07f; // Y ≈ 0.79m
 
     // Longitudinal chassis stringers
@@ -2007,11 +2444,17 @@ void drawBullockCart(Shader& shader, const mat4& model, float wheelRotation, flo
         Primitives::drawCube(shader, crossB, woodDark);
     }
 
-    // Floor deck planks (split bamboo / timber slats)
+    // Floor deck planks extending forward into driver seating area
     mat4 floorDeck = model;
     floorDeck = translate(floorDeck, vec3(0.0f, bedY + 0.025f, -0.20f));
     floorDeck = scale(floorDeck, vec3(bedW, 0.025f, bedL));
-    Primitives::drawCube(shader, floorDeck, woodLight);
+    Primitives::drawCube(shader, floorDeck, woodDeck);
+
+    // Front platform extension plank where driver sits
+    mat4 driverDeck = model;
+    driverDeck = translate(driverDeck, vec3(0.0f, bedY + 0.025f, 0.50f));
+    driverDeck = scale(driverDeck, vec3(bedW * 0.85f, 0.028f, 0.65f));
+    Primitives::drawCube(shader, driverDeck, woodDeck * 0.96f);
 
     // Side retaining upright stakes & guard rails
     for (float sx : { -bedW * 0.50f, bedW * 0.50f }) {
@@ -2027,86 +2470,180 @@ void drawBullockCart(Shader& shader, const mat4& model, float wheelRotation, flo
             mat4 rail = model;
             rail = translate(rail, vec3(sx, bedY + ry, -0.22f));
             rail = scale(rail, vec3(0.035f, 0.040f, bedL * 0.96f));
-            Primitives::drawCube(shader, rail, woodLight);
+            Primitives::drawCube(shader, rail, woodWarm);
         }
     }
 
-    // ── 4. Arched Woven Bamboo Canopy / Hood (বাঁশের ছই / Chhoi) ─
-    const float hoodZStart = -1.38f;
-    const float hoodZEnd   =  0.22f;
-    const float hoodLen    = hoodZEnd - hoodZStart;
-    const float hoodR      = bedW * 0.52f; // Arch radius ~ 0.62m
-    const int   archSegs   = 12;
+    // ── 4. Traditional Arched Woven Bamboo Canopy (বাঁশের ছই / Chhoi) ─
+    // Tall vaulted semicircular woven bamboo hood with arched ribs, closed back, and arched front opening
+    const float hoodZStart = -1.35f;
+    const float hoodZEnd   =  0.05f;                 // front edge of canopy, leaves spacious front deck for driver
+    const float hoodLen    = hoodZEnd - hoodZStart; // 1.40m
+    const float hoodR      = 0.66f;                 // generous vaulted arch radius
+    const float wallH      = 0.52f;                 // tall vertical side walls (1.18m total interior height!)
+    const float archCenterY= bedY + wallH;          // base height of semicircle arch (0.79 + 0.52 = 1.31m)
+    const int   archSegs   = 48;                    // 48 dense facets (ultra smooth curved mat, zero gaps)
 
-    // Semicircular arched thatch/bamboo skin
+    // A. Side Vertical Woven Bamboo Walls
+    for (float side : { -1.0f, 1.0f }) {
+        mat4 sideWall = model;
+        sideWall = translate(sideWall, vec3(side * (hoodR - 0.01f), bedY + wallH * 0.5f, (hoodZStart + hoodZEnd) * 0.5f));
+        sideWall = scale(sideWall, vec3(0.018f, wallH, hoodLen));
+        Primitives::drawCube(shader, sideWall, chhoiCol);
+    }
+
+    // B. Semicircular Solid Woven Bamboo Arch Shell (smooth golden bamboo mat, exact tangent angles, zero gaps)
     for (int a = 0; a < archSegs; ++a) {
         float a0 = (float)a * (PI / (float)archSegs);
         float a1 = (float)(a + 1) * (PI / (float)archSegs);
         float aMid = (a0 + a1) * 0.5f;
 
         float ax = -hoodR * cosf(aMid);
-        float ay = bedY + 0.20f + hoodR * sinf(aMid);
-        float segW = 2.0f * hoodR * sinf((a1 - a0) * 0.5f);
-        float tiltAng = -atan2f(cosf(aMid), sinf(aMid));
+        float ay = archCenterY + hoodR * sinf(aMid);
+        float segW = 2.0f * hoodR * sinf((a1 - a0) * 0.5f) * 1.05f; // gapless seamless overlap
+        float tiltAng = atan2f(cosf(aMid), sinf(aMid));             // mathematically exact tangent angle
 
         mat4 skinSeg = model;
         skinSeg = translate(skinSeg, vec3(ax, ay, (hoodZStart + hoodZEnd) * 0.5f));
         skinSeg = rotate(skinSeg, tiltAng, vec3(0.0f, 0.0f, 1.0f));
-        skinSeg = scale(skinSeg, vec3(segW * 1.05f, 0.020f, hoodLen));
-        Primitives::drawCube(shader, skinSeg, (a % 2 == 0) ? chhoiCol : (chhoiCol * 0.94f));
+        skinSeg = scale(skinSeg, vec3(segW, 0.012f, hoodLen));
+        Primitives::drawCube(shader, skinSeg, chhoiCol);
     }
 
-    // 4 Curved Structural Bamboo Hoops
+    // C. Closed Arched Rear Wall (পেছনের ছাতার দেয়াল)
+    // Lower rectangular back wall
+    mat4 rearLower = model;
+    rearLower = translate(rearLower, vec3(0.0f, bedY + wallH * 0.5f, hoodZStart));
+    rearLower = scale(rearLower, vec3(hoodR * 2.0f, wallH, 0.025f));
+    Primitives::drawCube(shader, rearLower, chhoiCol * 0.94f);
+
+    // Rear upper arched wall fan
+    const int rearWallSegs = 24;
+    for (int rw = 0; rw < rearWallSegs; ++rw) {
+        float rx = -hoodR * 0.97f + (float)rw * (hoodR * 1.94f / (float)(rearWallSegs - 1));
+        float maxY = sqrtf(fmaxf(0.0f, hoodR * hoodR - rx * rx));
+        if (maxY > 0.03f) {
+            mat4 rSlat = model;
+            rSlat = translate(rSlat, vec3(rx, archCenterY + maxY * 0.5f, hoodZStart));
+            rSlat = scale(rSlat, vec3(hoodR * 1.94f / (float)rearWallSegs * 1.06f, maxY, 0.018f));
+            Primitives::drawCube(shader, rSlat, chhoiCol * 0.92f);
+        }
+    }
+    // Rear wall bamboo cross-braces
+    mat4 rCrossH = model;
+    rCrossH = translate(rCrossH, vec3(0.0f, archCenterY + 0.12f, hoodZStart - 0.015f));
+    rCrossH = scale(rCrossH, vec3(hoodR * 1.90f, 0.032f, 0.032f));
+    Primitives::drawCube(shader, rCrossH, hoopCol);
+
+    mat4 rCrossV = model;
+    rCrossV = translate(rCrossV, vec3(0.0f, archCenterY + hoodR * 0.45f, hoodZStart - 0.015f));
+    rCrossV = scale(rCrossV, vec3(0.032f, hoodR * 0.90f, 0.032f));
+    Primitives::drawCube(shader, rCrossV, hoopCol);
+
+    // D. 4 Prominent Curved Bamboo Hoops (বাঁশের বাঁক) hugging exterior
+    float hoopZPositions[4] = { hoodZEnd, hoodZStart + hoodLen * 0.66f, hoodZStart + hoodLen * 0.33f, hoodZStart };
     for (int h = 0; h < 4; ++h) {
-        float hz = hoodZStart + (float)h * (hoodLen / 3.0f);
-        for (int a = 0; a < archSegs; ++a) {
-            float aMid = ((float)a + 0.5f) * (PI / (float)archSegs);
-            float ax = -hoodR * 1.01f * cosf(aMid);
-            float ay = bedY + 0.20f + hoodR * 1.01f * sinf(aMid);
-            float segW = 2.0f * hoodR * sinf(PI / (float)(archSegs * 2));
-            float tiltAng = -atan2f(cosf(aMid), sinf(aMid));
+        float hz = hoopZPositions[h];
+        bool isRim = (h == 0 || h == 3);
+        float hoopThick = isRim ? 0.048f : 0.038f;
+        float hoopRadial = isRim ? 0.042f : 0.032f;
+
+        // Side upright bamboo poles
+        for (float side : { -1.0f, 1.0f }) {
+            mat4 hPole = model;
+            hPole = translate(hPole, vec3(side * (hoodR + hoopRadial * 0.5f), bedY + wallH * 0.5f, hz));
+            hPole = scale(hPole, vec3(hoopRadial, wallH, hoopThick));
+            Primitives::drawCube(shader, hPole, hoopCol);
+        }
+
+        // Curved arch segments hugging the outer surface with exact tangent rotation
+        for (int a = 0; a < 36; ++a) {
+            float aMid = ((float)a + 0.5f) * (PI / 36.0f);
+            float ax = -(hoodR + hoopRadial * 0.5f) * cosf(aMid);
+            float ay = archCenterY + (hoodR + hoopRadial * 0.5f) * sinf(aMid);
+            float segW = 2.0f * (hoodR + hoopRadial * 0.5f) * sinf(PI / 72.0f) * 1.05f;
+            float tiltAng = atan2f(cosf(aMid), sinf(aMid));
 
             mat4 hoopSeg = model;
             hoopSeg = translate(hoopSeg, vec3(ax, ay, hz));
             hoopSeg = rotate(hoopSeg, tiltAng, vec3(0.0f, 0.0f, 1.0f));
-            hoopSeg = scale(hoopSeg, vec3(segW * 1.04f, 0.035f, 0.045f));
+            hoopSeg = scale(hoopSeg, vec3(segW, hoopRadial, hoopThick));
             Primitives::drawCube(shader, hoopSeg, hoopCol);
         }
     }
 
-    // ── 5. Cargo Under the Canopy ────────────────────────────────
-    // Stacked golden rice straw bales (বিচালি / খড়)
+    // E. 5 Longitudinal Bamboo Battens (পড়কা) running along canopy (flush with ends)
+    float battenAngles[5] = { 0.0f, PI * 0.25f, PI * 0.50f, PI * 0.75f, PI };
+    for (int b = 0; b < 5; ++b) {
+        float bAng = battenAngles[b];
+        float bx = -(hoodR + 0.024f) * cosf(bAng);
+        float by = (bAng == 0.0f || bAng == PI) ? (bedY + wallH) : (archCenterY + (hoodR + 0.024f) * sinf(bAng));
+
+        mat4 batten = model;
+        batten = translate(batten, vec3(bx, by, (hoodZStart + hoodZEnd) * 0.5f));
+        batten = scale(batten, vec3(0.028f, 0.028f, hoodLen));
+        Primitives::drawCube(shader, batten, battenCol);
+
+        // Binding rattan knots at every hoop crossing
+        for (int h = 0; h < 4; ++h) {
+            mat4 knot = model;
+            knot = translate(knot, vec3(bx, by, hoopZPositions[h]));
+            knot = scale(knot, vec3(0.038f, 0.038f, 0.048f));
+            Primitives::drawCube(shader, knot, tieCol);
+        }
+    }
+
+    // ── 5. Inside the Canopy (Passenger & Cargo) ────────────────
+    // Woven straw/jute floor sitting mat inside
+    mat4 floorMat = model;
+    floorMat = translate(floorMat, vec3(0.0f, bedY + 0.035f, -0.65f));
+    floorMat = scale(floorMat, vec3(hoodR * 1.85f, 0.012f, hoodLen * 0.92f));
+    Primitives::drawCube(shader, floorMat, vec3(0.68f, 0.56f, 0.36f));
+
+    // Seated Passenger inside the shaded canopy (clearly framed through arched opening, like reference image 3)
+    PersonParams passenger;
+    passenger.skinColor   = vec3(0.55f, 0.38f, 0.25f);
+    passenger.shirtColor  = vec3(0.24f, 0.44f, 0.82f); // Bengali blue kurta (matches reference image 3)
+    passenger.pantsColor  = vec3(0.86f, 0.84f, 0.78f); // cream pajama/dhoti
+    passenger.seated      = true;
+    passenger.hasGamcha   = true;
+    passenger.gamchaColor = vec3(0.94f, 0.40f, 0.10f); // orange/saffron gamcha
+    passenger.leftArmAngle= radians(18.0f);
+    passenger.rightArmAngle = radians(28.0f);
+
+    mat4 passM = model;
+    passM = translate(passM, vec3(0.12f, bedY + 0.02f, -0.32f));
+    passM = scale(passM, vec3(1.10f));
+    passM = rotate(passM, radians(-20.0f), vec3(0.0f, 1.0f, 0.0f)); // looking out toward front opening
+    Person::draw(shader, passM, passenger);
+
+    // Rear cargo: stacked golden rice straw bundles (বিচালি)
     mat4 straw1 = model;
-    straw1 = translate(straw1, vec3(0.0f, bedY + 0.22f, -0.65f));
-    straw1 = scale(straw1, vec3(bedW * 0.78f, 0.36f, 0.85f));
+    straw1 = translate(straw1, vec3(-0.15f, bedY + 0.18f, -0.92f));
+    straw1 = scale(straw1, vec3(0.55f, 0.26f, 0.55f));
     Primitives::drawCube(shader, straw1, strawCol);
 
-    mat4 straw2 = model;
-    straw2 = translate(straw2, vec3(0.0f, bedY + 0.44f, -0.62f));
-    straw2 = scale(straw2, vec3(bedW * 0.62f, 0.26f, 0.68f));
-    Primitives::drawCube(shader, straw2, strawCol * 0.95f);
-
-    // Jute grain sacks (পাটের বস্তা) at the rear
-    for (float sx : { -0.22f, 0.22f }) {
-        mat4 sack = model;
-        sack = translate(sack, vec3(sx, bedY + 0.16f, -1.15f));
-        sack = scale(sack, vec3(0.24f, 0.22f, 0.32f));
-        Primitives::drawSphere(shader, sack, sackCol);
-    }
+    // Jute grain sacks (পাটের বস্তা) at rear
+    mat4 sack1 = model;
+    sack1 = translate(sack1, vec3(0.20f, bedY + 0.16f, -0.95f));
+    sack1 = scale(sack1, vec3(0.24f, 0.22f, 0.30f));
+    Primitives::drawSphere(shader, sack1, sackCol);
 
     // Terracotta water pitcher (Kolshi) lashed to the rear corner
     mat4 kolshiM = model;
-    kolshiM = translate(kolshiM, vec3(bedW * 0.45f, bedY + 0.14f, -1.30f));
-    kolshiM = scale(kolshiM, vec3(0.70f));
+    kolshiM = translate(kolshiM, vec3(bedW * 0.36f, bedY + 0.14f, -1.18f));
+    kolshiM = scale(kolshiM, vec3(0.65f));
     drawKolshi(shader, kolshiM);
 
     // ── 6. Long A-Frame Draft Pole & Tongue (ইশাল / ধুরা) ────────
-    // Two converging wooden shafts extending forward to yoke
+    const float yokeY = 1.05f;
+    const float yokeZ = 2.35f;
+
     for (int s = -1; s <= 1; s += 2) {
         float fs = (float)s;
         mat4 pole = model;
         float px0 = fs * 0.45f, py0 = bedY, pz0 = -0.20f;
-        float px1 = fs * 0.12f, py1 = 0.96f, pz1 =  2.45f;
+        float px1 = fs * 0.12f, py1 = yokeY, pz1 = yokeZ;
         float mx = (px0 + px1) * 0.5f;
         float my = (py0 + py1) * 0.5f;
         float mz = (pz0 + pz1) * 0.5f;
@@ -2121,19 +2658,16 @@ void drawBullockCart(Shader& shader, const mat4& model, float wheelRotation, flo
         pole = rotate(pole, yawAng, vec3(0.0f, 1.0f, 0.0f));
         pole = rotate(pole, pitchAng, vec3(1.0f, 0.0f, 0.0f));
         pole = scale(pole, vec3(0.065f, 0.065f, len));
-        Primitives::drawCylinder(shader, pole, woodDark);
+        Primitives::drawCube(shader, pole, woodDark);
     }
 
     // Central tongue tip extension with iron hitch ring
     mat4 tongueTip = model;
-    tongueTip = translate(tongueTip, vec3(0.0f, 0.96f, 2.50f));
-    tongueTip = scale(tongueTip, vec3(0.09f, 0.08f, 0.28f));
+    tongueTip = translate(tongueTip, vec3(0.0f, yokeY, yokeZ + 0.08f));
+    tongueTip = scale(tongueTip, vec3(0.09f, 0.08f, 0.25f));
     Primitives::drawCube(shader, tongueTip, woodDark);
 
     // ── 7. The Yoke (জোয়াল / Joyal) ──────────────────────────────
-    const float yokeY = 0.98f;
-    const float yokeZ = 2.45f;
-
     // Transverse curved wooden beam spanning across both bullocks
     mat4 yoke = model;
     yoke = translate(yoke, vec3(0.0f, yokeY, yokeZ));
@@ -2141,19 +2675,19 @@ void drawBullockCart(Shader& shader, const mat4& model, float wheelRotation, flo
     Primitives::drawCube(shader, yoke, woodDark);
 
     // Curved neck rests on yoke over each bullock
-    for (float yx : { -0.58f, 0.58f }) {
+    for (float yx : { -0.62f, 0.62f }) {
         mat4 neckRest = model;
         neckRest = translate(neckRest, vec3(yx, yokeY - 0.035f, yokeZ));
         neckRest = scale(neckRest, vec3(0.32f, 0.045f, 0.095f));
-        Primitives::drawCube(shader, neckRest, woodLight);
+        Primitives::drawCube(shader, neckRest, woodWarm);
     }
 
     // 4 Vertical wooden yoke pins (জুঁতি / Khuti) hanging down
-    for (float kx : { -0.78f, -0.38f, 0.38f, 0.78f }) {
+    for (float kx : { -0.82f, -0.42f, 0.42f, 0.82f }) {
         mat4 pin = model;
         pin = translate(pin, vec3(kx, yokeY - 0.16f, yokeZ));
         pin = scale(pin, vec3(0.035f, 0.32f, 0.035f));
-        Primitives::drawCylinder(shader, pin, woodLight);
+        Primitives::drawCylinder(shader, pin, woodWarm);
     }
 
     // Jute coir tie ropes binding the yoke to the tongue
@@ -2163,17 +2697,20 @@ void drawBullockCart(Shader& shader, const mat4& model, float wheelRotation, flo
     Primitives::drawCube(shader, yokeRope, ropeCol);
 
     // ── 8. The Bullock Cart Driver (গাড়িয়াল / Gariyal) ───────────
+    // Sits outside on the front platform in front of the arched canopy (like reference images)
     PersonParams gariyal;
-    gariyal.skinColor   = vec3(0.52f, 0.35f, 0.22f);
-    gariyal.shirtColor  = vec3(0.85f, 0.82f, 0.76f); // off-white kurta
-    gariyal.pantsColor  = vec3(0.18f, 0.36f, 0.52f); // checkered blue lungi
+    gariyal.skinColor   = vec3(0.55f, 0.38f, 0.25f);
+    gariyal.shirtColor  = vec3(0.92f, 0.90f, 0.82f); // traditional cream kurta / shirt
+    gariyal.pantsColor  = vec3(0.82f, 0.80f, 0.74f); // light dhoti / lungi
     gariyal.seated      = true;
     gariyal.hasGamcha   = true;
-    gariyal.gamchaColor = vec3(0.82f, 0.18f, 0.12f); // red gamcha around neck
-    gariyal.rightArmAngle = radians(28.0f);          // holding driving reins/stick forward
+    gariyal.gamchaColor = vec3(0.94f, 0.36f, 0.10f); // vibrant orange gamcha draped over shoulder
+    gariyal.rightArmAngle = radians(35.0f);          // holding driving stick forward
+    gariyal.leftArmAngle  = radians(25.0f);          // holding driving reins forward
 
     mat4 gariyalM = model;
-    gariyalM = translate(gariyalM, vec3(0.0f, bedY + 0.15f, 0.48f));
+    gariyalM = translate(gariyalM, vec3(-0.06f, bedY + 0.02f, 0.44f));
+    gariyalM = scale(gariyalM, vec3(1.12f));
     if (walkPhase != 0.0f) {
         float driverSway = sinf(walkPhase * 2.0f) * radians(3.0f);
         gariyalM = rotate(gariyalM, driverSway, vec3(1.0f, 0.0f, 0.0f));
@@ -2182,31 +2719,1052 @@ void drawBullockCart(Shader& shader, const mat4& model, float wheelRotation, flo
 
     // Bamboo driving stick (পাঁচনি / Pachni) held in cartman's right hand
     mat4 stick = model;
-    stick = translate(stick, vec3(0.22f, bedY + 0.55f, 0.88f));
+    stick = translate(stick, vec3(0.18f, bedY + 0.42f, 0.75f));
     stick = rotate(stick, radians(-25.0f), vec3(1.0f, 0.0f, 0.0f));
     stick = scale(stick, vec3(0.020f, 0.020f, 0.85f));
-    Primitives::drawCylinder(shader, stick, woodLight);
+    Primitives::drawCube(shader, stick, woodWarm);
 
-    // ── 9. Pair of Harness Deshi Draft Bullocks (এক জোড়া বলদ গরু) ─
-    // Left Bullock (ফসল-রঙা বলদ — warm fawn-brown Deshi ox)
+    // Driving reins extending from bullocks' bits to the cart driver's hands
+    // Left bullock rein
+    {
+        mat4 reinL = model;
+        float rx0 = -0.62f, ry0 = 0.98f, rz0 = 2.70f;
+        float rx1 = -0.06f, ry1 = bedY + 0.38f, rz1 = 0.60f;
+        float rmx = (rx0 + rx1) * 0.5f, rmy = (ry0 + ry1) * 0.5f, rmz = (rz0 + rz1) * 0.5f;
+        float rdx = rx1 - rx0, rdy = ry1 - ry0, rdz = rz1 - rz0;
+        float rlen = sqrtf(rdx * rdx + rdy * rdy + rdz * rdz);
+        float ryaw = atan2f(rdx, rdz);
+        float rpitch = -atan2f(rdy, sqrtf(rdx * rdx + rdz * rdz));
+        reinL = translate(reinL, vec3(rmx, rmy, rmz));
+        reinL = rotate(reinL, ryaw, vec3(0.0f, 1.0f, 0.0f));
+        reinL = rotate(reinL, rpitch, vec3(1.0f, 0.0f, 0.0f));
+        reinL = scale(reinL, vec3(0.012f, 0.012f, rlen));
+        Primitives::drawCube(shader, reinL, ropeCol);
+    }
+    // Right bullock rein
+    {
+        mat4 reinR = model;
+        float rx0 = 0.62f, ry0 = 0.98f, rz0 = 2.70f;
+        float rx1 = 0.08f, ry1 = bedY + 0.38f, rz1 = 0.60f;
+        float rmx = (rx0 + rx1) * 0.5f, rmy = (ry0 + ry1) * 0.5f, rmz = (rz0 + rz1) * 0.5f;
+        float rdx = rx1 - rx0, rdy = ry1 - ry0, rdz = rz1 - rz0;
+        float rlen = sqrtf(rdx * rdx + rdy * rdy + rdz * rdz);
+        float ryaw = atan2f(rdx, rdz);
+        float rpitch = -atan2f(rdy, sqrtf(rdx * rdx + rdz * rdz));
+        reinR = translate(reinR, vec3(rmx, rmy, rmz));
+        reinR = rotate(reinR, ryaw, vec3(0.0f, 1.0f, 0.0f));
+        reinR = rotate(reinR, rpitch, vec3(1.0f, 0.0f, 0.0f));
+        reinR = scale(reinR, vec3(0.012f, 0.012f, rlen));
+        Primitives::drawCube(shader, reinR, ropeCol);
+    }
+
+    // ── 9. Pair of White Deshi Draft Bullocks (এক জোড়া সাদা বলদ গরু) ─
+    // Both bullocks are pure white/light grey with humps, curved horns, and harness (like reference images)
     mat4 leftOx = model;
-    leftOx = translate(leftOx, vec3(-0.58f, 0.0f, 2.30f));
-    drawCow(shader, leftOx, false, nullptr, walkPhase);
+    leftOx = translate(leftOx, vec3(-0.62f, 0.0f, 2.05f));
+    drawCow(shader, leftOx, false, &oxWhite1, walkPhase, true);
 
-    // Right Bullock (সাদা-ধূসর বলদ — light cream-grey Deshi ox)
     mat4 rightOx = model;
-    rightOx = translate(rightOx, vec3(0.58f, 0.0f, 2.30f));
-    drawCow(shader, rightOx, false, &whiteOxCol, walkPhase + 0.35f);
+    rightOx = translate(rightOx, vec3(0.62f, 0.0f, 2.05f));
+    drawCow(shader, rightOx, false, &oxWhite2, walkPhase + 0.35f, true);
 
     // Harness ropes extending from yoke to oxen halters
-    for (float oxX : { -0.58f, 0.58f }) {
+    for (float oxX : { -0.62f, 0.62f }) {
         mat4 harnessRope = model;
-        harnessRope = translate(harnessRope, vec3(oxX, 0.90f, 2.38f));
+        harnessRope = translate(harnessRope, vec3(oxX, 0.90f, yokeZ));
         harnessRope = rotate(harnessRope, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
         harnessRope = scale(harnessRope, vec3(0.022f, 0.022f, 0.32f));
         Primitives::drawCylinder(shader, harnessRope, ropeCol);
     }
 }
 
+// ═════════════════════════════════════════════════════════════════════
+// 1. TRADITIONAL RURAL ROADSIDE TEA STALL (চা-এর দোকান / Cha-er Dokan)
+// ═════════════════════════════════════════════════════════════════════
+void drawTeaStall(Shader& shader, const mat4& model, float animTime)
+{
+    shader.setInt("uUseTexture", 0);
+
+    vec3 woodPlank (0.42f, 0.30f, 0.16f); // weathered timber planks
+    vec3 bambooPost(0.52f, 0.44f, 0.22f); // seasoned bamboo posts
+    vec3 tinRoof   (0.56f, 0.58f, 0.60f); // corrugated galvanized tin roof
+    vec3 benchWood (0.36f, 0.24f, 0.12f); // dark timber seating bench
+    vec3 kettleCol (0.82f, 0.84f, 0.86f); // polished aluminum boiling kettle (Ketli)
+    vec3 clayPotCol(0.68f, 0.36f, 0.18f); // earthen clay tea cups (Matir Bhar)
+    vec3 glassCol  (0.85f, 0.92f, 0.95f); // glass chai tumblers
+
+    // 1. Raised earthen/timber platform plinth
+    mat4 plinth = model;
+    plinth = translate(plinth, vec3(0.0f, 0.10f, 0.0f));
+    plinth = scale(plinth, vec3(3.4f, 0.20f, 2.4f));
+    Primitives::drawCube(shader, plinth, woodPlank);
+
+    // 2. Four upright bamboo corner posts
+    float postH = 2.1f;
+    float hx = 1.55f, hz = 1.05f;
+    float posts[4][2] = { {-hx, -hz}, {hx, -hz}, {-hx, hz}, {hx, hz} };
+    for (int i = 0; i < 4; i++) {
+        mat4 p = model;
+        p = translate(p, vec3(posts[i][0], postH * 0.5f, posts[i][1]));
+        p = scale(p, vec3(0.065f, postH, 0.065f));
+        Primitives::drawCylinder(shader, p, bambooPost);
+    }
+
+    // 3. Sloping tin awning roof (sloping down forward towards +Z)
+    mat4 roof = model;
+    roof = translate(roof, vec3(0.0f, postH + 0.12f, 0.15f));
+    roof = rotate(roof, radians(14.0f), vec3(1.0f, 0.0f, 0.0f));
+    roof = scale(roof, vec3(3.6f, 0.045f, 2.7f));
+    Primitives::drawCube(shader, roof, tinRoof);
+
+    // 4. Wooden Service Counter (facing customer bench at +Z)
+    mat4 counter = model;
+    counter = translate(counter, vec3(0.0f, 0.72f, 0.55f));
+    counter = scale(counter, vec3(2.8f, 0.08f, 0.65f));
+    Primitives::drawCube(shader, counter, woodPlank);
+
+    // Counter support vertical posts
+    for (float cx : { -1.3f, 0.0f, 1.3f }) {
+        mat4 cp = model;
+        cp = translate(cp, vec3(cx, 0.36f, 0.55f));
+        cp = scale(cp, vec3(0.06f, 0.72f, 0.55f));
+        Primitives::drawCube(shader, cp, woodPlank * 0.9f);
+    }
+
+    // 5. Customer Seating Bench along front (+Z)
+    mat4 bench = model;
+    bench = translate(bench, vec3(0.0f, 0.40f, 1.25f));
+    bench = scale(bench, vec3(2.8f, 0.06f, 0.35f));
+    Primitives::drawCube(shader, bench, benchWood);
+
+    // 6. Large Boiling Aluminum Tea Kettle (Ketli / কেটলি) with animated steam puffs
+    mat4 kettle = model;
+    kettle = translate(kettle, vec3(-0.65f, 0.88f, 0.55f));
+    kettle = scale(kettle, vec3(0.32f, 0.30f, 0.32f));
+    Primitives::drawSphere(shader, kettle, kettleCol);
+
+    // Kettle spout
+    mat4 spout = model;
+    spout = translate(spout, vec3(-0.52f, 0.94f, 0.55f));
+    spout = rotate(spout, radians(-40.0f), vec3(0.0f, 0.0f, 1.0f));
+    spout = scale(spout, vec3(0.05f, 0.22f, 0.05f));
+    Primitives::drawCylinder(shader, spout, kettleCol);
+
+    // 7. Stack of glass chai tumblers & ceramic mugs
+    for (int g = 0; g < 4; g++) {
+        mat4 glass = model;
+        glass = translate(glass, vec3(0.15f + (float)g * 0.12f, 0.80f, 0.55f));
+        glass = scale(glass, vec3(0.07f, 0.12f, 0.07f));
+        Primitives::drawCylinder(shader, glass, glassCol);
+    }
+
+    // 8. Rear shelf holding glass jars and biscuit tins
+    mat4 shelf = model;
+    shelf = translate(shelf, vec3(0.0f, 1.25f, -0.85f));
+    shelf = scale(shelf, vec3(2.8f, 0.04f, 0.35f));
+    Primitives::drawCube(shader, shelf, woodPlank);
+
+    // Glass jars on rear shelf
+    for (int j = 0; j < 3; j++) {
+        mat4 jar = model;
+        jar = translate(jar, vec3(-0.70f + (float)j * 0.70f, 1.40f, -0.85f));
+        jar = scale(jar, vec3(0.18f, 0.26f, 0.18f));
+        Primitives::drawCylinder(shader, jar, glassCol * 0.85f);
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// 2. BANYAN TREE GATHERING SPOT (বটতলা / Bot-tola — Authentic Bot Gach)
+// ═════════════════════════════════════════════════════════════════════
+// Faithfully modeled directly after the user's reference photograph of an authentic
+// traditional Bangladeshi Banyan Tree (বটগাছ / Ficus benghalensis):
+// 1. Organic fluted multi-stem central trunk formed by intertwined merged columns
+// 2. Splayed basal buttress roots crawling radially along the soil
+// 3. Spreading heavy arching boughs supporting a massive majestic umbrella canopy
+// 4. Dense curtain of iconic hanging aerial prop roots (বটের ঝুড়ি / Jhuri) falling from boughs to ground
+// 5. Rich, multi-tiered botanical umbrella foliage with natural leafy contour and tonal depth
+void drawBanyanTreeSpot(Shader& shader, const mat4& model)
+{
+    shader.setInt("uUseTexture", 0);
+
+    // ── Optimized Static Color Palette ────────────────────────────
+    static const vec3 barkBase     (0.36f, 0.26f, 0.17f); // weathered woody grey-brown bark
+    static const vec3 barkFlute    (0.30f, 0.21f, 0.13f); // fluted intertwined trunk columns
+    static const vec3 barkBough    (0.34f, 0.24f, 0.15f); // heavy spreading horizontal limbs
+    static const vec3 jhuriPillar  (0.35f, 0.25f, 0.16f); // mature grounded aerial root pillars
+    static const vec3 jhuriHanging (0.42f, 0.31f, 0.19f); // hanging aerial root tendrils (বটের ঝুড়ি)
+    static const vec3 jhuriTip     (0.48f, 0.37f, 0.23f); // tender descending root tips
+    static const vec3 rootCrawl    (0.28f, 0.19f, 0.11f); // surface roots crawling on earth
+
+    // Multi-tiered foliage palette matching the reference photograph
+    static const vec3 leafSunlit   (0.24f, 0.52f, 0.17f); // sunlit golden-emerald apex & outer crown
+    static const vec3 leafLush     (0.17f, 0.43f, 0.13f); // rich mature banyan foliage
+    static const vec3 leafMid      (0.13f, 0.37f, 0.11f); // mid-canopy body
+    static const vec3 leafDeep     (0.09f, 0.29f, 0.08f); // shaded understory green
+    static const vec3 leafDark     (0.06f, 0.22f, 0.06f); // deep interior foliage shadow
+
+    // ── 1. Fluted Multi-Stem Central Banyan Trunk (গুঁড়ি ও মূল স্তম্ভ) ──────
+    // A) Central core structural trunk
+    mat4 coreTrunk = translate(model, vec3(0.0f, 1.70f, 0.0f));
+    coreTrunk = scale(coreTrunk, vec3(0.92f, 3.40f, 0.92f));
+    Primitives::drawCylinder(shader, coreTrunk, barkBase);
+
+    // B) Intertwined fluted vertical bark columns wrapping around core (Merged roots of Ficus)
+    struct TrunkFlute { float x, z; float r; float h; float yawDeg; };
+    static const TrunkFlute flutes[10] = {
+        {  0.58f,  0.22f, 0.26f, 3.45f,  15.0f },
+        {  0.42f,  0.52f, 0.22f, 3.35f,  45.0f },
+        { -0.05f,  0.64f, 0.25f, 3.50f,  85.0f },
+        { -0.48f,  0.44f, 0.24f, 3.40f, 130.0f },
+        { -0.65f,  0.08f, 0.26f, 3.55f, 175.0f },
+        { -0.52f, -0.42f, 0.23f, 3.40f, 215.0f },
+        { -0.12f, -0.62f, 0.25f, 3.50f, 260.0f },
+        {  0.38f, -0.54f, 0.24f, 3.35f, 300.0f },
+        {  0.64f, -0.18f, 0.25f, 3.45f, 340.0f },
+        {  0.15f,  0.25f, 0.22f, 3.60f,  20.0f }
+    };
+    for (const auto& fl : flutes) {
+        mat4 fM = model;
+        fM = translate(fM, vec3(fl.x, fl.h * 0.5f, fl.z));
+        fM = rotate(fM, radians(fl.yawDeg), vec3(0.0f, 1.0f, 0.0f));
+        fM = scale(fM, vec3(fl.r, fl.h, fl.r));
+        Primitives::drawCylinder(shader, fM, barkFlute);
+    }
+
+    // C) Sprawling Basal Surface Buttress Roots (বটের মাটি আঁকড়ে থাকা মূল)
+    struct ButtressRoot { float angDeg; float len; float wid; float dist; };
+    static const ButtressRoot buttresses[8] = {
+        {  15.0f, 1.85f, 0.26f, 0.75f },
+        {  62.0f, 1.65f, 0.24f, 0.70f },
+        { 105.0f, 2.05f, 0.28f, 0.80f },
+        { 150.0f, 1.70f, 0.24f, 0.72f },
+        { 195.0f, 1.95f, 0.27f, 0.78f },
+        { 245.0f, 1.60f, 0.22f, 0.68f },
+        { 285.0f, 2.10f, 0.28f, 0.82f },
+        { 330.0f, 1.75f, 0.25f, 0.74f }
+    };
+    for (const auto& br : buttresses) {
+        mat4 rM = model;
+        rM = rotate(rM, radians(br.angDeg), vec3(0.0f, 1.0f, 0.0f));
+        rM = translate(rM, vec3(0.0f, 0.12f, br.dist));
+        rM = rotate(rM, radians(18.0f), vec3(1.0f, 0.0f, 0.0f)); // splaying downward into soil
+        rM = scale(rM, vec3(br.wid, 0.22f, br.len));
+        Primitives::drawCube(shader, rM, rootCrawl);
+    }
+
+    // ── 2. Spreading Heavy Arching Boughs (সুবিশাল শাখা-প্রশাখা) ─────────
+    // 8 Primary radial boughs branching outward horizontally and arching upward
+    struct BanyanBough { float yawDeg; float pitchDeg; float len; float thick; float yStart; };
+    static const BanyanBough boughs[8] = {
+        {   0.0f, 32.0f, 3.2f, 0.24f, 3.10f },
+        {  45.0f, 28.0f, 3.5f, 0.25f, 3.25f },
+        {  90.0f, 34.0f, 3.1f, 0.23f, 3.15f },
+        { 135.0f, 30.0f, 3.6f, 0.26f, 3.30f },
+        { 180.0f, 33.0f, 3.3f, 0.24f, 3.15f },
+        { 225.0f, 29.0f, 3.5f, 0.25f, 3.25f },
+        { 270.0f, 35.0f, 3.0f, 0.23f, 3.10f },
+        { 315.0f, 31.0f, 3.4f, 0.25f, 3.20f }
+    };
+    for (const auto& bg : boughs) {
+        // Main limb
+        mat4 bM = model;
+        bM = translate(bM, vec3(0.0f, bg.yStart, 0.0f));
+        bM = rotate(bM, radians(bg.yawDeg), vec3(0.0f, 1.0f, 0.0f));
+        bM = rotate(bM, radians(bg.pitchDeg), vec3(1.0f, 0.0f, 0.0f));
+        bM = translate(bM, vec3(0.0f, bg.len * 0.5f, 0.0f));
+        mat4 bCyl = scale(bM, vec3(bg.thick, bg.len, bg.thick));
+        Primitives::drawCylinder(shader, bCyl, barkBough);
+
+        // Secondary spreading horizontal fork extending outward into umbrella canopy
+        mat4 subM = bM;
+        subM = translate(subM, vec3(0.0f, bg.len * 0.40f, 0.0f));
+        subM = rotate(subM, radians(32.0f), vec3(0.0f, 0.0f, 1.0f));
+        subM = translate(subM, vec3(0.0f, 0.85f, 0.0f));
+        mat4 subCyl = scale(subM, vec3(bg.thick * 0.65f, 1.70f, bg.thick * 0.65f));
+        Primitives::drawCylinder(shader, subCyl, barkBough);
+
+        // Secondary ascending fork into crown
+        mat4 upM = bM;
+        upM = translate(upM, vec3(0.0f, bg.len * 0.48f, 0.0f));
+        upM = rotate(upM, radians(-26.0f), vec3(0.0f, 0.0f, 1.0f));
+        upM = translate(upM, vec3(0.0f, 0.75f, 0.0f));
+        mat4 upCyl = scale(upM, vec3(bg.thick * 0.55f, 1.50f, bg.thick * 0.55f));
+        Primitives::drawCylinder(shader, upCyl, barkBough);
+    }
+
+    // ── 3. Grounded Pillar Aerial Roots (মাটিতে পৌঁছানো মোটা স্তম্ভমূল) ────
+    // Substantial vertical aerial roots that have reached the ground, forming wooden pillars
+    struct GroundedPillar { float x, z; float topY; float r; };
+    static const GroundedPillar pillars[10] = {
+        {  1.85f,  0.60f, 4.40f, 0.080f },
+        {  1.30f,  1.75f, 4.55f, 0.085f },
+        { -0.30f,  2.15f, 4.50f, 0.078f },
+        { -1.75f,  1.45f, 4.45f, 0.082f },
+        { -2.10f, -0.20f, 4.40f, 0.085f },
+        { -1.55f, -1.65f, 4.55f, 0.080f },
+        {  0.10f, -2.10f, 4.50f, 0.082f },
+        {  1.60f, -1.50f, 4.45f, 0.085f },
+        {  2.45f, -0.45f, 4.25f, 0.075f },
+        { -0.85f,  2.55f, 4.30f, 0.075f }
+    };
+    for (const auto& gp : pillars) {
+        mat4 pM = model;
+        pM = translate(pM, vec3(gp.x, gp.topY * 0.5f, gp.z));
+        pM = scale(pM, vec3(gp.r, gp.topY, gp.r));
+        Primitives::drawCylinder(shader, pM, jhuriPillar);
+
+        // Ground anchor flare where aerial pillar touches soil
+        mat4 flareM = model;
+        flareM = translate(flareM, vec3(gp.x, 0.08f, gp.z));
+        flareM = scale(flareM, vec3(gp.r * 1.8f, 0.16f, gp.r * 1.8f));
+        Primitives::drawCylinder(shader, flareM, rootCrawl);
+    }
+
+    // ── 4. Iconic Hanging Aerial Prop Roots (বটের ঝুড়ি / ঝুলন্ত শিকড়ের পর্দা) ─
+    // Slender, curtain-like aerial roots hanging down from horizontal boughs at various heights
+    struct HangingJhuri { float x, z; float topY; float len; float r; };
+    static const HangingJhuri jhuriTendrils[34] = {
+        // Inner ring tendrils
+        {  0.95f,  0.40f, 4.10f, 3.80f, 0.035f },
+        {  0.70f,  0.85f, 4.20f, 3.90f, 0.032f },
+        { -0.20f,  1.10f, 4.15f, 3.85f, 0.034f },
+        { -0.85f,  0.75f, 4.25f, 3.95f, 0.032f },
+        { -1.15f,  0.15f, 4.10f, 3.80f, 0.035f },
+        { -0.80f, -0.80f, 4.20f, 3.90f, 0.033f },
+        { -0.15f, -1.15f, 4.15f, 3.85f, 0.034f },
+        {  0.80f, -0.85f, 4.25f, 3.95f, 0.032f },
+        // Mid-span hanging root curtain (varying descending lengths)
+        {  1.55f,  1.15f, 4.35f, 3.60f, 0.028f },
+        {  1.15f,  1.85f, 4.40f, 3.80f, 0.026f },
+        {  0.45f,  2.25f, 4.30f, 3.40f, 0.025f },
+        { -0.75f,  2.05f, 4.45f, 3.75f, 0.027f },
+        { -1.45f,  1.80f, 4.35f, 3.50f, 0.026f },
+        { -2.05f,  1.05f, 4.40f, 3.85f, 0.028f },
+        { -2.35f,  0.35f, 4.30f, 3.30f, 0.024f },
+        { -2.15f, -0.75f, 4.45f, 3.70f, 0.027f },
+        { -1.65f, -1.45f, 4.35f, 3.55f, 0.026f },
+        { -1.05f, -2.05f, 4.40f, 3.80f, 0.028f },
+        { -0.35f, -2.35f, 4.30f, 3.40f, 0.025f },
+        {  0.55f, -2.15f, 4.45f, 3.75f, 0.027f },
+        {  1.35f, -1.75f, 4.35f, 3.60f, 0.026f },
+        {  2.05f, -1.05f, 4.40f, 3.85f, 0.028f },
+        {  2.25f, -0.25f, 4.30f, 3.45f, 0.025f },
+        {  2.15f,  0.55f, 4.45f, 3.70f, 0.027f },
+        // Outer peripheral dangling tendrils (gracefully floating in air above ground)
+        {  2.75f,  0.85f, 4.50f, 2.65f, 0.022f },
+        {  1.95f,  2.35f, 4.60f, 2.80f, 0.022f },
+        {  0.85f,  2.85f, 4.55f, 2.50f, 0.020f },
+        { -0.65f,  2.90f, 4.60f, 2.75f, 0.022f },
+        { -2.15f,  2.25f, 4.55f, 2.60f, 0.021f },
+        { -2.85f,  0.85f, 4.50f, 2.80f, 0.022f },
+        { -2.80f, -0.95f, 4.60f, 2.70f, 0.021f },
+        { -1.95f, -2.40f, 4.55f, 2.85f, 0.022f },
+        {  0.75f, -2.85f, 4.50f, 2.60f, 0.020f },
+        {  2.45f, -1.95f, 4.60f, 2.75f, 0.022f }
+    };
+    for (const auto& jh : jhuriTendrils) {
+        float yCenter = jh.topY - jh.len * 0.5f;
+        mat4 jM = model;
+        jM = translate(jM, vec3(jh.x, yCenter, jh.z));
+        jM = scale(jM, vec3(jh.r, jh.len, jh.r));
+        Primitives::drawCylinder(shader, jM, jhuriHanging);
+
+        // Tender dangling aerial root tip
+        mat4 tipM = model;
+        tipM = translate(tipM, vec3(jh.x, jh.topY - jh.len, jh.z));
+        tipM = scale(tipM, vec3(jh.r * 1.15f, 0.12f, jh.r * 1.15f));
+        Primitives::drawCone(shader, tipM, jhuriTip);
+    }
+
+    // ── 5. Majestic Broad Umbrella Foliage Canopy (বটের সুবিশাল চন্দ্রাতপ) ─
+    // Broad, flat-domed umbrella silhouette matching the reference photo
+    struct FoliageDomeLobe { float x, y, z; float rx, ry, rz; vec3 col; };
+    static const FoliageDomeLobe banyanCanopy[32] = {
+        // Apex crown & upper dome (Central sunlit peak)
+        {  0.00f, 7.15f,  0.00f, 2.10f, 0.95f, 2.10f, leafSunlit },
+        {  0.85f, 6.85f,  0.65f, 1.85f, 0.90f, 1.85f, leafSunlit },
+        { -0.80f, 6.80f, -0.65f, 1.85f, 0.90f, 1.85f, leafSunlit },
+        { -0.65f, 6.90f,  0.75f, 1.80f, 0.88f, 1.80f, leafSunlit },
+        {  0.75f, 6.75f, -0.75f, 1.80f, 0.88f, 1.80f, leafSunlit },
+
+        // High spreading canopy tier (R ≈ 1.8m - 2.8m)
+        {  1.90f, 6.30f,  0.45f, 1.95f, 0.92f, 1.85f, leafLush },
+        {  1.45f, 6.20f,  1.55f, 1.85f, 0.88f, 1.80f, leafLush },
+        {  0.25f, 6.35f,  2.05f, 1.90f, 0.90f, 1.90f, leafSunlit },
+        { -1.45f, 6.25f,  1.60f, 1.85f, 0.88f, 1.80f, leafLush },
+        { -2.05f, 6.20f,  0.35f, 1.95f, 0.92f, 1.85f, leafLush },
+        { -1.55f, 6.15f, -1.45f, 1.85f, 0.88f, 1.80f, leafMid },
+        { -0.20f, 6.30f, -2.05f, 1.90f, 0.90f, 1.90f, leafLush },
+        {  1.40f, 6.25f, -1.55f, 1.85f, 0.88f, 1.80f, leafLush },
+
+        // Mid-canopy broad umbrella terrace (R ≈ 2.8m - 4.2m)
+        {  2.95f, 5.55f,  0.40f, 2.05f, 0.85f, 1.95f, leafLush },
+        {  2.35f, 5.45f,  2.15f, 1.95f, 0.82f, 1.90f, leafMid },
+        {  0.40f, 5.60f,  3.05f, 2.00f, 0.85f, 2.00f, leafLush },
+        { -2.25f, 5.40f,  2.25f, 1.95f, 0.82f, 1.90f, leafMid },
+        { -3.05f, 5.50f,  0.30f, 2.05f, 0.85f, 1.95f, leafLush },
+        { -2.35f, 5.35f, -2.15f, 1.95f, 0.82f, 1.90f, leafMid },
+        { -0.30f, 5.55f, -3.00f, 2.00f, 0.85f, 2.00f, leafMid },
+        {  2.20f, 5.45f, -2.25f, 1.95f, 0.82f, 1.90f, leafLush },
+
+        // Outer perimeter drooping umbrella skirt (R ≈ 3.8m - 5.1m, breaking up silhouette)
+        {  3.75f, 4.75f,  0.60f, 1.65f, 0.72f, 1.60f, leafDeep },
+        {  3.10f, 4.65f,  2.45f, 1.55f, 0.68f, 1.55f, leafDeep },
+        {  1.85f, 4.70f,  3.55f, 1.60f, 0.70f, 1.60f, leafDeep },
+        { -0.20f, 4.80f,  3.90f, 1.65f, 0.72f, 1.65f, leafDeep },
+        { -2.15f, 4.65f,  3.40f, 1.55f, 0.68f, 1.55f, leafDeep },
+        { -3.70f, 4.70f,  0.50f, 1.65f, 0.72f, 1.60f, leafDeep },
+        { -3.35f, 4.60f, -2.05f, 1.55f, 0.68f, 1.55f, leafDeep },
+        { -1.80f, 4.65f, -3.50f, 1.60f, 0.70f, 1.60f, leafDeep },
+        {  0.30f, 4.75f, -3.85f, 1.65f, 0.72f, 1.65f, leafDeep },
+        {  2.55f, 4.60f, -3.10f, 1.55f, 0.68f, 1.55f, leafDeep },
+
+        // Interior understory shadow density (nestled between heavy boughs above aerial roots)
+        {  0.00f, 4.45f,  0.00f, 1.90f, 0.65f, 1.90f, leafDark }
+    };
+    for (const auto& cl : banyanCanopy) {
+        mat4 cM = model;
+        cM = translate(cM, vec3(cl.x, cl.y, cl.z));
+        cM = scale(cM, vec3(cl.rx, cl.ry, cl.rz));
+        Primitives::drawSphere(shader, cM, cl.col);
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// 3. VILLAGE FRESHWATER POND (পুকুর / Pukur with Ripples & Lilies)
+// ═════════════════════════════════════════════════════════════════════
+void drawPond(Shader& shader, const mat4& model, float animTime)
+{
+    shader.setInt("uUseTexture", 0);
+
+    vec3 bankMud   (0.38f, 0.32f, 0.20f); // damp earthen pond embankment
+    vec3 waterDeep (0.12f, 0.28f, 0.32f); // tranquil freshwater depth
+    vec3 lilyLeaf  (0.24f, 0.52f, 0.18f); // floating circular water lily pad
+    vec3 lilyFlower(0.95f, 0.88f, 0.92f); // delicate pink/white lotus blossom
+
+    // 1. Sloping earthen pond rim / embankment
+    mat4 embankment = model;
+    embankment = translate(embankment, vec3(0.0f, 0.04f, 0.0f));
+    embankment = scale(embankment, vec3(12.5f, 0.12f, 9.5f));
+    Primitives::drawCube(shader, embankment, bankMud);
+
+    // 2. Reflective, rippling water surface
+    float waterRipple = sinf(animTime * 1.6f) * 0.006f;
+    mat4 water = model;
+    water = translate(water, vec3(0.0f, 0.055f + waterRipple, 0.0f));
+    water = scale(water, vec3(11.2f, 0.002f, 8.2f));
+    Primitives::drawPlane(shader, water, waterDeep);
+
+    // 3. Water Lily (Shapla / পদ্ম) clusters floating on pond
+    float lilyPos[4][2] = {
+        { -3.2f,  1.8f },
+        {  2.8f, -1.6f },
+        { -1.4f, -2.2f },
+        {  3.4f,  1.6f }
+    };
+    for (int l = 0; l < 4; l++) {
+        mat4 pad = model;
+        pad = translate(pad, vec3(lilyPos[l][0], 0.062f + waterRipple, lilyPos[l][1]));
+        pad = scale(pad, vec3(0.65f, 0.005f, 0.65f));
+        Primitives::drawSphere(shader, pad, lilyLeaf);
+
+        // Lotus flower blossom
+        mat4 flower = model;
+        flower = translate(flower, vec3(lilyPos[l][0], 0.085f + waterRipple, lilyPos[l][1]));
+        flower = scale(flower, vec3(0.12f, 0.08f, 0.12f));
+        Primitives::drawSphere(shader, flower, lilyFlower);
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// 4. COURTYARD BAMBOO CLOTHESLINE (কাপড় শুকানোর দড়ি / Clothesline)
+// ═════════════════════════════════════════════════════════════════════
+void drawClothesline(Shader& shader, const mat4& model, float animTime)
+{
+    shader.setInt("uUseTexture", 0);
+
+    vec3 bambooPost(0.48f, 0.38f, 0.20f); // weathered bamboo upright poles
+    vec3 coirRope  (0.36f, 0.26f, 0.14f); // jute coir hanging line
+    vec3 gamchaRed (0.84f, 0.22f, 0.14f); // traditional red Bengali Gamcha
+    vec3 lungiPlaid(0.18f, 0.38f, 0.52f); // checkered Bengali cotton Lungi
+
+    float lineLength = 3.6f;
+    float postH      = 1.75f;
+
+    // 1. Two bamboo poles driven into courtyard ground
+    for (float px : { -lineLength * 0.5f, lineLength * 0.5f }) {
+        mat4 post = model;
+        post = translate(post, vec3(px, postH * 0.5f, 0.0f));
+        post = scale(post, vec3(0.045f, postH, 0.045f));
+        Primitives::drawCylinder(shader, post, bambooPost);
+    }
+
+    // 2. Horizontal coir rope line connecting the posts
+    mat4 rope = model;
+    rope = translate(rope, vec3(0.0f, postH - 0.10f, 0.0f));
+    rope = scale(rope, vec3(lineLength, 0.015f, 0.015f));
+    Primitives::drawCube(shader, rope, coirRope);
+
+    // 3. Fluttering Red Gamcha hanging on line
+    float windFlutter1 = (animTime > 0.0f) ? (sinf(animTime * 3.4f) * radians(9.0f)) : 0.0f;
+    mat4 gamcha = model;
+    gamcha = translate(gamcha, vec3(-0.65f, postH - 0.48f, 0.0f));
+    gamcha = rotate(gamcha, windFlutter1, vec3(1.0f, 0.0f, 0.0f));
+    gamcha = scale(gamcha, vec3(0.75f, 0.72f, 0.014f));
+    Primitives::drawCube(shader, gamcha, gamchaRed);
+
+    // 4. Fluttering Blue/Green Checked Lungi drying on line
+    float windFlutter2 = (animTime > 0.0f) ? (sinf(animTime * 2.8f + 1.2f) * radians(8.0f)) : 0.0f;
+    mat4 lungi = model;
+    lungi = translate(lungi, vec3(0.70f, postH - 0.60f, 0.0f));
+    lungi = rotate(lungi, windFlutter2, vec3(1.0f, 0.0f, 0.0f));
+    lungi = scale(lungi, vec3(1.05f, 0.95f, 0.014f));
+    Primitives::drawCube(shader, lungi, lungiPlaid);
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// 5. BAMBOO MOORING JETTY AT THE GHAT (বাঁশের তৈরি ঘাট / Bamboo Jetty)
+// ═════════════════════════════════════════════════════════════════════
+void drawBambooJetty(Shader& shader, const mat4& model)
+{
+    shader.setInt("uUseTexture", 0);
+
+    vec3 bambooPiling(0.42f, 0.32f, 0.18f); // water-soaked bamboo pilings
+    vec3 woodPlank   (0.50f, 0.38f, 0.22f); // river jetty timber deck
+    vec3 coirLash    (0.24f, 0.18f, 0.10f); // jute coir rope ties
+
+    float jettyL = 3.6f; // extends out into river water
+    float jettyW = 1.15f;
+    float deckY  = 0.14f;
+
+    // 1. Pairs of bamboo pilings driven into riverbed
+    for (float z = 0.4f; z <= jettyL; z += 1.0f) {
+        for (float x : { -jettyW * 0.42f, jettyW * 0.42f }) {
+            mat4 piling = model;
+            piling = translate(piling, vec3(x, 0.35f, z));
+            piling = scale(piling, vec3(0.055f, 1.2f, 0.055f));
+            Primitives::drawCylinder(shader, piling, bambooPiling);
+        }
+    }
+
+    // 2. Horizontal tie-bearers
+    for (float x : { -jettyW * 0.42f, jettyW * 0.42f }) {
+        mat4 bearer = model;
+        bearer = translate(bearer, vec3(x, deckY - 0.035f, jettyL * 0.5f));
+        bearer = scale(bearer, vec3(0.045f, 0.045f, jettyL));
+        Primitives::drawCube(shader, bearer, bambooPiling);
+    }
+
+    // 3. Wooden cross-deck planks
+    int numPlanks = 16;
+    for (int p = 0; p < numPlanks; p++) {
+        float pz = 0.15f + (float)p * (jettyL / (float)numPlanks);
+        mat4 plank = model;
+        plank = translate(plank, vec3(0.0f, deckY, pz));
+        plank = scale(plank, vec3(jettyW, 0.035f, 0.18f));
+        Primitives::drawCube(shader, plank, (p % 2 == 0) ? woodPlank : (woodPlank * 0.93f));
+    }
+
+    // 4. Mooring post at jetty tip for tying boats
+    mat4 moorPost = model;
+    moorPost = translate(moorPost, vec3(jettyW * 0.35f, 0.42f, jettyL - 0.15f));
+    moorPost = scale(moorPost, vec3(0.075f, 0.65f, 0.075f));
+    Primitives::drawCylinder(shader, moorPost, bambooPiling * 0.85f);
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// 6. TRADITIONAL RURAL CORRUGATED TIN WASHROOM (টিনের পায়খানা / বাথরুম)
+// ═════════════════════════════════════════════════════════════════════
+void drawWashroom(Shader& shader, const mat4& model)
+{
+    shader.setInt("uUseTexture", 0);
+
+    // ── Authentic Material Palette (Matching Reference CI Sheet Latrine) ──
+    const vec3 concreteBase (0.50f, 0.52f, 0.53f); // raised poured concrete plinth
+    const vec3 concreteDark (0.38f, 0.40f, 0.41f); // damp concrete skirting & step
+    const vec3 timberPost   (0.52f, 0.35f, 0.18f); // seasoned wooden corner framing & purlins
+    const vec3 timberTrim   (0.68f, 0.44f, 0.18f); // bright wooden door batten & jambs
+    const vec3 tinTealBase  (0.06f, 0.50f, 0.42f); // corrugated CI sheet base (Teal / Sea-Green)
+    const vec3 tinTealRib   (0.09f, 0.57f, 0.48f); // 3D corrugated vertical wave ridge highlight
+    const vec3 roofTinBase  (0.32f, 0.46f, 0.35f); // weathered olive-green corrugated tin roof
+    const vec3 roofTinRib   (0.38f, 0.52f, 0.40f); // corrugated roof wave ridges
+    const vec3 metalLatch   (0.22f, 0.20f, 0.18f); // forged iron sliding door bolt (Chhitkini)
+    const vec3 pvcVentPipe  (0.24f, 0.25f, 0.26f); // dark charcoal sanitary vent pipe
+
+    // Overall structure dimensions (compact rural footprint)
+    const float plinthW = 1.08f;
+    const float plinthD = 1.18f;
+    const float plinthH = 0.18f;
+
+    const float cabinW  = 0.94f;
+    const float cabinD  = 1.02f;
+    const float cabinH  = 1.84f; // wall height
+
+    const float halfW   = cabinW * 0.5f; // 0.47f
+    const float halfD   = cabinD * 0.5f; // 0.51f
+
+    // ── 1. Raised Concrete Plinth Foundation & Front Step ───────────
+    // Main foundation slab
+    mat4 plinth = model;
+    plinth = translate(plinth, vec3(0.0f, plinthH * 0.5f, 0.0f));
+    plinth = scale(plinth, vec3(plinthW, plinthH, plinthD));
+    Primitives::drawCube(shader, plinth, concreteBase);
+
+    // Darker perimeter footing band
+    mat4 footing = model;
+    footing = translate(footing, vec3(0.0f, 0.035f, 0.0f));
+    footing = scale(footing, vec3(plinthW + 0.05f, 0.07f, plinthD + 0.05f));
+    Primitives::drawCube(shader, footing, concreteDark);
+
+    // Front entrance step centered before the door (+Z)
+    mat4 step = model;
+    step = translate(step, vec3(0.0f, 0.045f, plinthD * 0.5f + 0.13f));
+    step = scale(step, vec3(0.66f, 0.09f, 0.26f));
+    Primitives::drawCube(shader, step, concreteDark);
+
+    // ── 2. Timber Structural Frame (4 Corner Posts & Roof Rafters) ──
+    const float postSize = 0.055f;
+    const float postH    = cabinH + 0.08f;
+    const float postY    = plinthH + postH * 0.5f;
+
+    // 4 Corner Wooden Posts
+    for (float px : { -halfW + postSize * 0.5f, halfW - postSize * 0.5f }) {
+        for (float pz : { -halfD + postSize * 0.5f, halfD - postSize * 0.5f }) {
+            mat4 post = model;
+            post = translate(post, vec3(px, postY, pz));
+            post = scale(post, vec3(postSize, postH, postSize));
+            Primitives::drawCube(shader, post, timberPost);
+        }
+    }
+
+    // Top horizontal wooden plates
+    mat4 topPlateL = model;
+    topPlateL = translate(topPlateL, vec3(-halfW + postSize * 0.5f, plinthH + cabinH - 0.02f, 0.0f));
+    topPlateL = scale(topPlateL, vec3(postSize, 0.05f, cabinD));
+    Primitives::drawCube(shader, topPlateL, timberPost);
+
+    mat4 topPlateR = model;
+    topPlateR = translate(topPlateR, vec3(halfW - postSize * 0.5f, plinthH + cabinH - 0.02f, 0.0f));
+    topPlateR = scale(topPlateR, vec3(postSize, 0.05f, cabinD));
+    Primitives::drawCube(shader, topPlateR, timberPost);
+
+    // ── 3. Corrugated Tin Walls (Left, Right, Rear) ───────────────────
+    const float wallCenterY = plinthH + cabinH * 0.5f;
+
+    // A. Left Wall (-X)
+    mat4 leftWall = model;
+    leftWall = translate(leftWall, vec3(-halfW + 0.01f, wallCenterY, 0.0f));
+    leftWall = scale(leftWall, vec3(0.018f, cabinH, cabinD - postSize * 2.0f));
+    Primitives::drawCube(shader, leftWall, tinTealBase);
+
+    // Left wall vertical corrugation wave ribs (8 flutes)
+    for (int r = 0; r < 8; ++r) {
+        float rz = (-halfD + postSize + 0.06f) + (float)r * ((cabinD - postSize * 2.0f - 0.12f) / 7.0f);
+        mat4 rib = model;
+        rib = translate(rib, vec3(-halfW - 0.004f, wallCenterY, rz));
+        rib = scale(rib, vec3(0.016f, cabinH, 0.022f));
+        Primitives::drawCylinder(shader, rib, tinTealRib);
+    }
+
+    // B. Right Wall (+X)
+    mat4 rightWall = model;
+    rightWall = translate(rightWall, vec3(halfW - 0.01f, wallCenterY, 0.0f));
+    rightWall = scale(rightWall, vec3(0.018f, cabinH, cabinD - postSize * 2.0f));
+    Primitives::drawCube(shader, rightWall, tinTealBase);
+
+    // Right wall vertical corrugation wave ribs (8 flutes)
+    for (int r = 0; r < 8; ++r) {
+        float rz = (-halfD + postSize + 0.06f) + (float)r * ((cabinD - postSize * 2.0f - 0.12f) / 7.0f);
+        mat4 rib = model;
+        rib = translate(rib, vec3(halfW + 0.004f, wallCenterY, rz));
+        rib = scale(rib, vec3(0.016f, cabinH, 0.022f));
+        Primitives::drawCylinder(shader, rib, tinTealRib);
+    }
+
+    // C. Rear Wall (-Z)
+    mat4 rearWall = model;
+    rearWall = translate(rearWall, vec3(0.0f, wallCenterY, -halfD + 0.01f));
+    rearWall = scale(rearWall, vec3(cabinW - postSize * 2.0f, cabinH, 0.018f));
+    Primitives::drawCube(shader, rearWall, tinTealBase);
+
+    // Rear wall vertical corrugation wave ribs (7 flutes)
+    for (int r = 0; r < 7; ++r) {
+        float rx = (-halfW + postSize + 0.06f) + (float)r * ((cabinW - postSize * 2.0f - 0.12f) / 6.0f);
+        mat4 rib = model;
+        rib = translate(rib, vec3(rx, wallCenterY, -halfD - 0.004f));
+        rib = scale(rib, vec3(0.022f, cabinH, 0.016f));
+        Primitives::drawCylinder(shader, rib, tinTealRib);
+    }
+
+    // ── 4. Front Wall & Corrugated Tin Door (+Z) ─────────────────────
+    // Wooden door jambs framing the front opening
+    const float doorW = 0.64f;
+    const float doorH = cabinH - 0.06f;
+    const float doorX = 0.04f; // slightly biased towards center
+
+    // Wooden door jamb (left vertical frame)
+    mat4 jambL = model;
+    jambL = translate(jambL, vec3(doorX - doorW * 0.5f - 0.02f, plinthH + doorH * 0.5f, halfD - 0.015f));
+    jambL = scale(jambL, vec3(0.04f, doorH, 0.04f));
+    Primitives::drawCube(shader, jambL, timberPost);
+
+    // Wooden door jamb (right vertical frame)
+    mat4 jambR = model;
+    jambR = translate(jambR, vec3(doorX + doorW * 0.5f + 0.02f, plinthH + doorH * 0.5f, halfD - 0.015f));
+    jambR = scale(jambR, vec3(0.04f, doorH, 0.04f));
+    Primitives::drawCube(shader, jambR, timberPost);
+
+    // Wooden lintel over door
+    mat4 lintel = model;
+    lintel = translate(lintel, vec3(doorX, plinthH + doorH + 0.025f, halfD - 0.015f));
+    lintel = scale(lintel, vec3(doorW + 0.08f, 0.05f, 0.04f));
+    Primitives::drawCube(shader, lintel, timberPost);
+
+    // Small fixed corrugated tin strip on the far left of front wall
+    float fixedW = (cabinW - postSize) * 0.5f - doorW * 0.5f;
+    if (fixedW > 0.04f) {
+        mat4 fixedTin = model;
+        fixedTin = translate(fixedTin, vec3(-halfW + fixedW * 0.5f + 0.02f, wallCenterY, halfD - 0.01f));
+        fixedTin = scale(fixedTin, vec3(fixedW, cabinH, 0.018f));
+        Primitives::drawCube(shader, fixedTin, tinTealBase);
+    }
+
+    // Main Corrugated Tin Door Panel
+    mat4 door = model;
+    door = translate(door, vec3(doorX, plinthH + doorH * 0.5f, halfD + 0.005f));
+    door = scale(door, vec3(doorW, doorH, 0.02f));
+    Primitives::drawCube(shader, door, tinTealBase);
+
+    // 6 Vertical corrugation flutes across the front door
+    for (int r = 0; r < 6; ++r) {
+        float dx = (doorX - doorW * 0.5f + 0.05f) + (float)r * ((doorW - 0.10f) / 5.0f);
+        mat4 dRib = model;
+        dRib = translate(dRib, vec3(dx, plinthH + doorH * 0.5f, halfD + 0.018f));
+        dRib = scale(dRib, vec3(0.022f, doorH, 0.016f));
+        Primitives::drawCylinder(shader, dRib, tinTealRib);
+    }
+
+    // Prominent golden timber edge batten on door (visible in reference photo!)
+    mat4 batten = model;
+    batten = translate(batten, vec3(doorX - doorW * 0.5f + 0.025f, plinthH + doorH * 0.5f, halfD + 0.022f));
+    batten = scale(batten, vec3(0.045f, doorH, 0.025f));
+    Primitives::drawCube(shader, batten, timberTrim);
+
+    // Horizontal metal sliding door latch (ছিটকিনি / Chhitkini)
+    float latchY = plinthH + doorH * 0.52f;
+    mat4 latchBase = model;
+    latchBase = translate(latchBase, vec3(doorX - doorW * 0.5f + 0.055f, latchY, halfD + 0.032f));
+    latchBase = scale(latchBase, vec3(0.12f, 0.035f, 0.015f));
+    Primitives::drawCube(shader, latchBase, metalLatch);
+
+    mat4 latchBolt = model;
+    latchBolt = translate(latchBolt, vec3(doorX - doorW * 0.5f + 0.055f, latchY, halfD + 0.040f));
+    latchBolt = scale(latchBolt, vec3(0.14f, 0.014f, 0.014f));
+    Primitives::drawCube(shader, latchBolt, metalLatch * 0.8f);
+
+    // ── 5. Slanted Single-Pitch Corrugated Tin Roof (একচালা ঢেউটিনের চাল) ──
+    // In reference photo: single pitch sloping gently backwards (~11 degrees)
+    const float roofSlopeDeg = -10.5f; // slope downwards towards rear (-Z)
+    const float roofW        = cabinW + 0.28f; // overhanging eaves on sides
+    const float roofD        = cabinD + 0.36f; // generous overhanging eaves front & back
+    const float roofThick    = 0.024f;
+    const float roofPivotY   = plinthH + cabinH + 0.09f;
+
+    // Wooden purlin rafters supporting the corrugated roof
+    for (float rx : { -roofW * 0.32f, 0.0f, roofW * 0.32f }) {
+        mat4 rafter = model;
+        rafter = translate(rafter, vec3(rx, roofPivotY - 0.035f, 0.0f));
+        rafter = rotate(rafter, radians(roofSlopeDeg), vec3(1.0f, 0.0f, 0.0f));
+        rafter = scale(rafter, vec3(0.045f, 0.045f, roofD * 0.94f));
+        Primitives::drawCube(shader, rafter, timberPost);
+    }
+
+    // Main Corrugated Tin Roof Sheet
+    mat4 roofSheet = model;
+    roofSheet = translate(roofSheet, vec3(0.0f, roofPivotY, 0.0f));
+    roofSheet = rotate(roofSheet, radians(roofSlopeDeg), vec3(1.0f, 0.0f, 0.0f));
+    roofSheet = scale(roofSheet, vec3(roofW, roofThick, roofD));
+    Primitives::drawCube(shader, roofSheet, roofTinBase);
+
+    // 9 Corrugated roof ribs along the slope
+    for (int r = 0; r < 9; ++r) {
+        float rx = (-roofW * 0.5f + 0.06f) + (float)r * ((roofW - 0.12f) / 8.0f);
+        mat4 rRib = model;
+        rRib = translate(rRib, vec3(rx, roofPivotY + 0.014f, 0.0f));
+        rRib = rotate(rRib, radians(roofSlopeDeg), vec3(1.0f, 0.0f, 0.0f));
+        rRib = scale(rRib, vec3(0.024f, 0.016f, roofD));
+        Primitives::drawCylinder(shader, rRib, roofTinRib);
+    }
+
+    // ── 6. Sanitary PVC Ventilation Pipe (ভেন্ট পাইপ at rear corner) ──
+    const float pipeH = cabinH + 0.42f; // extends well above roof
+    mat4 vent = model;
+    vent = translate(vent, vec3(-halfW + 0.09f, plinthH + pipeH * 0.5f, -halfD - 0.03f));
+    vent = scale(vent, vec3(0.065f, pipeH, 0.065f));
+    Primitives::drawCylinder(shader, vent, pvcVentPipe);
+
+    // Vent pipe T-cap / cowl on top
+    mat4 cowl = model;
+    cowl = translate(cowl, vec3(-halfW + 0.09f, plinthH + pipeH + 0.02f, -halfD - 0.03f));
+    cowl = scale(cowl, vec3(0.12f, 0.05f, 0.07f));
+    Primitives::drawCube(shader, cowl, pvcVentPipe * 0.85f);
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// 15. TRADITIONAL RURAL AGRICULTURAL FIELD PREPARATION & OX PLOWING (হালচাষ ও জমি তৈরি)
+// ═════════════════════════════════════════════════════════════════════
+void drawPlowingScene(Shader& shader, const mat4& model, float animTime,
+                      float customX, float customZ, float customHeading, float customWalkPhase,
+                      bool isNight)
+{
+    shader.setInt("uUseTexture", 0);
+
+    const vec3 soilBedCol   (0.24f, 0.17f, 0.10f); // rich damp dark alluvial soil
+    const vec3 furrowDark   (0.16f, 0.11f, 0.07f); // deep furrow shadows
+    const vec3 furrowRidge  (0.35f, 0.25f, 0.15f); // upturned ploughed soil ridges
+    const vec3 clodHighlight(0.42f, 0.31f, 0.18f); // sun-dried soil clods
+    const vec3 aalBorderCol (0.48f, 0.36f, 0.22f); // raised clay boundary ridge
+
+    // Oxen & plow materials (matching reference photo)
+    const vec3 oxTan   (0.76f, 0.60f, 0.40f);      // Left ox: warm fawn / tan coat
+    const vec3 oxBrown (0.38f, 0.20f, 0.11f);      // Right ox: rich dark chestnut brown coat
+    const vec3 blueHorn(0.20f, 0.55f, 0.92f);      // Painted blue horns (authentic rural custom)
+    const vec3 yokeWood(0.46f, 0.32f, 0.18f);      // Heavy hardwood yoke (Joyal)
+    const vec3 plowWood(0.42f, 0.28f, 0.15f);      // Seasoned jackfruit wood plow body (Langol)
+    const vec3 steelFhal(0.28f, 0.28f, 0.30f);     // Dark iron plowshare point (Fhal)
+    const vec3 reinRope(0.82f, 0.78f, 0.68f);      // Jute coir reins / guide ropes
+
+    const float centerX = -24.5f;
+    const float centerZ =  27.0f;
+    const float fieldW  =  12.0f;
+    const float fieldL  =   9.0f;
+
+    // ── 1. The Prepared Tilled Agricultural Field Bed (চাষ দেওয়া খাস জমি) ──
+    mat4 fieldBase = model;
+    fieldBase = translate(fieldBase, vec3(centerX, 0.012f, centerZ));
+    fieldBase = scale(fieldBase, vec3(fieldW, 1.0f, fieldL));
+    Primitives::drawPlane(shader, fieldBase, soilBedCol);
+
+    // Parallel ploughed soil furrows across the field
+    const int numFurrows = 18;
+    const float furrowStep = (fieldW - 0.8f) / (float)(numFurrows - 1);
+    for (int f = 0; f < numFurrows; ++f) {
+        float fx = (centerX - fieldW * 0.5f + 0.4f) + (float)f * furrowStep;
+
+        // Dark furrow trough
+        mat4 trough = model;
+        trough = translate(trough, vec3(fx, 0.015f, centerZ));
+        trough = scale(trough, vec3(0.10f, 0.012f, fieldL * 0.94f));
+        Primitives::drawCube(shader, trough, furrowDark);
+
+        // Raised ploughed earth ridge
+        mat4 ridge = model;
+        ridge = translate(ridge, vec3(fx + furrowStep * 0.45f, 0.035f, centerZ));
+        ridge = scale(ridge, vec3(furrowStep * 0.62f, 0.055f, fieldL * 0.94f));
+        Primitives::drawCube(shader, ridge, furrowRidge);
+
+        // Soil clods (মাটির ঢেলা) along the tilled ridges
+        for (int c = 0; c < 6; ++c) {
+            float cz = (centerZ - fieldL * 0.42f) + (float)c * (fieldL * 0.84f / 5.0f);
+            float clodJitterX = (float)((f * 7 + c * 13) % 7 - 3) * 0.022f;
+            float clodJitterZ = (float)((f * 11 + c * 5) % 7 - 3) * 0.032f;
+
+            mat4 clod = model;
+            clod = translate(clod, vec3(fx + furrowStep * 0.45f + clodJitterX, 0.065f, cz + clodJitterZ));
+            clod = scale(clod, vec3(0.085f, 0.055f, 0.085f));
+            Primitives::drawSphere(shader, clod, clodHighlight);
+        }
+    }
+
+    // 4 Earthen Boundary Ridges (Aal / মাটির আইল)
+    const float aalH = 0.09f, aalW = 0.32f;
+    for (int side = -1; side <= 1; side += 2) {
+        mat4 dikeZ = model;
+        dikeZ = translate(dikeZ, vec3(centerX, aalH * 0.5f, centerZ + (float)side * (fieldL * 0.5f)));
+        dikeZ = scale(dikeZ, vec3(fieldW + aalW, aalH, aalW));
+        Primitives::drawCube(shader, dikeZ, aalBorderCol);
+
+        mat4 dikeX = model;
+        dikeX = translate(dikeX, vec3(centerX + (float)side * (fieldW * 0.5f), aalH * 0.5f, centerZ));
+        dikeX = scale(dikeX, vec3(aalW, aalH, fieldL));
+        Primitives::drawCube(shader, dikeX, aalBorderCol);
+    }
+
+    // At nighttime, the draft oxen and farmer are resting at home/cowshed (only present during daytime/inspection)
+    if (isNight) {
+        return;
+    }
+
+    // ── 2. Plowing Motion Trajectory (Keyboard Driven or Animated Trajectory) ──
+    float teamPosX;
+    float teamPosZ;
+    float headingYaw;
+    float walkPhase;
+
+    if (customX > -900.0f) {
+        teamPosX   = customX;
+        teamPosZ   = customZ;
+        headingYaw = customHeading;
+        walkPhase  = customWalkPhase;
+    } else {
+        teamPosX = centerX;
+        const float movePeriod = 16.0f; // 16s per furrow circuit
+        float cycleT = fmodf(animTime, movePeriod) / movePeriod;
+        if (cycleT < 0.0f) cycleT += 1.0f;
+
+        if (cycleT < 0.45f) {
+            float s = cycleT / 0.45f;
+            teamPosZ = (centerZ - 2.5f) + s * 5.0f;
+            headingYaw = 0.0f;
+        } else if (cycleT < 0.50f) {
+            float s = (cycleT - 0.45f) / 0.05f;
+            teamPosZ = centerZ + 2.5f;
+            headingYaw = s * 180.0f;
+        } else if (cycleT < 0.95f) {
+            float s = (cycleT - 0.50f) / 0.45f;
+            teamPosZ = (centerZ + 2.5f) - s * 5.0f;
+            headingYaw = 180.0f;
+        } else {
+            float s = (cycleT - 0.95f) / 0.05f;
+            teamPosZ = centerZ - 2.5f;
+            headingYaw = 180.0f + s * 180.0f;
+        }
+        walkPhase = animTime * 5.2f;
+    }
+
+    // Team root matrix (oxen lead, farmer follows behind)
+    mat4 teamM = model;
+    teamM = translate(teamM, vec3(teamPosX, 0.0f, teamPosZ));
+    teamM = rotate(teamM, radians(headingYaw), vec3(0.0f, 1.0f, 0.0f));
+
+    // ── 3. Pair of Draft Oxen (এক জোড়া বলদ গরু) ──
+    mat4 leftOxM = teamM;
+    leftOxM = translate(leftOxM, vec3(-0.65f, 0.0f, 1.35f));
+    drawCow(shader, leftOxM, false, &oxTan, walkPhase, true);
+
+    mat4 rightOxM = teamM;
+    rightOxM = translate(rightOxM, vec3(0.65f, 0.0f, 1.35f));
+    drawCow(shader, rightOxM, false, &oxBrown, walkPhase + 0.45f, true);
+
+    // Blue Painted Horns (নীল রঙের শিং - matching reference image)
+    for (float hornSide : { -1.0f, 1.0f }) {
+        mat4 bHornL = leftOxM;
+        bHornL = translate(bHornL, vec3(hornSide * 0.18f, 1.52f, 0.72f));
+        bHornL = rotate(bHornL, radians(hornSide * 28.0f), vec3(0.0f, 0.0f, 1.0f));
+        bHornL = rotate(bHornL, radians(22.0f), vec3(1.0f, 0.0f, 0.0f));
+        bHornL = scale(bHornL, vec3(0.048f, 0.22f, 0.048f));
+        Primitives::drawCone(shader, bHornL, blueHorn);
+
+        mat4 bHornR = rightOxM;
+        bHornR = translate(bHornR, vec3(hornSide * 0.18f, 1.52f, 0.72f));
+        bHornR = rotate(bHornR, radians(hornSide * 28.0f), vec3(0.0f, 0.0f, 1.0f));
+        bHornR = rotate(bHornR, radians(22.0f), vec3(1.0f, 0.0f, 0.0f));
+        bHornR = scale(bHornR, vec3(0.048f, 0.22f, 0.048f));
+        Primitives::drawCone(shader, bHornR, blueHorn);
+    }
+
+    // ── 4. Wooden Yoke & Plow Assembly (জোয়াল, ঈশ ও কাঠের লাঙ্গল) ──
+    // Heavy wooden yoke beam (Joyal / জোয়াল) across both oxen necks
+    mat4 yoke = teamM;
+    yoke = translate(yoke, vec3(0.0f, 1.06f, 1.38f));
+    yoke = rotate(yoke, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
+    yoke = scale(yoke, vec3(0.075f, 0.075f, 1.95f));
+    Primitives::drawCylinder(shader, yoke, yokeWood);
+
+    // Yoke retaining pins (Shail / শাইল) locking each ox
+    for (float oxX : { -0.82f, -0.48f, 0.48f, 0.82f }) {
+        mat4 pin = teamM;
+        pin = translate(pin, vec3(oxX, 0.98f, 1.38f));
+        pin = scale(pin, vec3(0.035f, 0.26f, 0.035f));
+        Primitives::drawCylinder(shader, pin, yokeWood * 0.85f);
+    }
+
+    // Long central wooden draft beam (Eesh / ঈশ) from yoke center to plow base
+    mat4 eesh = teamM;
+    eesh = translate(eesh, vec3(0.0f, 0.58f, 0.35f));
+    eesh = rotate(eesh, radians(22.0f), vec3(1.0f, 0.0f, 0.0f));
+    eesh = scale(eesh, vec3(0.055f, 0.055f, 2.25f));
+    Primitives::drawCylinder(shader, eesh, plowWood);
+
+    // Curved wooden plow body (Langol / লাঙ্গল) at the base slicing into earth
+    mat4 plowBody = teamM;
+    plowBody = translate(plowBody, vec3(0.0f, 0.22f, -0.75f));
+    plowBody = rotate(plowBody, radians(-32.0f), vec3(1.0f, 0.0f, 0.0f));
+    plowBody = scale(plowBody, vec3(0.08f, 0.48f, 0.12f));
+    Primitives::drawCube(shader, plowBody, plowWood);
+
+    // Steel plowshare point (Fhal / ফাল)
+    mat4 fhal = teamM;
+    fhal = translate(fhal, vec3(0.0f, 0.04f, -0.68f));
+    fhal = rotate(fhal, radians(45.0f), vec3(1.0f, 0.0f, 0.0f));
+    fhal = scale(fhal, vec3(0.095f, 0.22f, 0.035f));
+    Primitives::drawCone(shader, fhal, steelFhal);
+
+    // Upright wooden steering handle (Muthia / মুঠিয়া)
+    mat4 muthia = teamM;
+    muthia = translate(muthia, vec3(0.0f, 0.62f, -0.82f));
+    muthia = rotate(muthia, radians(-18.0f), vec3(1.0f, 0.0f, 0.0f));
+    muthia = scale(muthia, vec3(0.045f, 0.85f, 0.045f));
+    Primitives::drawCylinder(shader, muthia, plowWood);
+
+    // Handle crossbar grip
+    mat4 handleGrip = teamM;
+    handleGrip = translate(handleGrip, vec3(0.0f, 1.02f, -0.92f));
+    handleGrip = rotate(handleGrip, radians(90.0f), vec3(0.0f, 1.0f, 0.0f));
+    handleGrip = scale(handleGrip, vec3(0.035f, 0.035f, 0.34f));
+    Primitives::drawCylinder(shader, handleGrip, plowWood);
+
+    // ── 5. The Farmer Steering Behind the Plow (হালচাষী কৃষক) ──
+    float fStride = sinf(walkPhase) * radians(26.0f);
+    float fBob    = fabsf(sinf(walkPhase)) * 0.022f;
+
+    PersonParams farmer;
+    farmer.skinColor   = vec3(0.48f, 0.32f, 0.18f); // Sun-tanned Bengali farmer
+    farmer.shirtColor  = vec3(0.95f, 0.95f, 0.93f); // White cotton shirt (like in Image 2)
+    farmer.pantsColor  = vec3(0.55f, 0.15f, 0.10f); // Hitched-up maroon lungi / kacha
+    farmer.hasGamcha   = true;
+    farmer.gamchaColor = vec3(0.84f, 0.18f, 0.12f); // Red gamcha around waist
+    farmer.leftLegAngle  = fStride;
+    farmer.rightLegAngle = -fStride;
+    farmer.leftArmAngle  = radians(-68.0f); // Forward gripping plow handle
+    farmer.rightArmAngle = radians(-68.0f);
+
+    mat4 farmerM = teamM;
+    farmerM = translate(farmerM, vec3(0.0f, fBob, -1.28f));
+    farmerM = rotate(farmerM, radians(12.0f), vec3(1.0f, 0.0f, 0.0f)); // Leaning forward with effort
+    farmerM = scale(farmerM, vec3(0.98f));
+    Person::draw(shader, farmerM, farmer);
+
+    // Checkered Headwrap / Turban (Pagri / গামছার পাগড়ি like in reference Image 2)
+    mat4 pagri = farmerM;
+    pagri = translate(pagri, vec3(0.0f, 1.08f, 0.02f));
+    pagri = scale(pagri, vec3(0.24f, 0.12f, 0.24f));
+    Primitives::drawCylinder(shader, pagri, vec3(0.92f, 0.90f, 0.86f));
+
+    mat4 pagriBand = farmerM;
+    pagriBand = translate(pagriBand, vec3(0.0f, 1.10f, 0.02f));
+    pagriBand = scale(pagriBand, vec3(0.25f, 0.05f, 0.25f));
+    Primitives::drawCylinder(shader, pagriBand, vec3(0.80f, 0.20f, 0.15f));
+
+    // ── 6. Two Guide Reins from Oxen to Farmer Hands (লাগাম / রশি) ──
+    for (float side : { -1.0f, 1.0f }) {
+        float x0 = side * 0.65f, y0 = 1.05f, z0 = 1.35f;
+        float x1 = side * 0.12f, y1 = 0.95f, z1 = -1.15f;
+        float mx = (x0 + x1) * 0.5f, my = (y0 + y1) * 0.5f, mz = (z0 + z1) * 0.5f;
+        float dx = x1 - x0, dy = y1 - y0, dz = z1 - z0;
+        float len = sqrtf(dx * dx + dy * dy + dz * dz);
+        float yaw = atan2f(dx, dz);
+        float pitch = -atan2f(dy, sqrtf(dx * dx + dz * dz));
+
+        mat4 rein = teamM;
+        rein = translate(rein, vec3(mx, my, mz));
+        rein = rotate(rein, yaw, vec3(0.0f, 1.0f, 0.0f));
+        rein = rotate(rein, pitch, vec3(1.0f, 0.0f, 0.0f));
+        rein = scale(rein, vec3(0.012f, 0.012f, len));
+        Primitives::drawCube(shader, rein, reinRope);
+    }
+}
+
 } // namespace House
+
 
