@@ -1,0 +1,20 @@
+# Visual Studio
+.vs/
+x64/
+**/x64/
+*.user
+*.suo
+*.pdb
+*.ilk
+*.obj
+*.exe
+
+# Temporary Office files
+~$*
+
+# Generated presentation
+Village_Gathering_By_The_River_Presentation.pptx
+
+# Python cache
+__pycache__/
+*.pyc
